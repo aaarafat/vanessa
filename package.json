@@ -4,8 +4,16 @@
   "license": "MIT",
   "scripts": {
     "start": "nx serve",
+    "lint": "nx workspace-lint && nx lint",
+    "test": "nx test",
+    "compile": "nx compile",
     "build": "nx build",
-    "test": "nx test"
+    "affected:lint": "nx affected:lint",
+    "affected:test": "nx affected:test",
+    "affected:compile": "nx affected --target=compile",
+    "affected:build": "nx affected:build",
+    "dep-graph": "nx dep-graph",
+    "format": "nx format:write"
   },
   "private": true,
   "devDependencies": {
