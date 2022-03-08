@@ -2,6 +2,10 @@
   "version": 2,
   "projects": {
     "car-ui": "apps/car-ui",
-    "car-ui-e2e": "apps/car-ui-e2e"
+    "car-ui-e2e": "apps/car-ui-e2e",
+    "rsu-ui": "apps/rsu-ui",
+    "rsu-ui-e2e": "apps/rsu-ui-e2e",
+    "simulation-ui": "apps/simulation-ui",
+    "simulation-ui-e2e": "apps/simulation-ui-e2e"
   }
 }

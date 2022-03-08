@@ -1,0 +1,73 @@
+{
+  "root": "apps/simulation-ui",
+  "sourceRoot": "apps/simulation-ui/src",
+  "projectType": "application",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/web:webpack",
+      "outputs": ["{options.outputPath}"],
+      "defaultConfiguration": "production",
+      "options": {
+        "compiler": "babel",
+        "outputPath": "dist/apps/simulation-ui",
+        "index": "apps/simulation-ui/src/index.html",
+        "baseHref": "/",
+        "main": "apps/simulation-ui/src/main.tsx",
+        "polyfills": "apps/simulation-ui/src/polyfills.ts",
+        "tsConfig": "apps/simulation-ui/tsconfig.app.json",
+        "assets": [
+          "apps/simulation-ui/src/favicon.ico",
+          "apps/simulation-ui/src/assets"
+        ],
+        "styles": [],
+        "scripts": [],
+        "webpackConfig": "@nrwl/react/plugins/webpack"
+      },
+      "configurations": {
+        "production": {
+          "fileReplacements": [
+            {
+              "replace": "apps/simulation-ui/src/environments/environment.ts",
+              "with": "apps/simulation-ui/src/environments/environment.prod.ts"
+            }
+          ],
+          "optimization": true,
+          "outputHashing": "all",
+          "sourceMap": false,
+          "namedChunks": false,
+          "extractLicenses": true,
+          "vendorChunk": false
+        }
+      }
+    },
+    "serve": {
+      "executor": "@nrwl/web:dev-server",
+      "options": {
+        "buildTarget": "simulation-ui:build",
+        "hmr": true
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "simulation-ui:build:production",
+          "hmr": false
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["apps/simulation-ui/**/*.{ts,tsx,js,jsx}"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/apps/simulation-ui"],
+      "options": {
+        "jestConfig": "apps/simulation-ui/jest.config.js",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+}
