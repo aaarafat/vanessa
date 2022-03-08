@@ -1,4 +1,7 @@
 {
   "version": 2,
-  "projects": {}
+  "projects": {
+    "car-ui": "apps/car-ui",
+    "car-ui-e2e": "apps/car-ui-e2e"
+  }
 }

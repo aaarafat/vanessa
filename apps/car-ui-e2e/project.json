@@ -1,0 +1,28 @@
+{
+  "root": "apps/car-ui-e2e",
+  "sourceRoot": "apps/car-ui-e2e/src",
+  "projectType": "application",
+  "targets": {
+    "e2e": {
+      "executor": "@nrwl/cypress:cypress",
+      "options": {
+        "cypressConfig": "apps/car-ui-e2e/cypress.json",
+        "devServerTarget": "car-ui:serve"
+      },
+      "configurations": {
+        "production": {
+          "devServerTarget": "car-ui:serve:production"
+        }
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["apps/car-ui-e2e/**/*.{js,ts}"]
+      }
+    }
+  },
+  "tags": [],
+  "implicitDependencies": ["car-ui"]
+}
