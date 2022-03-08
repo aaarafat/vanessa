@@ -25,7 +25,7 @@ def topology():
     cars = []
     for id in range(0, 10):
         cars.append(net.addCar('car%s' % (id+1), wlans=2, bgscan_threshold=-45, 
-                               s_inverval=5, l_interval=10, bgscan_module="simple", position=str(500*id)+','+str(500*id)+','+str(0)))
+                               s_inverval=5, l_interval=10, bgscan_module="simple"))
     
     rsu1 = net.addAccessPoint('rsu1', ssid='vanet-ssid', mac='00:00:00:11:00:01',
                             mode='g', channel='1', passwd='123456789a',
@@ -64,12 +64,11 @@ def topology():
 
     # net.useExternalProgram(program=sumo, port=8813,
     #                        config_file='map.sumocfg')
-    info("*** plotting Network\n")
-    net.plotGraph(max_x=1000, max_y=1000)
+    # info("*** plotting Network\n")
+    # net.plotGraph(max_x=1000, max_y=1000)
 
     info("*** Starting network\n")
     net.build()
-    net.addNAT().configDefault()
     c1.start()
     rsu1.start([c1])
     rsu2.start([c1])
@@ -83,9 +82,13 @@ def topology():
                   intf='%s-wlan0' % car)
         car.setIP('192.168.1.%s/24' % (int(cars.index(car))+1),
                   intf='%s-mp1' % car)
-        car.setRange(10, intf="car%s-mp1"%(int(cars.index(car))+1))
+        # car.setRange(10, intf="car%s-mp1"%(int(cars.index(car))+1))
 
-    
+    cars[0].setPosition("100, 150, 0")    
+    cars[1].setPosition("100, 100, 0")    
+    cars[2].setPosition("300, 150, 0")    
+    cars[3].setPosition("2500, 2500, 0")    
+    cars[4].setPosition("5000, 5000, 0")    
 
     info("*** Running CLI\n")
     CLI(net)
