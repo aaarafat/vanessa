@@ -1,0 +1,8 @@
+{
+  "version": 2,
+  "projects": {
+    "car-ui": "apps/car-ui",
+    "rsu-ui": "apps/rsu-ui",
+    "simulation-ui": "apps/simulation-ui"
+  }
+}
