@@ -36,4 +36,4 @@ jobs:
       - run: npm run affected:lint --fix --base=origin/$GITHUB_BASE_REF
       - run: npm run affected:test --base=origin/$GITHUB_BASE_REF
       - run: npm run affected:compile --base=origin/$GITHUB_BASE_REF
-      - run: npm run affected:build --prod --skip-nx-cache --baseHref ${NX_DEPLOY_URL:-/} --deployUrl ${NX_DEPLOY_URL:-/} --base=origin/$GITHUB_BASE_REF --verbose
+      - run: npm run affected:build --prod --skip-nx-cache --base=origin/$GITHUB_BASE_REF --verbose
