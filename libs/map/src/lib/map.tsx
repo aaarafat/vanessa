@@ -1,9 +1,7 @@
 import styled from 'styled-components';
 import React, { useRef, useEffect, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
-
-/* eslint-disable-next-line */
-export interface MapProps {}
+import { MapProps } from './map.props';
 
 const StyledMap = styled.div``;
 
@@ -31,12 +29,16 @@ const StyledSidebar = styled.div`
 mapboxgl.accessToken =
   'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA';
 
-export const Map: React.FC<MapProps> = () => {
+export const Map: React.FC<MapProps> = ({
+  currentZoom = 1.5,
+  currentLat = 34,
+  currentLng = 5,
+}) => {
   const mapContainerRef = useRef<any>();
 
-  const [lng, setLng] = useState(5);
-  const [lat, setLat] = useState(34);
-  const [zoom, setZoom] = useState(1.5);
+  const [lng, setLng] = useState(currentLng);
+  const [lat, setLat] = useState(currentLat);
+  const [zoom, setZoom] = useState(currentZoom);
 
   // Initialize map when component mounts
   useEffect(() => {
@@ -46,9 +48,6 @@ export const Map: React.FC<MapProps> = () => {
       center: [lng, lat],
       zoom: zoom,
     });
-
-    // Add navigation control (the +/- zoom buttons)
-    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
     map.on('move', () => {
       setLng(Number(map.getCenter().lng.toFixed(4)));
