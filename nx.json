@@ -1,7 +1,7 @@
 {
   "npmScope": "vanessa",
   "affected": {
-    "defaultBase": "main"
+    "defaultBase": "remotes/origin/main"
   },
   "cli": {
     "defaultCollection": "@nrwl/react"

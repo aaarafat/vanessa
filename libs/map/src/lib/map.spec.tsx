@@ -1,8 +1,6 @@
 import { render } from '@testing-library/react';
 
-import { BrowserRouter } from 'react-router-dom';
-
-import App from './app';
+import Map from './map';
 
 jest.mock('mapbox-gl/dist/mapbox-gl', () => ({
   GeolocateControl: jest.fn(),
@@ -14,14 +12,9 @@ jest.mock('mapbox-gl/dist/mapbox-gl', () => ({
   NavigationControl: jest.fn(),
 }));
 
-describe('App', () => {
+describe('Map', () => {
   it('should render successfully', () => {
-    const { baseElement } = render(
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    );
-
+    const { baseElement } = render(<Map />);
     expect(baseElement).toBeTruthy();
   });
 });

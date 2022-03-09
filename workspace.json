@@ -2,6 +2,7 @@
   "version": 2,
   "projects": {
     "car-ui": "apps/car-ui",
+    "map": "libs/map",
     "rsu-ui": "apps/rsu-ui",
     "simulation-ui": "apps/simulation-ui"
   }
