@@ -127,11 +127,16 @@ function drawNewCar(map: mapboxgl.Map, sourceId: string, car: Car) {
 
   map.addLayer({
     id: sourceId,
-    type: 'symbol',
+    // type: 'symbol',
     source: sourceId,
-    layout: {
-      "text-field": "Car {id}",
-    }
+    type: 'circle',
+    'paint': {
+      'circle-radius': 10,
+      'circle-color': '#007cbf',
+    },
+    // layout: {
+    //   "text-field": "Car {id}",
+    // }
   });
 }
 
