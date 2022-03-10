@@ -7,4 +7,12 @@ export interface MapProps {
 
   /**Current Lat value */
   currentLat?: number;
+
+  cars?: Car[];
+}
+
+export interface Car {
+  id: number;
+  lat: number;
+  lng: number;
 }

@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 
 import { Route } from 'react-router-dom';
-import { Map } from '@vanessa/map';
+import { Car, Map } from '@vanessa/map';
 
 const StyledApp = styled.div`
   margin: 0;
@@ -12,10 +12,28 @@ const StyledApp = styled.div`
   -moz-osx-font-smoothing: grayscale;
 `;
 
+const cars: Car[] = [
+  {
+    id: 1,
+    lat: 30.02543,
+    lng: 31.21146,
+  },
+  {
+    id: 2,
+    lat: 30.02763,
+    lng: 31.21082,
+  },
+  {
+    id: 3,
+    lat: 30.02425,
+    lng: 31.20995,
+  }
+]
+
 export function App() {
   return (
     <StyledApp>
-      <Route path="/" exact render={() => <Map />} />
+      <Route path="/" exact render={() => <Map cars={cars} />} />
       {/* END: routes */}
     </StyledApp>
   );
