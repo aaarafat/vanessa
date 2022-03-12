@@ -135,7 +135,7 @@ const ControlPanel: React.FC = () => {
         const directions = (map.getSource('directions') as any)._data;
 
         // get origin coordinates
-        const [lng, lat] = directions.features[0].geometry.coordinates;
+        const [lng, lat] = directions.features[2].geometry.coordinates[0];
         setCoords({ lng, lat });
 
         // set route coordinates

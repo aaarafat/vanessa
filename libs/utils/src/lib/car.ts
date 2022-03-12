@@ -37,41 +37,20 @@ export class Car implements ICar {
   }
 
   private display = () => {
-    // console.log(
-    //   `ID: ${this.id}, Lat: ${this.lat}, Lng: ${this.lng}, RouteIndex: ${
-    //     this.routeIndex
-    //   }, Arrived: ${this.arrived ? 'Yes' : 'No'}`
-    // );
+    console.log(
+      `ID: ${this.id}, Lat: ${this.lat}, Lng: ${this.lng}, RouteIndex: ${
+        this.routeIndex
+      }, Arrived: ${this.arrived ? 'Yes' : 'No'}`
+    );
   };
 
   /**
    * Update Car
    */
   private update = () => {
-    this.updateRouteIndex();
     this.updateCoordinates();
-    this.display();
     if(!this.arrived)
       requestAnimationFrame(this.update)
-  };
-
-  private updateRouteIndex = () => {
-    while (this.routeIndex < this.route.length - 1) {
-      const coords = this.coordinates;
-      const dist = euclideanDistance(coords, this.route[this.routeIndex + 1]);
-      const distBetweenIndexes = euclideanDistance(
-        this.route[this.routeIndex],
-        this.route[this.routeIndex + 1]
-      );
-
-      if (distBetweenIndexes > dist) {
-        // the car in the middle -> update the routeIndex
-        this.routeIndex++;
-      } else {
-        // nothing to be updated
-        break;
-      }
-    }
   };
 
   private updateCoordinates = () => {
@@ -87,9 +66,6 @@ export class Car implements ICar {
         this.lng = this.route[this.routeIndex].lng;
         this.routeIndex++;
         if (this.routeIndex === this.route.length) {
-          // you arrived
-          this.display();
-          // console.log('ARRRRIIIVEEEEEEEEEEEEED!!!!!!!!!!!!!!!!!!');
           clearInterval(this.updateIntervalId);
         }
       } else {
