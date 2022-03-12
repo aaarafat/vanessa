@@ -90,12 +90,12 @@ export class Car implements ICar {
           clearInterval(this.updateIntervalId);
         }
       } else {
-        const angle = Math.atan2(
-          this.coordinates.lat - this.route[this.routeIndex].lat,
-          this.coordinates.lng - this.route[this.routeIndex].lng
-        );
-        this.lat += movementAmount * Math.sin(angle);
-        this.lng += movementAmount * Math.cos(angle);
+        const vector: Coordinates = {
+          lng: (this.route[this.routeIndex].lng - this.coordinates.lng) / dist,
+          lat: (this.route[this.routeIndex].lat - this.coordinates.lat) / dist,
+        };
+        this.lat += movementAmount * vector.lat;
+        this.lng += movementAmount * vector.lng;
         movementAmount = 0;
       }
     }
