@@ -1,8 +1,9 @@
-import { euclideanDistance } from './distance';
+import { distanceInKm, euclideanDistance } from './distance';
 import { Coordinates, ICar } from './types';
 
 const UPDATE_INTERVAL = 1000; // every 1 second
-const SPEED = 0.0000003;
+const SPEED_KM_H = 100; // KM/H
+const MS_IN_HOUR = 1000 * 60 * 60;
 
 /**
  * Car Class
@@ -71,12 +72,9 @@ export class Car implements ICar {
   };
 
   private updateCoordinates = () => {
-    let movementAmount = SPEED * UPDATE_INTERVAL;
+    let movementAmount = SPEED_KM_H * ((UPDATE_INTERVAL * 1.0) / MS_IN_HOUR);
     while (movementAmount && !this.arrived) {
-      const dist = euclideanDistance(
-        this.coordinates,
-        this.route[this.routeIndex]
-      );
+      const dist = distanceInKm(this.coordinates, this.route[this.routeIndex]);
 
       if (movementAmount >= dist) {
         movementAmount -= dist;
