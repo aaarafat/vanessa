@@ -50,17 +50,17 @@ export const Map: React.FC<MapProps> = ({
   const [zoom, setZoom] = useState(currentZoom);
 
   function onInit(map: mapboxgl.Map) {
-    // const directions = new MapboxDirections({
-    //   accessToken: mapboxgl.accessToken,
-    //   unit: 'metric',
-    //   profile: 'mapbox/driving',
-    //   alternatives: 'true',
-    //   geometries: 'geojson',
-    // });
+    const directions = new MapboxDirections({
+      accessToken: mapboxgl.accessToken,
+      unit: 'metric',
+      profile: 'mapbox/driving',
+      alternatives: 'true',
+      geometries: 'geojson',
+    });
 
-    // console.log(directions);
+    console.log(directions);
 
-    // map.addControl(directions, 'top-right');
+    map.addControl(directions, 'top-right');
 
     map.on('move', () => {
       setLng(Number(map.getCenter().lng.toFixed(4)));
@@ -73,6 +73,10 @@ export const Map: React.FC<MapProps> = ({
       cars.forEach((car) => carHandler(map, car));
 
       // todo: update/add event for cars
+    });
+
+    directions.on('route', (e: any) => {
+      console.log((map.getSource('directions') as any)._data)
     });
   }
 

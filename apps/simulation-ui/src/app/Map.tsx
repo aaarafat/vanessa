@@ -38,7 +38,7 @@ const Container = styled.div<{ open: boolean }>`
   padding: 1rem;
   font-weight: bold;
   margin: 1rem;
-  width: 25%;
+  width: min(380px, 20%);
   align-items: stretch;
   transition: left 0.3s ease-in-out;
   flex-direction: column;
