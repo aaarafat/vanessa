@@ -2,8 +2,7 @@ import { euclideanDistance } from './distance';
 import { Coordinates, ICar } from './types';
 
 const UPDATE_INTERVAL = 1000; // every 1 second
-const SPEED = 0.000003;
-const COS_45 = Math.cos(0.25 * Math.PI);
+const SPEED = 0.0000003;
 
 /**
  * Car Class
@@ -91,8 +90,12 @@ export class Car implements ICar {
           clearInterval(this.updateIntervalId);
         }
       } else {
-        this.lat += movementAmount * COS_45;
-        this.lng += movementAmount * COS_45;
+        const angle = Math.atan2(
+          this.coordinates.lat - this.route[this.routeIndex].lat,
+          this.coordinates.lng - this.route[this.routeIndex].lng
+        );
+        this.lat += movementAmount * Math.sin(angle);
+        this.lng += movementAmount * Math.cos(angle);
         movementAmount = 0;
       }
     }
