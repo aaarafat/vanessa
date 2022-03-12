@@ -1,11 +1,11 @@
 export interface Coordinates {
-  lng?: number;
-  lat?: number;
+  lng: number;
+  lat: number;
 }
 
-export interface Car {
+export interface ICar {
   id: number;
   lat: number;
   lng: number;
-  route?: Coordinates[];
+  route: Coordinates[];
 }

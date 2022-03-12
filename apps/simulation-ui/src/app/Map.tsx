@@ -3,6 +3,7 @@ import { Map, MapContext } from '@vanessa/map';
 import styled from 'styled-components';
 import { Car, Coordinates, drawNewCar } from '@vanessa/utils';
 
+/*
 const cars: Car[] = [
   {
     id: 1,
@@ -25,6 +26,9 @@ const cars: Car[] = [
     lng: 31.21075,
   },
 ];
+*/
+
+const cars: Car[] = [];
 
 const Container = styled.div<{ open: boolean }>`
   display: flex;
@@ -92,8 +96,8 @@ const CLICK_SOURCE_ID = 'click';
 
 const ControlPanel: React.FC = () => {
   const { map, mapRef, mapDirections } = useContext(MapContext);
-  const [coords, setCoords] = React.useState<Coordinates>({});
-  const [route, setRoute] = React.useState<Coordinates[] | null>([]);
+  const [coords, setCoords] = React.useState<Coordinates>();
+  const [route, setRoute] = React.useState<Coordinates[]>();
   const [isOpen, setIsOpen] = React.useState(true);
 
   useEffect(() => {
@@ -113,7 +117,8 @@ const ControlPanel: React.FC = () => {
         });
       });
 
-      mapDirections.on('route', (e: any) => {
+      mapDirections.on('route', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const directions = (map.getSource('directions') as any)._data;
 
         // get origin coordinates
@@ -121,7 +126,13 @@ const ControlPanel: React.FC = () => {
         setCoords({ lng, lat });
 
         // set route coordinates
-        setRoute(directions.features[2].geometry.coordinates);
+        setRoute(
+          directions.features[2].geometry.coordinates.map(
+            (el: number[]): Coordinates => {
+              return { lng: el[0], lat: el[1] };
+            }
+          )
+        );
 
         // we can create car here
         (map.getSource(CLICK_SOURCE_ID) as mapboxgl.GeoJSONSource).setData(
@@ -142,15 +153,20 @@ const ControlPanel: React.FC = () => {
     if (!source || !route) return;
 
     // id is current time
-    const car: Car = {
+    const car: Car = new Car({
       id: Date.now(),
       lat: coords?.lat ?? 0,
       lng: coords?.lng ?? 0,
       route,
-    };
+    });
+
+    // add to cars list
+    // TODO: replace this with store
+    cars.push(car);
+
     drawNewCar(map, `car-${car.id}`, car);
-    setCoords({});
-    setRoute(null);
+    setCoords(undefined);
+    setRoute(undefined);
     mapDirections.removeRoutes();
   };
 
@@ -165,10 +181,7 @@ const ControlPanel: React.FC = () => {
       </OpenButton>
       <Container open={isOpen}>
         <SmallButton onClick={() => setIsOpen(false)}>{'<'}</SmallButton>
-        <PrimaryButton
-          onClick={handleAddCar}
-          disabled={!(coords.lat && coords.lng)}
-        >
+        <PrimaryButton onClick={handleAddCar} disabled={!coords}>
           Add Car
         </PrimaryButton>
       </Container>
