@@ -40,7 +40,7 @@ export const Map: React.FC<MapProps> = ({
   currentLng = 31.211,
   cars = [],
 }) => {
-  const { map, setOptions, mapRef } = useContext(MapContext);
+  const { setOptions, mapRef } = useContext(MapContext);
 
   const [lng, setLng] = useState(currentLng);
   const [lat, setLat] = useState(currentLat);
@@ -54,7 +54,6 @@ export const Map: React.FC<MapProps> = ({
     });
 
     map.on('load', () => {
-      console.log(cars);
       cars.forEach((car) => carHandler(map, car));
 
       // todo: update/add event for cars
@@ -71,15 +70,6 @@ export const Map: React.FC<MapProps> = ({
       onInit,
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // update cars
-  useEffect(() => {
-    if (map) cars.forEach((car) => carHandler(map, car));
-  }, [map, cars]);
-
-  useEffect(() => {
-    console.log('map', map);
-  }, [map]);
 
   return (
     <StyledMap>

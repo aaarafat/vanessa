@@ -1,7 +1,7 @@
 import React, { useContext, useEffect } from 'react';
 import { Map, MapContext } from '@vanessa/map';
 import styled from 'styled-components';
-import { Car, Coordinates, drawNewCar } from '@vanessa/utils';
+import { Car, Coordinates, drawNewCar, updateCar } from '@vanessa/utils';
 
 /*
 const cars: Car[] = [
@@ -76,7 +76,7 @@ const SmallButton = styled(PrimaryButton)`
   line-height: 1;
 `;
 
-const OpenButton = styled(SmallButton)<{ open: boolean }>`
+const OpenButton = styled(SmallButton) <{ open: boolean }>`
   position: absolute;
   top: 0;
   margin: 3rem;
@@ -84,6 +84,7 @@ const OpenButton = styled(SmallButton)<{ open: boolean }>`
 `;
 
 export const Simulation: React.FC = () => {
+  const { map } = useContext(MapContext);
   const [time, setTime] = React.useState<number>();
 
   useEffect(() => {
@@ -92,8 +93,15 @@ export const Simulation: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    console.log('update!!!!!!!!!!!!!');
-  }, [time]);
+    if (map) {
+      map.on('load', () => {
+        setInterval(
+          () => cars.forEach((car) => updateCar(map, `car-${car.id}`, car)),
+          500
+        );
+      });
+    }
+  }, [map]);
 
   return (
     <div>
@@ -112,7 +120,6 @@ const ControlPanel: React.FC = () => {
   const [isOpen, setIsOpen] = React.useState(true);
 
   useEffect(() => {
-    console.log(map, mapRef);
     if (map) {
       // add directions controller
       map.addControl(mapDirections, 'top-right');

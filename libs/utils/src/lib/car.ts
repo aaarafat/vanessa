@@ -36,11 +36,11 @@ export class Car implements ICar {
   }
 
   private display = () => {
-    console.log(
-      `ID: ${this.id}, Lat: ${this.lat}, Lng: ${this.lng}, RouteIndex: ${
-        this.routeIndex
-      }, Arrived: ${this.arrived ? 'Yes' : 'No'}`
-    );
+    // console.log(
+    //   `ID: ${this.id}, Lat: ${this.lat}, Lng: ${this.lng}, RouteIndex: ${
+    //     this.routeIndex
+    //   }, Arrived: ${this.arrived ? 'Yes' : 'No'}`
+    // );
   };
 
   /**
@@ -87,7 +87,7 @@ export class Car implements ICar {
         if (this.routeIndex === this.route.length) {
           // you arrived
           this.display();
-          console.log('ARRRRIIIVEEEEEEEEEEEEED!!!!!!!!!!!!!!!!!!');
+          // console.log('ARRRRIIIVEEEEEEEEEEEEED!!!!!!!!!!!!!!!!!!');
           clearInterval(this.updateIntervalId);
         }
       } else {
