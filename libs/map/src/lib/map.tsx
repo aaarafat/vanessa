@@ -1,7 +1,9 @@
 import styled from 'styled-components';
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useContext } from 'react';
 import mapboxgl, { GeoJSONSourceRaw } from 'mapbox-gl';
 import { Car, MapProps } from './map.props';
+import { MapContext } from './context';
+import { drawNewCar, updateCar } from '@vanessa/utils';
 
 import "./mapbox-gl.css";
 import "./mapbox-gl-directions.css";
@@ -35,33 +37,19 @@ const StyledSidebar = styled.div`
 mapboxgl.accessToken =
   'pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4M29iazA2Z2gycXA4N2pmbDZmangifQ.-g_vE53SD2WrJ6tFX7QHmA';
 
-const carDefaultProps = {
-  title: 'Car',
-  'marker-size': 'large',
-  'marker-color': '#f00',
-}
-
 export const Map: React.FC<MapProps> = ({
   currentZoom = 15.79,
   currentLat = 30.0246,
   currentLng = 31.211,
   cars = [],
 }) => {
-  const mapContainerRef = useRef<any>();
+  const { map, setOptions, mapRef } = useContext(MapContext);
 
   const [lng, setLng] = useState(currentLng);
   const [lat, setLat] = useState(currentLat);
   const [zoom, setZoom] = useState(currentZoom);
 
-  // Initialize map when component mounts
-  useEffect(() => {
-    const map = new mapboxgl.Map({
-      container: mapContainerRef.current,
-      style: 'mapbox://styles/mapbox/streets-v11',
-      center: [lng, lat],
-      zoom: zoom,
-    });
-
+  function onInit(map: mapboxgl.Map) {
     const directions = new MapboxDirections({
       accessToken: mapboxgl.accessToken,
       unit: 'metric',
@@ -69,6 +57,8 @@ export const Map: React.FC<MapProps> = ({
       alternatives: 'true',
       geometries: 'geojson',
     });
+
+    console.log(directions)
 
     map.addControl(directions, 'top-right');
 
@@ -86,10 +76,22 @@ export const Map: React.FC<MapProps> = ({
 
       // todo: update/add event for cars
     });
+  }
 
-    // Clean up on unmount
-    return () => map.remove();
+
+  // Initialize map when component mounts
+  useEffect(() => {
+    setOptions({
+      style: 'mapbox://styles/mapbox/streets-v11',
+      center: [lng, lat],
+      zoom: zoom,
+      onInit
+    })
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    console.log("map", map)
+  }, [map])
 
   return (
     <StyledMap>
@@ -98,7 +100,7 @@ export const Map: React.FC<MapProps> = ({
           Longitude: {lng} | Latitude: {lat} | Zoom: {zoom}
         </div>
       </StyledSidebar>
-      <StyledContainer ref={mapContainerRef} />
+      <StyledContainer ref={mapRef} />
     </StyledMap>
   );
 };
@@ -117,47 +119,3 @@ function carHandler(map: mapboxgl.Map, car: Car) {
     // todo: remove car
   }
 }
-
-function drawNewCar(map: mapboxgl.Map, sourceId: string, car: Car) {
-  const geojson: GeoJSONSourceRaw = {
-    type: "geojson",
-    data: getCarLocation(car)
-  };
-  map.addSource(sourceId, geojson);
-
-  map.addLayer({
-    id: sourceId,
-    // type: 'symbol',
-    source: sourceId,
-    type: 'circle',
-    'paint': {
-      'circle-radius': 10,
-      'circle-color': '#007cbf',
-    },
-    // layout: {
-    //   "text-field": "Car {id}",
-    // }
-  });
-}
-
-function updateCar(map: mapboxgl.Map, sourceId: string, car: Car) {
-  (map.getSource(sourceId) as mapboxgl.GeoJSONSource).setData(getCarLocation(car));
-}
-
-
-function getCarLocation(car: Car): GeoJSON.FeatureCollection {
-  const { lng, lat } = car;
-  return {
-    type: "FeatureCollection",
-    features: [
-      {
-        type: "Feature",
-        geometry: {
-          type: "Point",
-          coordinates: [lng, lat],
-        },
-        properties: { ...carDefaultProps, ...car },
-      }
-    ],
-  }
-};

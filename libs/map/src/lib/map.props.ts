@@ -1,3 +1,5 @@
+import React from "react";
+
 export interface MapProps {
   /**Current Zoom value */
   currentZoom?: number;
@@ -15,4 +17,14 @@ export interface Car {
   id: number;
   lat: number;
   lng: number;
+}
+
+export interface MapContextInterface {
+  map: mapboxgl.Map | null;
+  mapRef: React.MutableRefObject<HTMLDivElement | null> | null;
+  setOptions: (options: MapOptions) => void;
+}
+
+export interface MapOptions extends Omit<mapboxgl.MapboxOptions, "container"> {
+  onInit?: (map: mapboxgl.Map) => void
 }
