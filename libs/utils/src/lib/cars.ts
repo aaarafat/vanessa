@@ -1,17 +1,21 @@
-import mapboxgl, { GeoJSONSourceRaw } from "mapbox-gl";
-import { Car } from "../map/src/lib/map.props";
-
+import mapboxgl, { GeoJSONSourceRaw } from 'mapbox-gl';
+// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
+import { Car } from '../../../map/src/lib/map.props';
 
 const carDefaultProps = {
   title: 'Car',
   'marker-size': 'large',
   'marker-color': '#f00',
-}
+};
 
-export function drawNewCar(map: mapboxgl.Map, sourceId: string, car: Car): void {
+export function drawNewCar(
+  map: mapboxgl.Map,
+  sourceId: string,
+  car: Car
+): void {
   const geojson: GeoJSONSourceRaw = {
-    type: "geojson",
-    data: getCarLocation(car)
+    type: 'geojson',
+    data: getCarLocation(car),
   };
   map.addSource(sourceId, geojson);
 
@@ -19,7 +23,7 @@ export function drawNewCar(map: mapboxgl.Map, sourceId: string, car: Car): void 
     id: sourceId,
     source: sourceId,
     type: 'circle',
-    'paint': {
+    paint: {
       'circle-radius': 10,
       'circle-color': '#007cbf',
     },
@@ -27,23 +31,24 @@ export function drawNewCar(map: mapboxgl.Map, sourceId: string, car: Car): void 
 }
 
 export function updateCar(map: mapboxgl.Map, sourceId: string, car: Car) {
-  (map.getSource(sourceId) as mapboxgl.GeoJSONSource).setData(getCarLocation(car));
+  (map.getSource(sourceId) as mapboxgl.GeoJSONSource).setData(
+    getCarLocation(car)
+  );
 }
-
 
 export function getCarLocation(car: Car): GeoJSON.FeatureCollection {
   const { lng, lat } = car;
   return {
-    type: "FeatureCollection",
+    type: 'FeatureCollection',
     features: [
       {
-        type: "Feature",
+        type: 'Feature',
         geometry: {
-          type: "Point",
+          type: 'Point',
           coordinates: [lng, lat],
         },
         properties: { ...carDefaultProps, ...car },
-      }
+      },
     ],
-  }
-};
+  };
+}

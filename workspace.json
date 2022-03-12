@@ -4,6 +4,7 @@
     "car-ui": "apps/car-ui",
     "map": "libs/map",
     "rsu-ui": "apps/rsu-ui",
-    "simulation-ui": "apps/simulation-ui"
+    "simulation-ui": "apps/simulation-ui",
+    "utils": "libs/utils"
   }
 }
