@@ -112,31 +112,26 @@ const ControlPanel: React.FC = () => {
         });
       });
 
-      // on click add point to map
-      map.on('click', (e) => {
-        const { lng, lat } = e.lngLat;
+      mapDirections.on('route', (e: any) => {
+        console.log((map.getSource('directions') as any)._data);
+        const directions: any = (map.getSource('directions') as any)._data;
+
+        console.log(directions);
+
+        // get origin coordinates
+        const [lng, lat] = directions.features[0].geometry.coordinates;
         setCoords({ lng, lat });
 
+        // we can create car here
         (map.getSource(CLICK_SOURCE_ID) as mapboxgl.GeoJSONSource).setData(
           coordsToFeature({
             lng,
             lat,
           })
         );
-
-        map.getLayer(CLICK_SOURCE_ID) && map.removeLayer(CLICK_SOURCE_ID);
-        map.addLayer({
-          id: CLICK_SOURCE_ID,
-          type: 'circle',
-          source: CLICK_SOURCE_ID,
-          paint: {
-            'circle-radius': 10,
-            'circle-color': '#fbb03b',
-          },
-        });
       });
     }
-  }, [map, mapRef]);
+  }, [map, mapRef, mapDirections]);
 
   const handleAddCar = () => {
     if (!map) return;
@@ -144,7 +139,6 @@ const ControlPanel: React.FC = () => {
     // if no previous click, return
     const source = map.getSource(CLICK_SOURCE_ID);
     if (!source) return;
-    map.getLayer(CLICK_SOURCE_ID) && map.removeLayer(CLICK_SOURCE_ID);
 
     // id is current time
     const car: Car = {

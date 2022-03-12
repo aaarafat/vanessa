@@ -59,13 +59,6 @@ export const Map: React.FC<MapProps> = ({
 
       // todo: update/add event for cars
     });
-
-    /*
-    directions.on('route', (e: any) => {
-      console.log((map.getSource('directions') as any)._data);
-      // we can create car here
-    });
-    */
   }
 
   // Initialize map when component mounts
