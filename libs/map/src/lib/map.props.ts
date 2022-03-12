@@ -16,6 +16,7 @@ export interface MapProps {
 
 export interface MapContextInterface {
   map: mapboxgl.Map | null;
+  mapDirections: any | null; // add interface later
   mapRef: React.MutableRefObject<HTMLDivElement | null> | null;
   setOptions: (options: MapOptions) => void;
 }

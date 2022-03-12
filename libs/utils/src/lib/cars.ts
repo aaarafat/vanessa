@@ -1,6 +1,5 @@
 import mapboxgl, { GeoJSONSourceRaw } from 'mapbox-gl';
-import { Car } from './types';
-
+import { Car } from './car';
 
 const carDefaultProps = {
   title: 'Car',
