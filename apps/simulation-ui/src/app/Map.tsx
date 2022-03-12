@@ -93,6 +93,7 @@ const CLICK_SOURCE_ID = 'click';
 const ControlPanel: React.FC = () => {
   const { map, mapRef, mapDirections } = useContext(MapContext);
   const [coords, setCoords] = React.useState<Coordinates>({});
+  const [route, setRoute] = React.useState<Coordinates[] | null>([]);
   const [isOpen, setIsOpen] = React.useState(true);
 
   useEffect(() => {
@@ -113,14 +114,14 @@ const ControlPanel: React.FC = () => {
       });
 
       mapDirections.on('route', (e: any) => {
-        console.log((map.getSource('directions') as any)._data);
-        const directions: any = (map.getSource('directions') as any)._data;
-
-        console.log(directions);
+        const directions = (map.getSource('directions') as any)._data;
 
         // get origin coordinates
         const [lng, lat] = directions.features[0].geometry.coordinates;
         setCoords({ lng, lat });
+
+        // set route coordinates
+        setRoute(directions.features[2].geometry.coordinates);
 
         // we can create car here
         (map.getSource(CLICK_SOURCE_ID) as mapboxgl.GeoJSONSource).setData(
@@ -138,16 +139,19 @@ const ControlPanel: React.FC = () => {
 
     // if no previous click, return
     const source = map.getSource(CLICK_SOURCE_ID);
-    if (!source) return;
+    if (!source || !route) return;
 
     // id is current time
     const car: Car = {
       id: Date.now(),
       lat: coords?.lat ?? 0,
       lng: coords?.lng ?? 0,
+      route,
     };
     drawNewCar(map, `car-${car.id}`, car);
     setCoords({});
+    setRoute(null);
+    mapDirections.removeRoutes();
   };
 
   return (

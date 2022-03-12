@@ -7,4 +7,5 @@ export interface Car {
   id: number;
   lat: number;
   lng: number;
+  route?: Coordinates[];
 }
