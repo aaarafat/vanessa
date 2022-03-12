@@ -31,7 +31,7 @@ const Container = styled.div<{ open: boolean }>`
   position: absolute;
   top: 0;
   bottom: 0;
-  left: ${props => props.open ? 0 : '-100%'};
+  left: ${(props) => (props.open ? 0 : '-100%')};
   background-color: #010942ed;
   color: #ffffff;
   z-index: 1 !important;
@@ -70,14 +70,14 @@ const SmallButton = styled(PrimaryButton)`
   align-items: center;
   justify-content: center;
   line-height: 1;
-`
+`;
 
-const OpenButton = styled(SmallButton) <{ open: boolean }>`
+const OpenButton = styled(SmallButton)<{ open: boolean }>`
   position: absolute;
   top: 0;
   margin: 3rem;
-  ${props => props.open ? 'display: none;' : ''}
-`
+  ${(props) => (props.open ? 'display: none;' : '')}
+`;
 
 export const Simulation: React.FC = () => {
   return (
@@ -91,13 +91,16 @@ export const Simulation: React.FC = () => {
 const CLICK_SOURCE_ID = 'click';
 
 const ControlPanel: React.FC = () => {
-  const { map, mapRef } = useContext(MapContext);
+  const { map, mapRef, mapDirections } = useContext(MapContext);
   const [coords, setCoords] = React.useState<Coordinates>({});
   const [isOpen, setIsOpen] = React.useState(true);
 
   useEffect(() => {
     console.log(map, mapRef);
     if (map) {
+      // add directions controller
+      map.addControl(mapDirections, 'top-right');
+
       // add click source on load
       map.on('load', () => {
         map.addSource(CLICK_SOURCE_ID, {
@@ -148,17 +151,28 @@ const ControlPanel: React.FC = () => {
       id: Date.now(),
       lat: coords?.lat ?? 0,
       lng: coords?.lng ?? 0,
-    }
+    };
     drawNewCar(map, `car-${car.id}`, car);
     setCoords({});
-  }
+  };
 
   return (
     <>
-      <OpenButton onClick={() => setIsOpen(true)} open={isOpen} disabled={isOpen}>{'>'}</OpenButton>
+      <OpenButton
+        onClick={() => setIsOpen(true)}
+        open={isOpen}
+        disabled={isOpen}
+      >
+        {'>'}
+      </OpenButton>
       <Container open={isOpen}>
         <SmallButton onClick={() => setIsOpen(false)}>{'<'}</SmallButton>
-        <PrimaryButton onClick={handleAddCar} disabled={!(coords.lat && coords.lng)}>Add Car</PrimaryButton>
+        <PrimaryButton
+          onClick={handleAddCar}
+          disabled={!(coords.lat && coords.lng)}
+        >
+          Add Car
+        </PrimaryButton>
       </Container>
     </>
   );

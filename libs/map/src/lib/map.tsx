@@ -8,9 +8,6 @@ import { Car, drawNewCar, updateCar } from '@vanessa/utils';
 import './mapbox-gl.css';
 import './mapbox-gl-directions.css';
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const MapboxDirections = require('@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions');
-
 const StyledMap = styled.div``;
 
 const StyledContainer = styled.div`
@@ -50,18 +47,6 @@ export const Map: React.FC<MapProps> = ({
   const [zoom, setZoom] = useState(currentZoom);
 
   function onInit(map: mapboxgl.Map) {
-    const directions = new MapboxDirections({
-      accessToken: mapboxgl.accessToken,
-      unit: 'metric',
-      profile: 'mapbox/driving',
-      alternatives: 'true',
-      geometries: 'geojson',
-    });
-
-    console.log(directions);
-
-    map.addControl(directions, 'top-right');
-
     map.on('move', () => {
       setLng(Number(map.getCenter().lng.toFixed(4)));
       setLat(Number(map.getCenter().lat.toFixed(4)));
@@ -75,9 +60,12 @@ export const Map: React.FC<MapProps> = ({
       // todo: update/add event for cars
     });
 
+    /*
     directions.on('route', (e: any) => {
-      console.log((map.getSource('directions') as any)._data)
+      console.log((map.getSource('directions') as any)._data);
+      // we can create car here
     });
+    */
   }
 
   // Initialize map when component mounts
@@ -86,6 +74,7 @@ export const Map: React.FC<MapProps> = ({
       style: 'mapbox://styles/mapbox/streets-v11',
       center: [lng, lat],
       zoom: zoom,
+      accessToken: mapboxgl.accessToken,
       onInit,
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
