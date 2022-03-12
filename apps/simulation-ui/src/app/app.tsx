@@ -1,8 +1,6 @@
 import styled from 'styled-components';
 
 import { Route } from 'react-router-dom';
-import { Car, MapContext } from '@vanessa/map';
-import { useContext, useEffect } from 'react';
 import { Simulation } from './Map';
 
 const StyledApp = styled.div`
@@ -13,7 +11,6 @@ const StyledApp = styled.div`
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 `;
-
 
 export function App() {
   return (

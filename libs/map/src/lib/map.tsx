@@ -1,12 +1,12 @@
 import styled from 'styled-components';
-import React, { useRef, useEffect, useState, useContext } from 'react';
-import mapboxgl, { GeoJSONSourceRaw } from 'mapbox-gl';
-import { Car, MapProps } from './map.props';
+import React, { useEffect, useState, useContext } from 'react';
+import mapboxgl from 'mapbox-gl';
+import { MapProps } from './map.props';
 import { MapContext } from './context';
-import { drawNewCar, updateCar } from '@vanessa/utils';
+import { Car, drawNewCar, updateCar } from '@vanessa/utils';
 
-import "./mapbox-gl.css";
-import "./mapbox-gl-directions.css";
+import './mapbox-gl.css';
+import './mapbox-gl-directions.css';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const MapboxDirections = require('@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions');
@@ -58,7 +58,7 @@ export const Map: React.FC<MapProps> = ({
       geometries: 'geojson',
     });
 
-    console.log(directions)
+    console.log(directions);
 
     map.addControl(directions, 'top-right');
 
@@ -69,15 +69,12 @@ export const Map: React.FC<MapProps> = ({
     });
 
     map.on('load', () => {
-      console.log(cars)
-      cars.forEach((car) =>
-        carHandler(map, car)
-      );
+      console.log(cars);
+      cars.forEach((car) => carHandler(map, car));
 
       // todo: update/add event for cars
     });
   }
-
 
   // Initialize map when component mounts
   useEffect(() => {
@@ -85,13 +82,13 @@ export const Map: React.FC<MapProps> = ({
       style: 'mapbox://styles/mapbox/streets-v11',
       center: [lng, lat],
       zoom: zoom,
-      onInit
-    })
+      onInit,
+    });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    console.log("map", map)
-  }, [map])
+    console.log('map', map);
+  }, [map]);
 
   return (
     <StyledMap>
@@ -104,7 +101,6 @@ export const Map: React.FC<MapProps> = ({
     </StyledMap>
   );
 };
-
 
 export default Map;
 function carHandler(map: mapboxgl.Map, car: Car) {

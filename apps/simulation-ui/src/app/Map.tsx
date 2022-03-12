@@ -1,8 +1,7 @@
 import React, { useContext, useEffect } from 'react';
-import { Car, Map, MapContext } from '@vanessa/map';
+import { Map, MapContext } from '@vanessa/map';
 import styled from 'styled-components';
-import { GeoJSONSourceRaw } from 'mapbox-gl';
-import { FeatureCollection } from '@turf/turf';
+import { Car } from '@vanessa/utils';
 
 const cars: Car[] = [
   {
@@ -24,8 +23,8 @@ const cars: Car[] = [
     id: 4,
     lat: 30.02616,
     lng: 31.21075,
-  }
-]
+  },
+];
 
 const Container = styled.div`
   display: flex;
@@ -55,42 +54,43 @@ const PrimaryButton = styled.button`
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
   cursor: pointer;
   font-size: 1.2rem;
-`
+`;
 
 export const Simulation: React.FC = () => {
-  return <div>
-    <Map cars={cars} />
-    <ControlPanel />
-  </div>
-}
+  return (
+    <div>
+      <Map cars={cars} />
+      <ControlPanel />
+    </div>
+  );
+};
 
 const ControlPanel: React.FC = (props) => {
   const { map, mapRef } = useContext(MapContext);
   useEffect(() => {
-    console.log(map, mapRef)
+    console.log(map, mapRef);
     if (map) {
       map.addSource('click', {
         type: 'geojson',
         data: {
           type: 'FeatureCollection',
           features: [],
-        }
+        },
       });
-      map.on("click", (e) => {
+      map.on('click', (e) => {
         (map.getSource('click') as mapboxgl.GeoJSONSource).setData(
           coordsToFeature({
             lng: e.lngLat.lng,
             lat: e.lngLat.lat,
           })
         );
-      })
+      });
     }
-  }, [map, mapRef])
-
+  }, [map, mapRef]);
 
   const handleAddCar = () => {
-    console.log('add car')
-  }
+    console.log('add car');
+  };
 
   // function drawCar() {
   //   // if no map, return
@@ -118,22 +118,31 @@ const ControlPanel: React.FC = (props) => {
   //   });
   // }
 
-  return <Container>
-    <PrimaryButton onClick={handleAddCar}>Add Car</PrimaryButton>
-  </Container>
-}
+  return (
+    <Container>
+      <PrimaryButton onClick={handleAddCar}>Add Car</PrimaryButton>
+    </Container>
+  );
+};
 
-function coordsToFeature({ lng, lat }: { lng: number, lat: number }): GeoJSON.FeatureCollection {
+function coordsToFeature({
+  lng,
+  lat,
+}: {
+  lng: number;
+  lat: number;
+}): GeoJSON.FeatureCollection {
   return {
     type: 'FeatureCollection',
-    features: [{
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [+lng, +lat],
+    features: [
+      {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [+lng, +lat],
+        },
+        properties: {},
       },
-      properties: {},
-    }],
-  }
+    ],
+  };
 }
-

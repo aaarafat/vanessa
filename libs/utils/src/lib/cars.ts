@@ -1,6 +1,10 @@
 import mapboxgl, { GeoJSONSourceRaw } from 'mapbox-gl';
-// eslint-disable-next-line @nrwl/nx/enforce-module-boundaries
-import { Car } from '../../../map/src/lib/map.props';
+
+export interface Car {
+  id: number;
+  lat: number;
+  lng: number;
+}
 
 const carDefaultProps = {
   title: 'Car',
