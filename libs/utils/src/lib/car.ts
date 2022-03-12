@@ -1,9 +1,8 @@
 import { distanceInKm, euclideanDistance } from './distance';
 import { Coordinates, ICar } from './types';
 
-const UPDATE_INTERVAL = 1000; // every 1 second
-const SPEED_KM_H = 100; // KM/H
 const MS_IN_HOUR = 1000 * 60 * 60;
+const SPEED_KM_H = 100; // KM/H
 
 /**
  * Car Class
@@ -16,6 +15,7 @@ export class Car implements ICar {
   private routeIndex: number;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private updateIntervalId: any;
+  private prevTime: number;
 
   constructor(car: ICar) {
     this.id = car.id;
@@ -24,7 +24,8 @@ export class Car implements ICar {
     this.route = car.route;
     this.routeIndex = 0;
 
-    this.updateIntervalId = setInterval(this.update, UPDATE_INTERVAL);
+    this.prevTime = Date.now();
+    this.update();
   }
 
   public get coordinates(): Coordinates {
@@ -50,6 +51,8 @@ export class Car implements ICar {
     this.updateRouteIndex();
     this.updateCoordinates();
     this.display();
+    if(!this.arrived)
+      requestAnimationFrame(this.update)
   };
 
   private updateRouteIndex = () => {
@@ -72,7 +75,9 @@ export class Car implements ICar {
   };
 
   private updateCoordinates = () => {
-    let movementAmount = SPEED_KM_H * ((UPDATE_INTERVAL * 1.0) / MS_IN_HOUR);
+    const now = Date.now();
+    let movementAmount = SPEED_KM_H * (((now - this.prevTime) * 1.0) / MS_IN_HOUR);
+    this.prevTime = now;
     while (movementAmount && !this.arrived) {
       const dist = distanceInKm(this.coordinates, this.route[this.routeIndex]);
 

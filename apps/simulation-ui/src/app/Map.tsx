@@ -85,20 +85,15 @@ const OpenButton = styled(SmallButton) <{ open: boolean }>`
 
 export const Simulation: React.FC = () => {
   const { map } = useContext(MapContext);
-  const [time, setTime] = React.useState<number>();
-
-  useEffect(() => {
-    // update componene every 0.5 seconds
-    setInterval(() => setTime(Date.now), 500);
-  }, []);
 
   useEffect(() => {
     if (map) {
       map.on('load', () => {
-        setInterval(
-          () => cars.forEach((car) => updateCar(map, `car-${car.id}`, car)),
-          500
-        );
+        function drawCars() {
+          if (map) cars.forEach((car) => updateCar(map, `car-${car.id}`, car))
+          requestAnimationFrame(drawCars);
+        }
+        drawCars();
       });
     }
   }, [map]);
