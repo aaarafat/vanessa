@@ -2,7 +2,7 @@ import { euclideanDistance } from './distance';
 import { Coordinates, ICar } from './types';
 
 const UPDATE_INTERVAL = 1000; // every 1 second
-const SPEED = 0.0000003;
+const SPEED = 0.000003;
 const COS_45 = Math.cos(0.25 * Math.PI);
 
 /**

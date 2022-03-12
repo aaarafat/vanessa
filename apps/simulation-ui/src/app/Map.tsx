@@ -84,6 +84,17 @@ const OpenButton = styled(SmallButton)<{ open: boolean }>`
 `;
 
 export const Simulation: React.FC = () => {
+  const [time, setTime] = React.useState<number>();
+
+  useEffect(() => {
+    // update componene every 0.5 seconds
+    setInterval(() => setTime(Date.now), 500);
+  }, []);
+
+  useEffect(() => {
+    console.log('update!!!!!!!!!!!!!');
+  }, [time]);
+
   return (
     <div>
       <Map cars={cars} />

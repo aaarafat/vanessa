@@ -72,6 +72,11 @@ export const Map: React.FC<MapProps> = ({
     });
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // update cars
+  useEffect(() => {
+    if (map) cars.forEach((car) => carHandler(map, car));
+  }, [map, cars]);
+
   useEffect(() => {
     console.log('map', map);
   }, [map]);
