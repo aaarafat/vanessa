@@ -1,10 +1,6 @@
 import mapboxgl, { GeoJSONSourceRaw } from 'mapbox-gl';
+import { Car } from './types';
 
-export interface Car {
-  id: number;
-  lat: number;
-  lng: number;
-}
 
 const carDefaultProps = {
   title: 'Car',

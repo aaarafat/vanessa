@@ -1,7 +1,7 @@
 import React, { useContext, useEffect } from 'react';
 import { Map, MapContext } from '@vanessa/map';
 import styled from 'styled-components';
-import { Car } from '@vanessa/utils';
+import { Car, Coordinates, drawNewCar } from '@vanessa/utils';
 
 const cars: Car[] = [
   {
@@ -26,12 +26,12 @@ const cars: Car[] = [
   },
 ];
 
-const Container = styled.div`
+const Container = styled.div<{ open: boolean }>`
   display: flex;
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 0;
+  left: ${props => props.open ? 0 : '-100%'};
   background-color: #010942ed;
   color: #ffffff;
   z-index: 1 !important;
@@ -39,7 +39,9 @@ const Container = styled.div`
   font-weight: bold;
   margin: 1rem;
   width: 25%;
-  align-items: flex-start;
+  align-items: stretch;
+  transition: left 0.3s ease-in-out;
+  flex-direction: column;
 `;
 
 const PrimaryButton = styled.button`
@@ -49,12 +51,33 @@ const PrimaryButton = styled.button`
   color: #000;
   font-weight: bold;
   /* width: 100%; */
-  flex: 1;
   border-radius: 1.5rem;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
   cursor: pointer;
   font-size: 1.2rem;
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
 `;
+
+const SmallButton = styled(PrimaryButton)`
+  align-self: flex-start;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+`
+
+const OpenButton = styled(SmallButton) <{ open: boolean }>`
+  position: absolute;
+  top: 0;
+  margin: 3rem;
+  ${props => props.open ? 'display: none;' : ''}
+`
 
 export const Simulation: React.FC = () => {
   return (
@@ -65,63 +88,79 @@ export const Simulation: React.FC = () => {
   );
 };
 
-const ControlPanel: React.FC = (props) => {
+const CLICK_SOURCE_ID = 'click';
+
+const ControlPanel: React.FC = () => {
   const { map, mapRef } = useContext(MapContext);
+  const [coords, setCoords] = React.useState<Coordinates>({});
+  const [isOpen, setIsOpen] = React.useState(true);
+
   useEffect(() => {
     console.log(map, mapRef);
     if (map) {
-      map.addSource('click', {
-        type: 'geojson',
-        data: {
-          type: 'FeatureCollection',
-          features: [],
-        },
+      // add click source on load
+      map.on('load', () => {
+        map.addSource(CLICK_SOURCE_ID, {
+          type: 'geojson',
+          data: {
+            type: 'FeatureCollection',
+            features: [],
+          },
+        });
       });
+
+      // on click add point to map
       map.on('click', (e) => {
-        (map.getSource('click') as mapboxgl.GeoJSONSource).setData(
+        const { lng, lat } = e.lngLat;
+        setCoords({ lng, lat });
+
+        (map.getSource(CLICK_SOURCE_ID) as mapboxgl.GeoJSONSource).setData(
           coordsToFeature({
-            lng: e.lngLat.lng,
-            lat: e.lngLat.lat,
+            lng,
+            lat,
           })
         );
+
+        map.getLayer(CLICK_SOURCE_ID) && map.removeLayer(CLICK_SOURCE_ID);
+        map.addLayer({
+          id: CLICK_SOURCE_ID,
+          type: 'circle',
+          source: CLICK_SOURCE_ID,
+          paint: {
+            'circle-radius': 10,
+            'circle-color': '#fbb03b',
+          },
+        });
       });
     }
   }, [map, mapRef]);
 
   const handleAddCar = () => {
-    console.log('add car');
-  };
+    if (!map) return;
 
-  // function drawCar() {
-  //   // if no map, return
-  //   if (!map) return;
-  //   const id = "click";
+    // if no previous click, return
+    const source = map.getSource(CLICK_SOURCE_ID);
+    if (!source) return;
+    map.getLayer(CLICK_SOURCE_ID) && map.removeLayer(CLICK_SOURCE_ID);
 
-  //   // if no previous click, return
-  //   const source = map.getSource(id);
-  //   if (!source) return;
-
-  //   // get previous click coordinates, remove it, create new source for the new car, draw a car
-
-  //   // const prevClick = source.getData().features[0].geometry.coordinates;
-  //   const location = source;
-  //   map.addSource("click", geojson);
-
-  //   map.addLayer({
-  //     id: id,
-  //     source: id,
-  //     type: 'circle',
-  //     'paint': {
-  //       'circle-radius': 10,
-  //       'circle-color': '#a79c06',
-  //     },
-  //   });
-  // }
+    // id is current time
+    const car: Car = {
+      id: Date.now(),
+      lat: coords?.lat ?? 0,
+      lng: coords?.lng ?? 0,
+    }
+    drawNewCar(map, `car-${car.id}`, car);
+    setCoords({});
+  }
 
   return (
-    <Container>
-      <PrimaryButton onClick={handleAddCar}>Add Car</PrimaryButton>
-    </Container>
+    <>
+      <OpenButton onClick={() => setIsOpen(true)} open={isOpen} disabled={isOpen}>{'>'}</OpenButton>
+      <Container open={isOpen}>
+        <SmallButton onClick={() => setIsOpen(false)}>{'<'}</SmallButton>
+        <PrimaryButton onClick={handleAddCar} disabled={!(coords.lat && coords.lng)}>Add Car</PrimaryButton>
+      </Container>
+    </>
   );
 };
 

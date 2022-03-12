@@ -25,7 +25,7 @@ const StyledSidebar = styled.div`
   display: inline-block;
   position: absolute;
   top: 0;
-  left: 0;
+  right: 0;
   margin: 12px;
   background-color: #404040;
   color: #ffffff;
@@ -50,17 +50,17 @@ export const Map: React.FC<MapProps> = ({
   const [zoom, setZoom] = useState(currentZoom);
 
   function onInit(map: mapboxgl.Map) {
-    const directions = new MapboxDirections({
-      accessToken: mapboxgl.accessToken,
-      unit: 'metric',
-      profile: 'mapbox/driving',
-      alternatives: 'true',
-      geometries: 'geojson',
-    });
+    // const directions = new MapboxDirections({
+    //   accessToken: mapboxgl.accessToken,
+    //   unit: 'metric',
+    //   profile: 'mapbox/driving',
+    //   alternatives: 'true',
+    //   geometries: 'geojson',
+    // });
 
-    console.log(directions);
+    // console.log(directions);
 
-    map.addControl(directions, 'top-right');
+    // map.addControl(directions, 'top-right');
 
     map.on('move', () => {
       setLng(Number(map.getCenter().lng.toFixed(4)));
