@@ -10,3 +10,9 @@ export interface ICar {
   speed: number;
   route: Coordinates[];
 }
+
+export interface CarProps extends Partial<ICar> {
+  title?: string;
+  name?: string;
+  description?: string;
+}

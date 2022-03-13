@@ -33,7 +33,39 @@ export const MapProvider: React.FC = (props) => {
         profile: 'mapbox/driving',
         alternatives: 'true',
         geometries: 'geojson',
+        controls: {
+          instructions: false,
+          profileSwitcher: false,
+        },
+        interactive: false,
       });
+
+      map.on('load', () => {
+        map.on('mousedown', directions.onDragDown);
+        map.on('mousemove', directions.move);
+        map.on('click', (e) => {
+          const features = map.queryRenderedFeatures(
+            e.point,
+            {
+              filter: [
+                'in',
+                'Car',
+                ['get', 'title'],
+              ]
+            }
+          );
+          if (features.length) {
+            return;
+          }
+          directions.onClick(e);
+        });
+
+        map.on('touchstart', directions.move);
+        map.on('touchstart', directions.onDragDown);
+
+      })
+
+      console.log(directions)
 
       setMap(map);
       setMapDirections(directions);

@@ -1,10 +1,11 @@
 import mapboxgl, { GeoJSONSourceRaw } from 'mapbox-gl';
 import { Car } from './car';
+import { CarProps } from './types';
 
-const carDefaultProps = {
+const carDefaultProps: CarProps = {
   title: 'Car',
-  'marker-size': 'large',
-  'marker-color': '#f00',
+  description: `id: {id}<br>
+    speed: {speed} km/h`,
 };
 
 export function drawNewCar(

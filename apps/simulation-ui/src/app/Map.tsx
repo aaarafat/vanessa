@@ -1,7 +1,8 @@
 import React, { useContext, useEffect } from 'react';
 import { Map, MapContext } from '@vanessa/map';
 import styled from 'styled-components';
-import { Car, Coordinates, drawNewCar, updateCar } from '@vanessa/utils';
+import { Car, CarProps, Coordinates, drawNewCar, interpolateString, updateCar } from '@vanessa/utils';
+import mapboxgl from 'mapbox-gl';
 
 /*
 const cars: Car[] = [
@@ -148,12 +149,13 @@ const ControlPanel: React.FC = () => {
         const directions = (map.getSource('directions') as any)._data;
 
         // get origin coordinates
-        const [lng, lat] = directions.features[2].geometry.coordinates[0];
+        const feature = directions.features.find((f: GeoJSON.Feature) => f.properties?.route === 'selected');
+        const [lng, lat] = feature.geometry.coordinates[0];
         setCoords({ lng, lat });
 
         // set route coordinates
         setRoute(
-          directions.features[2].geometry.coordinates.map(
+          feature.geometry.coordinates.map(
             (el: number[]): Coordinates => {
               return { lng: el[0], lat: el[1] };
             }
@@ -193,9 +195,40 @@ const ControlPanel: React.FC = () => {
     cars.push(car);
 
     drawNewCar(map, `car-${car.id}`, car);
+    map.on('click', `car-${car.id}`, (e) => {
+      const coordinates = (e.features?.[0].geometry as GeoJSON.Point).coordinates.slice();
+      const description = (e.features?.[0].properties as CarProps).description || '';
+      const properties = interpolateString(description, car);
+
+      while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+      }
+
+      const popup = new mapboxgl.Popup({
+        closeButton: false,
+      })
+        .setLngLat(coordinates as mapboxgl.LngLatLike)
+        .setHTML(String(properties))
+        .addTo(map);
+
+      function movePopup() {
+        if (!popup.isOpen()) return;
+
+        const properties = interpolateString(description, car);
+        popup.setLngLat(car.coordinates as mapboxgl.LngLatLike)
+          .setHTML(String(properties));
+        requestAnimationFrame(movePopup);
+      }
+      requestAnimationFrame(movePopup);
+
+
+
+    })
     setCoords(undefined);
     setRoute(undefined);
     mapDirections.removeRoutes();
+    map.getLayer('origin') && map.removeLayer('origin');
+    map.getLayer('destination') && map.removeLayer('destination');
   };
 
   return (
