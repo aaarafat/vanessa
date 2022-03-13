@@ -30,7 +30,7 @@ const cars: Car[] = [
 
 const cars: Car[] = [];
 
-const Container = styled.div<{ open: boolean }>`
+const Container = styled.form<{ open: boolean }>`
   display: flex;
   position: absolute;
   top: 0;
@@ -39,7 +39,7 @@ const Container = styled.div<{ open: boolean }>`
   background-color: #010942ed;
   color: #ffffff;
   z-index: 1 !important;
-  padding: 1rem;
+  padding: 1rem 2rem;
   font-weight: bold;
   margin: 1rem;
   width: min(380px, 20%);
@@ -49,7 +49,7 @@ const Container = styled.div<{ open: boolean }>`
 `;
 
 const PrimaryButton = styled.button`
-  margin: 1rem;
+  margin: 1rem 0;
   padding: 1rem;
   background-color: #ccc;
   color: #000;
@@ -83,6 +83,18 @@ const OpenButton = styled(SmallButton) <{ open: boolean }>`
   ${(props) => (props.open ? 'display: none;' : '')}
 `;
 
+const Input = styled.input`
+  margin: 1rem 0;
+  padding: 1rem;
+  background-color: #ccc;
+  color: #000;
+  font-weight: bold;
+  /* width: 100%; */
+  border-radius: 1.5rem;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+  font-size: 1.2rem;
+`;
+
 export const Simulation: React.FC = () => {
   const { map } = useContext(MapContext);
 
@@ -113,6 +125,7 @@ const ControlPanel: React.FC = () => {
   const [coords, setCoords] = React.useState<Coordinates>();
   const [route, setRoute] = React.useState<Coordinates[]>();
   const [isOpen, setIsOpen] = React.useState(true);
+  const [speed, setSpeed] = React.useState(50);
 
   useEffect(() => {
     if (map) {
@@ -158,7 +171,8 @@ const ControlPanel: React.FC = () => {
     }
   }, [map, mapRef, mapDirections]);
 
-  const handleAddCar = () => {
+  const handleAddCar = (e: React.FormEvent) => {
+    e.preventDefault();
     if (!map) return;
 
     // if no previous click, return
@@ -171,6 +185,7 @@ const ControlPanel: React.FC = () => {
       lat: coords?.lat ?? 0,
       lng: coords?.lng ?? 0,
       route,
+      speed
     });
 
     // add to cars list
@@ -192,9 +207,11 @@ const ControlPanel: React.FC = () => {
       >
         {'>'}
       </OpenButton>
-      <Container open={isOpen}>
-        <SmallButton onClick={() => setIsOpen(false)}>{'<'}</SmallButton>
-        <PrimaryButton onClick={handleAddCar} disabled={!coords}>
+      <Container open={isOpen} onSubmit={handleAddCar}>
+        <SmallButton onClick={() => setIsOpen(false)} type="button">{'<'}</SmallButton>
+        <label htmlFor="speed" >Speed (km/h)</label>
+        <Input id="speed" type="number" min="10" max="100" value={speed} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSpeed(+e.target.value)} />
+        <PrimaryButton disabled={!coords}>
           Add Car
         </PrimaryButton>
       </Container>

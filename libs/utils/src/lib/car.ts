@@ -1,4 +1,4 @@
-import { distanceInKm, euclideanDistance } from './distance';
+import { distanceInKm } from './distance';
 import { Coordinates, ICar } from './types';
 
 const MS_IN_HOUR = 1000 * 60 * 60;
@@ -11,6 +11,7 @@ export class Car implements ICar {
   public id: number;
   public lat: number;
   public lng: number;
+  public speed: number;
   public route: Coordinates[];
   private routeIndex: number;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -21,6 +22,7 @@ export class Car implements ICar {
     this.id = car.id;
     this.lat = car.lat;
     this.lng = car.lng;
+    this.speed = car.speed;
     this.route = car.route;
     this.routeIndex = 0;
 
@@ -55,7 +57,7 @@ export class Car implements ICar {
 
   private updateCoordinates = () => {
     const now = Date.now();
-    let movementAmount = SPEED_KM_H * (((now - this.prevTime) * 1.0) / MS_IN_HOUR);
+    let movementAmount = this.speed * (((now - this.prevTime) * 1.0) / MS_IN_HOUR);
     this.prevTime = now;
     while (movementAmount && !this.arrived) {
       const dist = distanceInKm(this.coordinates, this.route[this.routeIndex]);
