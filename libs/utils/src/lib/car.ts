@@ -2,7 +2,6 @@ import { distanceInKm } from './distance';
 import { Coordinates, ICar } from './types';
 
 const MS_IN_HOUR = 1000 * 60 * 60;
-const SPEED_KM_H = 100; // KM/H
 
 /**
  * Car Class
@@ -51,13 +50,14 @@ export class Car implements ICar {
    */
   private update = () => {
     this.updateCoordinates();
-    if(!this.arrived)
-      requestAnimationFrame(this.update)
+    if (!this.arrived) requestAnimationFrame(this.update);
+    else this.speed = 0;
   };
 
   private updateCoordinates = () => {
     const now = Date.now();
-    let movementAmount = this.speed * (((now - this.prevTime) * 1.0) / MS_IN_HOUR);
+    let movementAmount =
+      this.speed * (((now - this.prevTime) * 1.0) / MS_IN_HOUR);
     this.prevTime = now;
     while (movementAmount && !this.arrived) {
       const dist = distanceInKm(this.coordinates, this.route[this.routeIndex]);
