@@ -195,41 +195,42 @@ const ControlPanel: React.FC = () => {
     cars.push(car);
 
     drawNewCar(map, `car-${car.id}`, car);
-    map.on('click', `car-${car.id}`, (e) => {
-      const coordinates = (e.features?.[0].geometry as GeoJSON.Point).coordinates.slice();
-      const description = (e.features?.[0].properties as CarProps).description || '';
-      const properties = interpolateString(description, car);
-
-      while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
-        coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
-      }
-
-      const popup = new mapboxgl.Popup({
-        closeButton: false,
-      })
-        .setLngLat(coordinates as mapboxgl.LngLatLike)
-        .setHTML(String(properties))
-        .addTo(map);
-
-      function movePopup() {
-        if (!popup.isOpen()) return;
-
-        const properties = interpolateString(description, car);
-        popup.setLngLat(car.coordinates as mapboxgl.LngLatLike)
-          .setHTML(String(properties));
-        requestAnimationFrame(movePopup);
-      }
-      requestAnimationFrame(movePopup);
+    map.on('click', `car-${car.id}`, (e) => carClickHandler(e, car));
 
 
-
-    })
     setCoords(undefined);
     setRoute(undefined);
-    mapDirections.removeRoutes();
-    map.getLayer('origin') && map.removeLayer('origin');
-    map.getLayer('destination') && map.removeLayer('destination');
+    mapDirections.reset();
   };
+
+  function carClickHandler(e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] | undefined; } & mapboxgl.EventData, car: Car) {
+    if (!map) return;
+    const coordinates = (e.features?.[0].geometry as GeoJSON.Point).coordinates.slice();
+    const description = (e.features?.[0].properties as CarProps).description || '';
+    const properties = interpolateString(description, car);
+
+    while (Math.abs(e.lngLat.lng - coordinates[0]) > 180) {
+      coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
+    }
+
+    const popup = new mapboxgl.Popup({
+      closeButton: false,
+    })
+      .setLngLat(coordinates as mapboxgl.LngLatLike)
+      .setHTML(String(properties))
+      .addTo(map);
+
+    function movePopup() {
+      if (!popup.isOpen())
+        return;
+
+      const properties = interpolateString(description, car);
+      popup.setLngLat(car.coordinates as mapboxgl.LngLatLike)
+        .setHTML(String(properties));
+      requestAnimationFrame(movePopup);
+    }
+    requestAnimationFrame(movePopup);
+  }
 
   return (
     <>
@@ -251,6 +252,7 @@ const ControlPanel: React.FC = () => {
     </>
   );
 };
+
 
 function coordsToFeature({
   lng,
