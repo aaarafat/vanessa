@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { MapContextInterface, MapOptions } from './map.props';
 // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -36,6 +36,7 @@ export const MapProvider: React.FC = (props) => {
         controls: {
           instructions: false,
           profileSwitcher: false,
+          inputs: false,
         },
       });
 

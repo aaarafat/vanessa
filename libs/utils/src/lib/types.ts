@@ -9,6 +9,7 @@ export interface ICar {
   lng: number;
   speed: number;
   route: Coordinates[];
+  originalDirections: GeoJSON.Feature;
 }
 
 export interface CarProps extends Partial<ICar> {

@@ -7,6 +7,30 @@ export class Directions extends MapboxDirections {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-useless-constructor
   constructor(options?: any) {
     super(options);
+    this.freezed = 0;
+  }
+
+  freeze() {
+    if (this.freezed++) return;
+    this._map.off('touchstart', this.move);
+    this._map.off('touchstart', this.onDragDown);
+
+    this._map.off('mousedown', this.onDragDown);
+    this._map.off('mousemove', this.move);
+
+    this.storeUnsubscribe();
+    delete this.storeUnsubscribe;
+  }
+
+  unfreeze() {
+    if (--this.freezed) return;
+    this._map.on('touchstart', this.move);
+    this._map.on('touchstart', this.onDragDown);
+
+    this._map.on('mousedown', this.onDragDown);
+    this._map.on('mousemove', this.move);
+
+    this.subscribedActions();
   }
 
   mapState() {
