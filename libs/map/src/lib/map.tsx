@@ -3,7 +3,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import mapboxgl from 'mapbox-gl';
 import { MapProps } from './map.props';
 import { MapContext } from './context';
-import { Car, drawNewCar, updateCar } from '@vanessa/utils';
+import { Car } from '@vanessa/utils';
 
 import './mapbox-gl.css';
 import './mapbox-gl-directions.css';
@@ -54,7 +54,25 @@ export const Map: React.FC<MapProps> = ({
     });
 
     map.on('load', () => {
-      cars.forEach((car) => carHandler(map, car));
+      //mark the first layer
+      map.addSource('first-source', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [0, 0],
+          },
+          properties: {},
+        },
+      });
+      map.addLayer({
+        id: 'first-layer',
+        type: 'symbol',
+        source: 'first-source',
+      });
+
+      cars.forEach((car) => new Car({ ...car, map }));
 
       // todo: update/add event for cars
     });
@@ -84,15 +102,3 @@ export const Map: React.FC<MapProps> = ({
 };
 
 export default Map;
-function carHandler(map: mapboxgl.Map, car: Car) {
-  const sourceId = `car-${car.id}`;
-  const currSource = map.getSource(sourceId);
-  const isNewCar = !currSource;
-
-  if (isNewCar) {
-    drawNewCar(map, sourceId, car);
-  } else {
-    updateCar(map, sourceId, car);
-    // todo: remove car
-  }
-}

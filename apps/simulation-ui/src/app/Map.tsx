@@ -1,7 +1,8 @@
 import React, { useContext, useEffect } from 'react';
 import { Map, MapContext } from '@vanessa/map';
 import styled from 'styled-components';
-import { Car, Coordinates, drawNewCar, updateCar } from '@vanessa/utils';
+import { Car, Coordinates, ICar } from '@vanessa/utils';
+import mapboxgl from 'mapbox-gl';
 
 /*
 const cars: Car[] = [
@@ -76,7 +77,7 @@ const SmallButton = styled(PrimaryButton)`
   line-height: 1;
 `;
 
-const OpenButton = styled(SmallButton) <{ open: boolean }>`
+const OpenButton = styled(SmallButton)<{ open: boolean }>`
   position: absolute;
   top: 0;
   margin: 3rem;
@@ -101,11 +102,7 @@ export const Simulation: React.FC = () => {
   useEffect(() => {
     if (map) {
       map.on('load', () => {
-        function drawCars() {
-          if (map) cars.forEach((car) => updateCar(map, `car-${car.id}`, car))
-          requestAnimationFrame(drawCars);
-        }
-        drawCars();
+        cars.map((car) => new Car({ ...car, map }));
       });
     }
   }, [map]);
@@ -120,12 +117,21 @@ export const Simulation: React.FC = () => {
 
 const CLICK_SOURCE_ID = 'click';
 
+const initialState = {
+  speed: 10,
+};
+
 const ControlPanel: React.FC = () => {
   const { map, mapRef, mapDirections } = useContext(MapContext);
-  const [coords, setCoords] = React.useState<Coordinates>();
-  const [route, setRoute] = React.useState<Coordinates[]>();
+  const [carInputs, setCarInputs] = React.useState<Partial<ICar>>(initialState);
   const [isOpen, setIsOpen] = React.useState(true);
-  const [speed, setSpeed] = React.useState(50);
+
+  const handleCarInputsChange = (newValue: Partial<ICar>) => {
+    setCarInputs((prev) => ({
+      ...prev,
+      ...newValue,
+    }));
+  };
 
   useEffect(() => {
     if (map) {
@@ -145,28 +151,37 @@ const ControlPanel: React.FC = () => {
 
       mapDirections.on('route', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const directions = (map.getSource('directions') as any)._data;
+        const directions = (map.getSource('directions') as any)
+          ._data as GeoJSON.FeatureCollection;
 
         // get origin coordinates
-        const [lng, lat] = directions.features[2].geometry.coordinates[0];
-        setCoords({ lng, lat });
+        const feature = directions.features.find(
+          (f: GeoJSON.Feature) => f.properties?.route === 'selected'
+        );
 
-        // set route coordinates
-        setRoute(
-          directions.features[2].geometry.coordinates.map(
+        if (feature?.geometry.type === 'LineString') {
+          const [lng, lat] = feature.geometry.coordinates[0] || [];
+          const route = feature?.geometry.coordinates.map(
             (el: number[]): Coordinates => {
               return { lng: el[0], lat: el[1] };
             }
-          )
-        );
+          );
 
-        // we can create car here
-        (map.getSource(CLICK_SOURCE_ID) as mapboxgl.GeoJSONSource).setData(
-          coordsToFeature({
+          handleCarInputsChange({
             lng,
             lat,
-          })
-        );
+            route,
+            originalDirections: feature,
+          });
+
+          // we can create car here
+          (map.getSource(CLICK_SOURCE_ID) as mapboxgl.GeoJSONSource).setData(
+            coordsToFeature({
+              lng,
+              lat,
+            })
+          );
+        }
       });
     }
   }, [map, mapRef, mapDirections]);
@@ -177,25 +192,21 @@ const ControlPanel: React.FC = () => {
 
     // if no previous click, return
     const source = map.getSource(CLICK_SOURCE_ID);
-    if (!source || !route) return;
+    if (!source || !carInputs.route) return;
 
-    // id is current time
     const car: Car = new Car({
-      id: Date.now(),
-      lat: coords?.lat ?? 0,
-      lng: coords?.lng ?? 0,
-      route,
-      speed
+      ...carInputs,
+      map,
     });
 
     // add to cars list
-    // TODO: replace this with store
     cars.push(car);
+    car.on('click', () => {
+      mapDirections.removeRoutes();
+    });
 
-    drawNewCar(map, `car-${car.id}`, car);
-    setCoords(undefined);
-    setRoute(undefined);
-    mapDirections.removeRoutes();
+    setCarInputs(initialState);
+    mapDirections.reset();
   };
 
   return (
@@ -208,12 +219,21 @@ const ControlPanel: React.FC = () => {
         {'>'}
       </OpenButton>
       <Container open={isOpen} onSubmit={handleAddCar}>
-        <SmallButton onClick={() => setIsOpen(false)} type="button">{'<'}</SmallButton>
-        <label htmlFor="speed" >Speed (km/h)</label>
-        <Input id="speed" type="number" min="10" max="100" value={speed} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSpeed(+e.target.value)} />
-        <PrimaryButton disabled={!coords}>
-          Add Car
-        </PrimaryButton>
+        <SmallButton onClick={() => setIsOpen(false)} type="button">
+          {'<'}
+        </SmallButton>
+        <label htmlFor="speed">Speed (km/h)</label>
+        <Input
+          id="speed"
+          type="number"
+          min="10"
+          max="100"
+          value={carInputs.speed}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            handleCarInputsChange({ speed: +e.target.value })
+          }
+        />
+        <PrimaryButton disabled={!carInputs.route}>Add Car</PrimaryButton>
       </Container>
     </>
   );
