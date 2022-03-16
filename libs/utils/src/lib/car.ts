@@ -218,6 +218,10 @@ export class Car implements ICar {
       coordinates[0] += e.lngLat.lng > coordinates[0] ? 360 : -360;
     }
 
+    this.map.flyTo({
+      center: coordinates as mapboxgl.LngLatLike,
+    });
+
     const popup = new mapboxgl.Popup({
       closeButton: false,
     })
@@ -239,6 +243,11 @@ export class Car implements ICar {
         );
         return;
       }
+
+      if (!this.map.isMoving())
+        this.map.flyTo({
+          center: this.coordinates as mapboxgl.LngLatLike,
+        });
 
       popup
         .setLngLat(this.coordinates as mapboxgl.LngLatLike)
