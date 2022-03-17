@@ -4,6 +4,7 @@ import { interpolateString } from './string-utils';
 import { Coordinates, ICar, CarProps } from './types';
 
 const MS_IN_HOUR = 1000 * 60 * 60;
+const FPS = 30;
 
 const carDefaultProps: CarProps = {
   title: 'Car',
@@ -152,13 +153,17 @@ export class Car implements ICar {
     );
   };
 
+  private updateNextFrame() {
+    setTimeout(() => requestAnimationFrame(this.update), 1000 / FPS);
+  }
+
   /**
    * Update Car
    */
   private update = () => {
     this.updateCoordinates();
     this.updateSource();
-    if (!this.arrived) requestAnimationFrame(this.update);
+    if (!this.arrived) this.updateNextFrame();
     else this.speed = 0;
   };
 
