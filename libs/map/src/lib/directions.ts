@@ -1,9 +1,12 @@
 import mapboxgl from 'mapbox-gl';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const MapboxDirections = require('@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions');
-
+// const MapboxDirections = require('@vanessa/mapbox-directions');
+import MapboxDirections from '@vanessa/mapbox-directions';
+console.log(MapboxDirections);
 export class Directions extends MapboxDirections {
+  freezed: number;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-useless-constructor
   constructor(options?: any) {
     super(options);
@@ -18,7 +21,7 @@ export class Directions extends MapboxDirections {
     this._map.off('mousedown', this.onDragDown);
     this._map.off('mousemove', this.move);
 
-    this.storeUnsubscribe();
+    this.storeUnsubscribe?.();
     delete this.storeUnsubscribe;
   }
 
