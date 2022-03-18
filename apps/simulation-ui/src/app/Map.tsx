@@ -202,11 +202,15 @@ const ControlPanel: React.FC = () => {
     // add to cars list
     cars.push(car);
     car.on('click', () => {
-      setTimeout(() => mapDirections.reset(), 500);
+      mapDirections.reset();
+      mapDirections.freeze();
+    });
+    car.on('popup-closed', () => {
+      mapDirections.unfreeze();
     });
 
     setCarInputs(initialState);
-    setTimeout(() => mapDirections.reset(), 500);
+    mapDirections.reset();
   };
 
   return (

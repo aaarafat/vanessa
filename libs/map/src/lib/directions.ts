@@ -36,17 +36,19 @@ export class Directions extends MapboxDirections {
   mapState() {
     super.mapState();
     if (this.options.interactive !== false) {
-      this._map.off('click', this.onClick);
-      this._map.on('click', (e: mapboxgl.MapMouseEvent) => {
-        console.log('here');
-        if (this._isPointOnCar(e.point)) {
-          console.log('car');
-          return;
-        }
-
-        this.onClick(e);
-      });
+      this.overrideClickEvent();
     }
+  }
+
+  private overrideClickEvent() {
+    this._map.off('click', this.onClick);
+    this._map.on('click', (e: mapboxgl.MapMouseEvent) => {
+      if (this._isPointOnCar(e.point)) {
+        return;
+      }
+
+      this.onClick(e);
+    });
   }
 
   _isPointOnCar(point: mapboxgl.Point) {
@@ -58,6 +60,10 @@ export class Directions extends MapboxDirections {
   }
 
   reset() {
+    this.resetUtil();
+    setTimeout(() => this.resetUtil(), 500);
+  }
+  private resetUtil() {
     this.removeRoutes();
     this._map.getSource('directions').setData({
       type: 'FeatureCollection',
