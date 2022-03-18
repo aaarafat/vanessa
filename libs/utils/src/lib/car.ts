@@ -169,7 +169,6 @@ export class Car implements ICar {
     this.updateSource();
     this.updatePopup();
     if (!this.arrived) this.updateNextFrame();
-    else this.speed = 0;
   };
 
   private updateCoordinates = () => {
@@ -198,6 +197,10 @@ export class Car implements ICar {
         movementAmount = 0;
       }
     }
+    if (this.arrived) {
+      this.speed = 0;
+      this.emit('props-updated');
+    }
   };
 
   private updateSource = () => {
@@ -216,12 +219,16 @@ export class Car implements ICar {
   };
 
   private onClick = () => {
-    this.popup = new mapboxgl.Popup({
-      closeButton: false,
-    })
+    this.popup = new mapboxgl.Popup()
       .setLngLat(this.coordinates as mapboxgl.LngLatLike)
       .setHTML(this.description)
       .addTo(this.map);
+
+    this.popup.on('close', () => {
+      this.popup = null;
+      this.map?.setLayoutProperty(`car-${this.id}-route`, 'visibility', 'none');
+      this.emit('popup-closed', this);
+    });
 
     this.map?.setLayoutProperty(
       `car-${this.id}-route`,
@@ -235,13 +242,6 @@ export class Car implements ICar {
 
   private updatePopup() {
     if (!this.popup) return;
-    if (!this.popup.isOpen()) {
-      this.popup.remove();
-      this.popup = null;
-      this.map?.setLayoutProperty(`car-${this.id}-route`, 'visibility', 'none');
-      this.emit('popup-closed', this);
-      return;
-    }
 
     if (!this.map.isMoving()) {
       this.map.jumpTo({
@@ -251,9 +251,7 @@ export class Car implements ICar {
       this.smoothlyFlyToCar();
     }
 
-    this.popup
-      .setLngLat(this.coordinates as mapboxgl.LngLatLike)
-      .setHTML(this.description);
+    this.popup.setLngLat(this.coordinates as mapboxgl.LngLatLike);
   }
 
   private smoothlyFlyToCar(now = false) {
@@ -278,14 +276,17 @@ export class Car implements ICar {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  public on(type: 'click' | 'move' | 'popup-closed', handler: any) {
+  public on(
+    type: 'click' | 'move' | 'popup-closed' | 'props-updated',
+    handler: any
+  ) {
     this.subscribe(type, handler);
     return this;
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private subscribe(
-    type: 'click' | 'move' | 'popup-closed',
+    type: 'click' | 'move' | 'popup-closed' | 'props-updated',
     handler: (...args: any) => void
   ) {
     if (!this.handlers[type]) this.handlers[type] = [];
@@ -293,7 +294,10 @@ export class Car implements ICar {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private emit(type: 'click' | 'move' | 'popup-closed', ...args: any[]) {
+  private emit(
+    type: 'click' | 'move' | 'popup-closed' | 'props-updated',
+    ...args: any[]
+  ) {
     if (!this.handlers[type]) return;
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
