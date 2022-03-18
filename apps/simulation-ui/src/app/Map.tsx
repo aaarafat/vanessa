@@ -202,11 +202,11 @@ const ControlPanel: React.FC = () => {
     // add to cars list
     cars.push(car);
     car.on('click', () => {
-      mapDirections.removeRoutes();
+      setTimeout(() => mapDirections.reset(), 500);
     });
 
     setCarInputs(initialState);
-    mapDirections.reset();
+    setTimeout(() => mapDirections.reset(), 500);
   };
 
   return (

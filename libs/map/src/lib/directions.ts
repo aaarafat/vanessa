@@ -38,7 +38,9 @@ export class Directions extends MapboxDirections {
     if (this.options.interactive !== false) {
       this._map.off('click', this.onClick);
       this._map.on('click', (e: mapboxgl.MapMouseEvent) => {
+        console.log('here');
         if (this._isPointOnCar(e.point)) {
+          console.log('car');
           return;
         }
 
