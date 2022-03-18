@@ -101,6 +101,7 @@ export const Simulation: React.FC = () => {
 
   useEffect(() => {
     if (map) {
+      map.setMaxZoom(18);
       map.on('load', () => {
         cars.map((car) => new Car({ ...car, map }));
       });

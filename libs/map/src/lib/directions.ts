@@ -1,7 +1,7 @@
 import mapboxgl from 'mapbox-gl';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const MapboxDirections = require('@mapbox/mapbox-gl-directions/dist/mapbox-gl-directions');
+const MapboxDirections = require('vanessa-mapbox-gl-directions/dist/mapbox-gl-directions');
 
 export class Directions extends MapboxDirections {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-useless-constructor
