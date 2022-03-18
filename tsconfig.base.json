@@ -18,6 +18,7 @@
     "baseUrl": ".",
     "paths": {
       "@vanessa/map": ["libs/map/src/index.ts"],
+      "@vanessa/mapbox-directions": ["libs/mapbox-directions/src/index.js"],
       "@vanessa/utils": ["libs/utils/src/index.ts"]
     }
   },

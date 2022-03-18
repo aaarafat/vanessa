@@ -3,6 +3,7 @@
   "projects": {
     "car-ui": "apps/car-ui",
     "map": "libs/map",
+    "mapbox-directions": "libs/mapbox-directions",
     "rsu-ui": "apps/rsu-ui",
     "simulation-ui": "apps/simulation-ui",
     "utils": "libs/utils"

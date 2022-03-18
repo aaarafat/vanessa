@@ -1,0 +1,33 @@
+{
+  "root": "libs/mapbox-directions",
+  "sourceRoot": "libs/mapbox-directions/src",
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nrwl/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/libs/mapbox-directions",
+        "main": "libs/mapbox-directions/src/index.js",
+        "tsConfig": "libs/mapbox-directions/tsconfig.lib.json",
+        "assets": ["libs/mapbox-directions/*.md"]
+      }
+    },
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["libs/mapbox-directions/**/*.js"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/libs/mapbox-directions"],
+      "options": {
+        "jestConfig": "libs/mapbox-directions/jest.config.js",
+        "passWithNoTests": true
+      }
+    }
+  },
+  "tags": []
+}
