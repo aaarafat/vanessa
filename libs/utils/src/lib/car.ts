@@ -230,6 +230,10 @@ export class Car implements ICar {
       this.emit('popup-closed', this);
     });
 
+    this.on('props-updated', () => {
+      this.popup?.setHTML(this.description);
+    });
+
     this.map?.setLayoutProperty(
       `car-${this.id}-route`,
       'visibility',
@@ -263,6 +267,7 @@ export class Car implements ICar {
   private smoothFlyUtil() {
     this.map.flyTo({
       center: this.coordinates as mapboxgl.LngLatLike,
+      maxDuration: 200,
     });
     this.map.once('moveend', () => {
       this.wasFlyingToCar = false;
