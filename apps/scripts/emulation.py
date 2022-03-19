@@ -13,6 +13,8 @@ from mn_wifi.cli import CLI
 from mn_wifi.net import Mininet_wifi
 from mn_wifi.vanet import vanet
 from mn_wifi.wmediumdConnector import interference
+import socketio
+import json
 #ap_scan
 #configureAdhoc
 #configureMacAddr
@@ -34,7 +36,7 @@ sio = SocketIO(APP,cors_allowed_origins="*")
 @sio.on('connect')
 def connected():
     print('Connected')
-
+    
 @sio.on('disconnect')
 def disconnected():
     print('Disconnected')
@@ -56,6 +58,9 @@ def position(message):
 def run_socket():
     sio.run(APP, host=HOST, port=PORT)
 
+def save(path, content):
+        with open(path, 'w') as f:
+            f.write(content)
 
 "Create a network."
 net = Mininet_wifi(link=wmediumd, wmediumd_mode=interference, autoAssociation = True)
@@ -124,9 +129,14 @@ def topology(args):
     for i in range(len(stations)):
         f.write(stations[i].wintfs[0].ip+"\n")
     f.close()
-    sta1.cmd(f'sudo python3 routing.py {sta1.wintfs[0].ip} &')
-    sta2.cmd(f'sudo python3 routing.py {sta2.wintfs[0].ip} &')
-    sta3.cmd(f'sudo python3 routing.py {sta3.wintfs[0].ip} &')
+    metadata = {'mac':dict(),
+            'mac2ip':dict()}
+    for sta in stations:
+        metadata['mac'][sta.name] = sta.wintfs[0].mac
+        metadata['mac2ip'][sta.wintfs[0].mac] = sta.wintfs[0].ip
+    save("/tmp/mn.metadata.json", json.dumps(metadata))
+    for sta in stations:
+        sta.cmd(f'sudo python3 aodv.py {sta.name} {len(stations)} &')
     info("*** Running CLI\n")
     CLI(net)
     info("*** Stopping network\n")
