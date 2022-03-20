@@ -96,7 +96,7 @@ class aodv(threading.Thread):
             return 3000 + neighbor_id
         elif neighbor_type == "sta":
             return 4000 + neighbor_id
-
+    #the client function
     def send(self, dst_port, msg):
         try:
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as client_socket:
@@ -214,75 +214,9 @@ class aodv(threading.Thread):
                 time.sleep(0.25)
                 time2 = time.time()
             return sources    
-    #route request   
-    # def send_RREQ(self):
-    #     self.broadcast_id +=1
-    #     message_type = "RREQ"
-    #     destination_type = "rsu"
-    #     # Increment our sequence number
-    #     self.seq_num += 1
-    #     sender_id = self.node_id
-    #     sender_ip = self.node_ip
-    #     hop_count = 0
-    #     rreq_id = self.rreq_id
-    #     origin = self.node_id
-    #     origin_seq_no = self.seq_num
-    #     message = message_type + "-" + str(sender_id) + "-" + sender_ip + "-" + str(hop_count) + "-" + str(rreq_id) + "-" + str(origin) + "-" + str(origin_seq_no)
-        
-    #     # Broadcast the RREQ packet to all the neighbors
-    #     for key, neighbor in self.neighbors.items():
-    #         port = self.get_port(neighbor['ip'])
-    #         self.send(int(port), message)
-    #         logging.debug("['" + message_type + "', 'Broadcasting RREQ to rsu" + "']")
-            
-    #     # Buffer the RREQ_ID for PATH_DISCOVERY_TIME. This is used to discard duplicate RREQ messages
-    #     if (self.node_id in self.rreq_id_list.keys()):
-    #         per_node_list = self.rreq_id_list[self.node_id]
-    #     else:
-    #         per_node_list = dict()
-    #     path_discovery_timer = Timer(AODV_PATH_DISCOVERY_TIME, 
-    #                                  self.handle_dead_neighbor, 
-    #                                  [self.node_id, rreq_id])
-    #     per_node_list[rreq_id] = {'RREQ_ID': rreq_id, 
-    #                               'Timer-Callback': path_discovery_timer}
-    #     self.rreq_id_list[self.node_id] = {'Node': self.node_id, 
-    #                                        'RREQ_ID_List': per_node_list}
-    #     path_discovery_timer.start()
-    #route reply
-    def send_RREP(self):
-        message_type = "RREP"
-
-    # def broadcast(self, msg="hi", raw_socket=None):
-    #     with socket.socket(socket.AF_PACKET, socket.SOCK_RAW) as client_socket:
-    #     # Bind an interface
-    #         client_socket.bind((self.interface, 0))
-    #         # Send a frame
-    #         print(self.node_name)
-    #         dst = binascii.unhexlify(''.join(("02:00:00:00:01:00").split(':')))
-    #         src = binascii.unhexlify(''.join(self.get_mac_address().split(':')))
-    #         print(client_socket.sendall(
-    #             # Pack in network byte order
-    #             struct.pack('!6s6sH2s',
-    #                         dst,             # Destination MAC address
-    #                         src,    # Source MAC address
-    #                         ETH_P_802_EX1,                      # Ethernet type
-    #                         'Hi'.encode())))                     # Payload
-    #         print('Sent!')
-        # if raw_socket == None:
-        #     print("please define a broadcasting socket socket")
-        #     return
-        # dst = b'\xff\xff\xff\xff\xff\xff'  # destination MAC address
-        # src = binascii.unhexlify(''.join(self.get_mac_address().split(':')))  # source MAC address
-        # payload = msg.encode()            # payload
-        # print(self.node_name+' sending')
-        # raw_socket.sendall(struct.pack('!6s6sH2s', dst , src , ETH_P_802_EX1 , payload))
+    
     def run(self):
-        # raw_socket = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.htons(ETH_P_IP))
-        # raw_socket.bind((self.interface, 0))
-        print(self.get_mac_address())
-        # if self.node_name == "sta3":
-        #     self.broadcast(raw_socket=raw_socket)
-        # else:
+        self.get_mac_address()
         self.set_port()
         
         time.sleep(1)
