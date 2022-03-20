@@ -32,6 +32,10 @@ APP = Flask("mininet")
 
 
 sio = SocketIO(APP,cors_allowed_origins="*")
+"Create a network."
+net = Mininet_wifi(link=wmediumd, wmediumd_mode=interference, autoAssociation = True)
+stations = {}
+kwargs = dict()
 
 @sio.on('connect')
 def connected():
@@ -44,15 +48,27 @@ def disconnected():
 @sio.on('test')
 def test(message):
     print(message["data"])
-    print(sta1.position)
-    sta1.setPosition("400,890,0")
+
+
     emit('testResponse', {'data': message["data"] + " recieved"})
 
 @sio.on('position')
 def position(message):
     print("position updated")
-    print(sta1.position)
-    sta1.setPosition("782,120,0")
+    stations["car1"].setPosition("782,120,0")
+
+
+@sio.on('add_car')
+def add_car(data):
+    print(f"card id : {data.id}")
+    print(f"card position : {data.pos}")
+    stations[data.id] = net.addStation(data.id, position=data.pos,
+                        **kwargs)
+    net.addLink(stations[data.id], cls=adhoc, intf=f"{data.id}-wlan0",
+                ssid='adhocNet', mode='g', channel=5,
+                ht_cap='HT40+',  **kwargs)
+    #TODO save to json file 
+    #TODO the aodv protocol
 
 
 def run_socket():
@@ -62,21 +78,18 @@ def save(path, content):
         with open(path, 'w') as f:
             f.write(content)
 
-"Create a network."
-net = Mininet_wifi(link=wmediumd, wmediumd_mode=interference, autoAssociation = True)
+
 info("*** Creating nodes\n")
-kwargs = dict()
+
 #kwargs['range'] = 100
-sta1 = net.addStation('sta1', position="50, 100, 0",
+stations["car1"] = net.addStation('car1', position="50, 100, 0",
                           **kwargs)
-sta2 = net.addStation('sta2', position="100, 100, 0",
+stations["car2"] = net.addStation('car2', position="100, 100, 0",
                         **kwargs)
-sta3 = net.addStation('sta3', position="140, 100, 0",
+stations["car3"] = net.addStation('car3', position="140, 100, 0",
                         **kwargs)
-stations = []
-stations.append(sta1)
-stations.append(sta2)
-stations.append(sta3)
+
+
 
 
 def topology(args):
@@ -95,18 +108,21 @@ def topology(args):
     for proto in args:
         if proto in protocols:
             kwargs['proto'] = proto
-    net.addLink(sta1, cls=adhoc, intf='sta1-wlan0',
+            
+    net.addLink(stations["car1"], cls=adhoc, intf='car1-wlan0',
                 ssid='adhocNet', mode='g', channel=5,
                 ht_cap='HT40+',  **kwargs)
-    net.addLink(sta2, cls=adhoc, intf='sta2-wlan0',
+    net.addLink(stations["car2"], cls=adhoc, intf='car2-wlan0',
                 ssid='adhocNet', mode='g', channel=5,
                 ht_cap='HT40+',  **kwargs)
-    net.addLink(sta3, cls=adhoc, intf='sta3-wlan0',
+    net.addLink(stations["car3"], cls=adhoc, intf='car3-wlan0',
                 ssid='adhocNet', mode='g', channel=5,
                 ht_cap='HT40+', **kwargs)
     
-    info("*** Plotting network\n")
-    net.plotGraph(max_x=1000, max_y=1000)
+    
+    
+    #info("*** Plotting network\n")
+    #net.plotGraph(max_x=1000, max_y=1000)
     # net.setMobilityModel(time=0, model='RandomDirection', max_x=1000, max_y=1000,
     #                      min_v=10, max_v=100, seed=20)
 
@@ -122,21 +138,22 @@ def topology(args):
     #     sta3.setIP6('2001::3/64', intf="sta3-wlan0")
     # sta1.cmd("ip route add 10.0.0.3 via 10.0.0.2")
     # sta3.cmd("ip route add 10.0.0.1 via 10.0.0.2")
-    sta1.cmd('sysctl net.ipv4.ip_forward=1')
-    sta2.cmd('echo 1 > /proc/sys/net/ipv4/ip_forward')
-    sta3.cmd('sysctl net.ipv4.ip_forward=1')
+    stations["car1"].cmd('sysctl net.ipv4.ip_forward=1')
+    stations["car2"].cmd('echo 1 > /proc/sys/net/ipv4/ip_forward')
+    stations["car3"].cmd('sysctl net.ipv4.ip_forward=1')
     f = open("ips", "w")
-    for i in range(len(stations)):
-        f.write(stations[i].wintfs[0].ip+"\n")
+    for id in stations:
+        f.write(stations[id].wintfs[0].ip+"\n")
     f.close()
     metadata = {'mac':dict(),
             'mac2ip':dict()}
-    for sta in stations:
-        metadata['mac'][sta.name] = sta.wintfs[0].mac
-        metadata['mac2ip'][sta.wintfs[0].mac] = sta.wintfs[0].ip
+    for id in stations:
+        metadata['mac'][stations[id].name] = stations[id].wintfs[0].mac
+        metadata['mac2ip'][stations[id].wintfs[0].mac] = stations[id].wintfs[0].ip
     save("/tmp/mn.metadata.json", json.dumps(metadata))
-    for sta in stations:
-        sta.cmd(f'sudo python3 aodv.py {sta.name} {len(stations)} &')
+    for id in stations:
+        #TODO : remove number of stations so that we can run it on new added cars
+        stations[id].cmd(f'sudo python3 aodv.py {stations[id].name} {len(stations)} &')
     info("*** Running CLI\n")
     CLI(net)
     info("*** Stopping network\n")
