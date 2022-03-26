@@ -1,33 +1,29 @@
 import React, { useContext, useEffect } from 'react';
 import { Map, MapContext } from '@vanessa/map';
 import styled from 'styled-components';
-import { Car, Coordinates, ICar } from '@vanessa/utils';
+import { Car, Coordinates, ICar, IRSU, RSU } from '@vanessa/utils';
 import mapboxgl from 'mapbox-gl';
 
-/*
-const cars: Car[] = [
+const rsus: IRSU[] = [
   {
     id: 1,
-    lat: 30.02543,
-    lng: 31.21146,
+    lng: 31.213,
+    lat: 30.0252,
+    radius: 0.25,
   },
   {
     id: 2,
-    lat: 30.02763,
-    lng: 31.21082,
+    lng: 31.2029,
+    lat: 30.0269,
+    radius: 0.5,
   },
   {
     id: 3,
-    lat: 30.02425,
-    lng: 31.20995,
-  },
-  {
-    id: 4,
-    lat: 30.02616,
-    lng: 31.21075,
+    lng: 31.2129,
+    lat: 30.0185,
+    radius: 0.5,
   },
 ];
-*/
 
 const cars: Car[] = [];
 
@@ -104,6 +100,7 @@ export const Simulation: React.FC = () => {
       map.setMaxZoom(18);
       map.on('load', () => {
         cars.map((car) => new Car({ ...car, map }));
+        rsus.map((rsu) => new RSU({ ...rsu, map }));
       });
     }
   }, [map]);

@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 
 import { Route } from 'react-router-dom';
-import { Simulation } from './Map';
+import { Simulation } from './simulation';
 
 const StyledApp = styled.div`
   margin: 0;

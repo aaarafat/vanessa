@@ -11,8 +11,20 @@ export interface ICar {
   route: Coordinates[];
   originalDirections: GeoJSON.Feature;
 }
+export interface IRSU {
+  id: number;
+  lat: number;
+  lng: number;
+  radius: number;
+}
 
 export interface CarProps extends Partial<ICar> {
+  title?: string;
+  name?: string;
+  description?: string;
+}
+
+export interface RSUProps extends Partial<IRSU> {
   title?: string;
   name?: string;
   description?: string;

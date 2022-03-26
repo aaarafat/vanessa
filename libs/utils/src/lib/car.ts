@@ -2,9 +2,7 @@ import mapboxgl from 'mapbox-gl';
 import { distanceInKm } from './distance';
 import { interpolateString } from './string-utils';
 import { Coordinates, ICar, CarProps } from './types';
-
-const MS_IN_HOUR = 1000 * 60 * 60;
-const FPS = 30;
+import { MS_IN_HOUR, FPS } from './constants';
 
 const carDefaultProps: CarProps = {
   title: 'Car',
