@@ -27,6 +27,7 @@
     "@nrwl/tao": "13.8.5",
     "@nrwl/web": "13.8.5",
     "@nrwl/workspace": "13.8.5",
+    "@nx-go/nx-go": "^2.4.0",
     "@testing-library/react": "12.1.2",
     "@testing-library/react-hooks": "7.0.2",
     "@types/jest": "27.0.2",
