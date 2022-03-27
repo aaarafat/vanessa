@@ -1,0 +1,23 @@
+{
+  "root": "libs/map",
+  "sourceRoot": "libs/map/src",
+  "projectType": "library",
+  "tags": [],
+  "targets": {
+    "lint": {
+      "executor": "@nrwl/linter:eslint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["libs/map/**/*.{ts,tsx,js,jsx}"]
+      }
+    },
+    "test": {
+      "executor": "@nrwl/jest:jest",
+      "outputs": ["coverage/libs/map"],
+      "options": {
+        "jestConfig": "libs/map/jest.config.js",
+        "passWithNoTests": true
+      }
+    }
+  }
+}

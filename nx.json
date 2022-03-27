@@ -1,7 +1,7 @@
 {
   "npmScope": "vanessa",
   "affected": {
-    "defaultBase": "main"
+    "defaultBase": "remotes/origin/main"
   },
   "cli": {
     "defaultCollection": "@nrwl/react"
@@ -11,7 +11,8 @@
       "dependencies": "*",
       "devDependencies": "*"
     },
-    ".eslintrc.json": "*"
+    ".eslintrc.json": "*",
+    "go.mod": "*"
   },
   "tasksRunnerOptions": {
     "default": {
