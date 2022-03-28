@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
+
+	"github.com/aaarafat/vanessa/apps/router/aodv"
 )
 
 func main() {
@@ -13,14 +16,19 @@ func main() {
 	}
 
 	station := args[1]
-	numberOfNodes := args[2]
+	numberOfNodes, err := strconv.Atoi(args[2])
 
-	fmt.Println("Station: ", station)
-	fmt.Println("numberOfNodes: ", numberOfNodes)
+	if err != nil {
+		fmt.Println("Number of nodes must be an integer");
+		os.Exit(1);
+	}
 
-	/*
-	aodv := aodv.New(station, numberOfNodes)
+	a, err := aodv.New(station, numberOfNodes)
 
-	go aodv.Run()
-	*/
+	if err != nil {
+		fmt.Println("Error in ceating aodv router", err);
+		os.Exit(1);
+	}
+
+	a.Run()
 }

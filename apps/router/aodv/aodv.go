@@ -1,10 +1,11 @@
 package aodv
 
 import (
-	"fmt"
-	"net"
-	"strconv"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"strconv"
 )
 
 // Global definitions for the Ethernet IEEE 802.3 interface.
@@ -37,7 +38,7 @@ type Aodv struct {
 	numNodes int
 	nodeName string
 	nodeInterface string
-	nodeIp net.IP
+	nodeIp string
 	nodeMac string
 	nodePort int
 	seqNum int
@@ -47,15 +48,20 @@ type Aodv struct {
 
 // Metadata Structure
 type Metadata struct {
-	mac: map[string] string `json:"mac"`
-	mac2Ip: map[string] string `json:"mac2ip"`
+	Mac map[string] string `json:"mac"`
+	Mac2Ip map[string] string `json:"mac2ip"`
 }
 
 
 // Create new AODV based router
-func New(station string, numberOfNodes int) (*Aodv, err) {
+func New(station string, numberOfNodes int) (*Aodv, error) {
 	aodv := new(Aodv)
-	aodv.nodeId = Atoi(station[3:])
+	id, err := strconv.Atoi(station[3:])
+	if err != nil {
+		return nil, err
+	}
+
+	aodv.nodeId = id
 	aodv.nodeType = station[:3]
 	aodv.numNodes = numberOfNodes
 	aodv.nodeInterface = station + "-wlan0"
@@ -64,13 +70,13 @@ func New(station string, numberOfNodes int) (*Aodv, err) {
 	aodv.seqNum = 0
 	aodv.nodeMac = ""
 	aodv.nodeIp = ""
-	aodv.nodePort = nil
+	aodv.nodePort = 0
 	// --------------------------
 	// TODO: Add socket and timer
 	// ---------------------------
 	aodv.routingTable = make(map[string]string)
 	aodv.neighborTable = make(map[string]string)
-	return aodv
+	return aodv, nil
 }
 
 // Run AODV Router
@@ -88,20 +94,20 @@ func (aodv* Aodv) getMacAddress() string {
 	if err != nil {
 		panic(err)
 	}
-	fmt.Sprintf("Read Metadata file successfully in node with ID=%d", aodv.nodeId)
+	fmt.Printf("Read Metadata file successfully in node with ID=%d\n", aodv.nodeId)
 	// Close the file after the function is done
 	defer metadataFile.Close()
 
 	// read data from metadata file
 	byteValue, _ := ioutil.ReadAll(metadataFile)
 	var metadata Metadata	
-	json.Unmarshal(byteValue, &metadata
+	json.Unmarshal(byteValue, &metadata)
 	
 	// update aodv
-	aodv.nodeMac = metadata.mac[aodv.nodeName]
-	aodv.nodeIp = metadata.mac2Ip[aodv.nodeMac]
+	aodv.nodeMac = metadata.Mac[aodv.nodeName]
+	aodv.nodeIp = metadata.Mac2Ip[aodv.nodeMac]
 
-	fmt.Sprintf("Mac Address : %s, IP : %s for node with ID=%d", aodv.nodeMac, aodv.nodeIp, aodv.nodeId)
+	fmt.Printf("Mac Address : %s, IP : %s for node with ID=%d\n", aodv.nodeMac, aodv.nodeIp, aodv.nodeId)
 
 	return aodv.nodeMac
 } 
