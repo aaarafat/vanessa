@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"os"
 	"strconv"
+	"syscall"
+	"time"
 )
 
 // Global definitions for the Ethernet IEEE 802.3 interface.
@@ -84,6 +86,45 @@ func (aodv* Aodv) Run() {
 	// TODO: Run AODV in a new go routine
 	// get aodv mac address
 	aodv.getMacAddress()
+	// set aodv port
+	aodv.setPort()
+
+	time.Sleep(1 * time.Second)
+	// update neighbors
+	
+
+
+	// init Inet socket
+	socket, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_STREAM, syscall.IPPROTO_TCP)
+	
+	if err != nil {
+		panic(err)
+	}
+	defer syscall.Close(socket)
+	fmt.Println("Socket created : ", socket)
+
+	// bind and start listening 
+	syscall.Bind(socket, &syscall.SockaddrInet4{Port: aodv.nodePort, Addr: [4]byte{127, 0, 0, 1}})
+	syscall.Listen(socket, 1)
+
+	// accept connection
+	conn, addr, err := syscall.Accept(socket)
+
+	if err != nil {
+		panic(err)
+	}
+
+	// read data from socket
+	fmt.Println("Connected to: ", addr)
+	data := make([]byte, 1024)
+	for {
+		n, err := syscall.Read(conn, data)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("Received: ", string(data[:n]))
+		syscall.Write(conn, data)
+	}
 }
 
 // Get Node Mac Address
@@ -111,3 +152,32 @@ func (aodv* Aodv) getMacAddress() string {
 
 	return aodv.nodeMac
 } 
+
+// Set Node Port
+func (aodv* Aodv) setPort() int {
+	if aodv.nodeType == "rsu" {
+		aodv.nodePort = 3000 + aodv.nodeId
+	} else if aodv.nodeType == "car" {
+		aodv.nodePort = 4000 + aodv.nodeId
+	}
+
+	fmt.Printf("Port Number = %d for node with ID=%d\n", aodv.nodePort, aodv.nodeId)
+
+	return aodv.nodePort
+}
+
+// update neighbors
+func (aodv* Aodv) updateNeighbors() [] string {
+	var sources []string
+	
+	// open socket
+	socket, err := syscall.Socket(syscall.AF_PACKET, syscall.SOCK_RAW, ETH_P_ALL)
+	if err != nil {
+		panic(err)
+	}
+	defer syscall.Close(socket)
+
+	// TODO: complete this function
+
+	return sources
+}
