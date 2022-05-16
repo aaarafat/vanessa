@@ -1,10 +1,17 @@
-import React, { useContext, useEffect } from 'react';
+import React, {
+  ChangeEvent,
+  ReactEventHandler,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import { Map, MapContext } from '@vanessa/map';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { Car, Coordinates, ICar, IRSU, RSU } from '@vanessa/utils';
+import * as turf from '@turf/turf';
 import mapboxgl from 'mapbox-gl';
 
-const rsus: IRSU[] = [
+const rsusData: IRSU[] = [
   {
     id: 1,
     lng: 31.213,
@@ -25,9 +32,11 @@ const rsus: IRSU[] = [
   },
 ];
 
+const rsus: RSU[] = [];
+
 const cars: Car[] = [];
 
-const Container = styled.form<{ open: boolean }>`
+const Container = styled.div<{ open: boolean }>`
   display: flex;
   position: absolute;
   top: 0;
@@ -39,9 +48,15 @@ const Container = styled.form<{ open: boolean }>`
   padding: 1rem 2rem;
   font-weight: bold;
   margin: 1rem;
-  width: min(380px, 20%);
+  width: min(200px, 20%);
   align-items: stretch;
   transition: left 0.3s ease-in-out;
+  flex-direction: column;
+`;
+
+const Form = styled.form`
+  display: flex;
+  align-items: stretch;
   flex-direction: column;
 `;
 
@@ -92,24 +107,223 @@ const Input = styled.input`
   font-size: 1.2rem;
 `;
 
+const spin = keyframes`
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+`;
+
+const Loader = styled.div`
+  border: 10px solid #f3f3f3;
+  border-top: 10px solid #3498db;
+  border-radius: 50%;
+  width: 80px;
+  height: 80px;
+  animation: ${spin} 1s linear infinite;
+`;
+
+const LoaderContainer = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 999999;
+  background-color: rgba(0, 0, 0, 0.61);
+
+  backdrop-filter: blur(5px);
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
 export const Simulation: React.FC = () => {
-  const { map } = useContext(MapContext);
+  const { map, mapDirections } = useContext(MapContext);
+  const [mapLoaded, setMapLoaded] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [obstacles, setObstacles] = useState<turf.FeatureCollection>({
+    type: 'FeatureCollection',
+    features: [],
+  });
 
   useEffect(() => {
     if (map) {
       map.setMaxZoom(18);
       map.on('load', () => {
-        cars.map((car) => new Car({ ...car, map }));
-        rsus.map((rsu) => new RSU({ ...rsu, map }));
+        // cars.map((car) => new Car({ ...car, map }));
+        rsusData.forEach((rsu) => rsus.push(new RSU({ ...rsu, map })));
+        setMapLoaded(true);
       });
     }
   }, [map]);
 
+  useEffect(() => {
+    if (mapLoaded && map) {
+      const obstacle = turf.buffer(obstacles, 10, { units: 'meters' });
+      if (!map.getSource('obstacles')) {
+        map.addSource('obstacles', {
+          type: 'geojson',
+          data: obstacle,
+        });
+
+        map.addLayer({
+          id: 'obstacles',
+          type: 'fill',
+          source: 'obstacles',
+          layout: {},
+          paint: {
+            'fill-color': '#f03b20',
+            'fill-opacity': 0.5,
+            'fill-outline-color': '#f03b20',
+          },
+        });
+      } else {
+        (map.getSource('obstacles') as mapboxgl.GeoJSONSource).setData(
+          obstacle
+        );
+      }
+    }
+  }, [obstacles, map, mapLoaded]);
+
+  const handleAddObstacle = (coordinates: Coordinates | null) => {
+    if (!coordinates) return;
+    setObstacles((prev) => ({
+      ...prev,
+      features: [
+        ...prev.features,
+        {
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [coordinates.lng, coordinates.lat],
+          },
+          properties: {},
+        },
+      ],
+    }));
+  };
+
+  const handleAddCar = (carInputs: Partial<ICar>) => {
+    if (!map) return;
+
+    // if no previous click, return
+    const source = map.getSource(CLICK_SOURCE_ID);
+    if (!source || !carInputs.route) return;
+
+    const car: Car = new Car({
+      ...carInputs,
+      map,
+    });
+
+    // add to cars list
+    cars.push(car);
+    car.on('click', () => {
+      mapDirections.reset();
+      mapDirections.freeze();
+    });
+    car.on('popup-closed', () => {
+      mapDirections.unfreeze();
+    });
+
+    mapDirections.reset();
+  };
+
+  const handleExport = () => {
+    const info: Array<any> = [...cars, ...rsus].map((item) => item.export());
+    info.push({
+      coordinates: obstacles.features
+        .map((f) =>
+          f.geometry.type === 'Point' ? f.geometry.coordinates : null
+        )
+        .filter(Boolean),
+      type: 'obstacles',
+    });
+    const fileData = JSON.stringify(info, null, 2);
+    const blob = new Blob([fileData], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = 'exported.json';
+    link.href = url;
+    link.click();
+    link.remove();
+  };
+
+  const clearMap = (removeRSUs = false) => {
+    if (!map) return;
+    (map.getSource('obstacles') as mapboxgl.GeoJSONSource).setData({
+      type: 'FeatureCollection',
+      features: [],
+    });
+    cars.forEach((car) => car.remove());
+    cars.splice(0, cars.length);
+    if (removeRSUs) {
+      rsus.forEach((rsu) => rsu.remove());
+      rsus.splice(0, rsus.length);
+    }
+    mapDirections.reset();
+  };
+
+  const handleImport = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      clearMap(true);
+      const data = JSON.parse(reader.result as string);
+      data.forEach((item: any) => {
+        if (item.type === 'car') {
+          handleAddCar({
+            ...item,
+          });
+        } else if (item.type === 'rsu') {
+          rsus.push(new RSU({ ...item, map }));
+        } else if (item.type === 'obstacles') {
+          setObstacles({
+            type: 'FeatureCollection',
+            features: item.coordinates.map((c: turf.Point) => ({
+              type: 'Feature',
+              geometry: {
+                type: 'Point',
+                coordinates: c,
+              },
+              properties: {},
+            })),
+          });
+        }
+      });
+      setLoading(false);
+    });
+    input.onchange = (e) => {
+      if (input.files?.[0]) {
+        setLoading(true);
+        reader.readAsText(input.files[0]);
+      }
+    };
+    input.click();
+    input.remove();
+  };
+
   return (
-    <div>
-      <Map cars={cars} />
-      <ControlPanel />
-    </div>
+    <>
+      {loading && (
+        <LoaderContainer>
+          <Loader />
+        </LoaderContainer>
+      )}
+      <div>
+        <Map cars={cars} />
+        <ControlPanel
+          onAddCar={handleAddCar}
+          onAddObstacle={handleAddObstacle}
+          onExport={handleExport}
+          onImport={handleImport}
+          onClearMap={() => clearMap(false)}
+        />
+      </div>
+    </>
   );
 };
 
@@ -119,9 +333,16 @@ const initialState = {
   speed: 10,
 };
 
-const ControlPanel: React.FC = () => {
+const ControlPanel: React.FC<{
+  onAddObstacle: (coordinates: Coordinates | null) => void;
+  onAddCar: (carInputs: Partial<ICar>) => void;
+  onExport: () => void;
+  onImport: () => void;
+  onClearMap: () => void;
+}> = ({ onAddObstacle, onAddCar, onExport, onImport, onClearMap }) => {
   const { map, mapRef, mapDirections } = useContext(MapContext);
   const [carInputs, setCarInputs] = React.useState<Partial<ICar>>(initialState);
+  const [accidentInput, setAccidentInput] = React.useState<Coordinates>();
   const [isOpen, setIsOpen] = React.useState(true);
 
   const handleCarInputsChange = (newValue: Partial<ICar>) => {
@@ -169,7 +390,6 @@ const ControlPanel: React.FC = () => {
             lng,
             lat,
             route,
-            originalDirections: feature,
           });
 
           // we can create car here
@@ -181,35 +401,23 @@ const ControlPanel: React.FC = () => {
           );
         }
       });
+
+      mapDirections.on('reset', () => {
+        setCarInputs(initialState);
+        setAccidentInput(undefined);
+      });
     }
   }, [map, mapRef, mapDirections]);
 
-  const handleAddCar = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!map) return;
-
-    // if no previous click, return
-    const source = map.getSource(CLICK_SOURCE_ID);
-    if (!source || !carInputs.route) return;
-
-    const car: Car = new Car({
-      ...carInputs,
-      map,
-    });
-
-    // add to cars list
-    cars.push(car);
-    car.on('click', () => {
-      mapDirections.reset();
-      mapDirections.freeze();
-    });
-    car.on('popup-closed', () => {
-      mapDirections.unfreeze();
-    });
-
-    setCarInputs(initialState);
-    mapDirections.reset();
-  };
+  useEffect(() => {
+    if (map) {
+      mapDirections.on('origin', (e: any) => {
+        const [lng, lat] = e.feature.geometry.coordinates || [];
+        const coordinates = { lng, lat };
+        setAccidentInput(coordinates);
+      });
+    }
+  }, [map, mapDirections]);
 
   return (
     <>
@@ -220,22 +428,42 @@ const ControlPanel: React.FC = () => {
       >
         {'>'}
       </OpenButton>
-      <Container open={isOpen} onSubmit={handleAddCar}>
-        <SmallButton onClick={() => setIsOpen(false)} type="button">
-          {'<'}
-        </SmallButton>
-        <label htmlFor="speed">Speed (km/h)</label>
-        <Input
-          id="speed"
-          type="number"
-          min="10"
-          max="100"
-          value={carInputs.speed}
-          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-            handleCarInputsChange({ speed: +e.target.value })
-          }
-        />
-        <PrimaryButton disabled={!carInputs.route}>Add Car</PrimaryButton>
+      <Container
+        open={isOpen}
+        onSubmit={(e) => {
+          e.preventDefault();
+          onAddCar(carInputs);
+        }}
+      >
+        <Form>
+          <SmallButton onClick={() => setIsOpen(false)} type="button">
+            {'<'}
+          </SmallButton>
+          <label htmlFor="speed">Speed (km/h)</label>
+          <Input
+            id="speed"
+            type="number"
+            min="10"
+            max="100"
+            value={carInputs.speed}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+              handleCarInputsChange({ speed: +e.target.value })
+            }
+          />
+          <PrimaryButton disabled={!carInputs.route}>Add Car</PrimaryButton>
+        </Form>
+        <PrimaryButton
+          disabled={!accidentInput}
+          onClick={() => {
+            onAddObstacle(accidentInput || null);
+            mapDirections.reset();
+          }}
+        >
+          Add Accident
+        </PrimaryButton>
+        <PrimaryButton onClick={onExport}>Export</PrimaryButton>
+        <PrimaryButton onClick={onImport}>Import</PrimaryButton>
+        <PrimaryButton onClick={onClearMap}>Clear Map</PrimaryButton>
       </Container>
     </>
   );

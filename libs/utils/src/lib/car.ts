@@ -1,8 +1,9 @@
 import mapboxgl from 'mapbox-gl';
-import { distanceInKm } from './distance';
+import { distanceInKm, euclideanDistance } from './distance';
 import { interpolateString } from './string-utils';
 import { Coordinates, ICar, CarProps } from './types';
 import { MS_IN_HOUR, FPS } from './constants';
+import * as turf from '@turf/turf';
 
 const carDefaultProps: CarProps = {
   title: 'Car',
@@ -19,6 +20,7 @@ export class Car implements ICar {
   public id: number;
   public lat: number;
   public lng: number;
+  private prevCoordinates: Coordinates;
   public speed: number;
   public route: Coordinates[];
   public originalDirections: GeoJSON.Feature;
@@ -33,31 +35,32 @@ export class Car implements ICar {
   private prevTime: number;
   private map: mapboxgl.Map;
   private popup: mapboxgl.Popup | null;
+  private obstacleDetected: boolean;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private handlers: Record<string, ((...arg: any) => void)[]>;
   private wasFlyingToCar: boolean;
+  private animationFrame: number;
+  private removed = false;
 
   constructor(car: Partial<ICar> & { map: mapboxgl.Map }) {
     this.id = car.id || Date.now();
     this.sourceId = `car-${this.id}`;
     this.lat = car.lat || 0;
     this.lng = car.lng || 0;
+    this.prevCoordinates = this.coordinates;
     this.speed = car.speed || 10;
     this.route = car.route || [];
     this.map = car.map;
     this.popup = null;
-    this.originalDirections = car.originalDirections || {
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [this.lng, this.lat],
-      },
-      properties: null,
-    };
+    this.originalDirections = turf.lineString(
+      this.route.map((r: Coordinates) => [r.lng, r.lat])
+    );
     this.routeIndex = 0;
     this.handlers = {};
     this.wasFlyingToCar = false;
+    this.animationFrame = 0;
+    this.obstacleDetected = false;
 
     this.draw();
     this.attachHandlers();
@@ -156,13 +159,17 @@ export class Car implements ICar {
   };
 
   private updateNextFrame() {
-    setTimeout(() => requestAnimationFrame(this.update), 1000 / FPS);
+    setTimeout(
+      () => (this.animationFrame = requestAnimationFrame(this.update)),
+      1000 / FPS
+    );
   }
 
   /**
    * Update Car
    */
   private update = () => {
+    if (this.removed) return;
     this.updateCoordinates();
     this.updateSource();
     this.updatePopup();
@@ -174,7 +181,12 @@ export class Car implements ICar {
     let movementAmount =
       this.speed * (((now - this.prevTime) * 1.0) / MS_IN_HOUR);
     this.prevTime = now;
-    while (movementAmount && !this.arrived) {
+    while (movementAmount && !this.arrived && !this.obstacleDetected) {
+      if (this.checkObstacles()) {
+        this.speed = 0;
+        this.emit('props-updated');
+        break;
+      }
       const dist = distanceInKm(this.coordinates, this.route[this.routeIndex]);
 
       if (movementAmount >= dist) {
@@ -201,6 +213,29 @@ export class Car implements ICar {
     }
   };
 
+  private checkObstacles(): boolean {
+    const obstacles: turf.Geometry = (this.map.getSource('obstacles') as any)
+      ._data;
+    const lineStep = turf.lineString([
+      [this.coordinates.lng, this.coordinates.lat],
+      [this.route[this.routeIndex].lng, this.route[this.routeIndex].lat],
+    ]);
+    const sensorRangeEndPoint = turf.along(lineStep, 100, {
+      units: 'meters',
+    });
+    const sensorRange = turf.lineString([
+      [this.coordinates.lng, this.coordinates.lat],
+      sensorRangeEndPoint.geometry.coordinates,
+    ]);
+
+    if (!turf.booleanDisjoint(sensorRange, obstacles)) {
+      this.obstacleDetected = true;
+      this.emit('obstacle-detected');
+      return true;
+    }
+    return false;
+  }
+
   private updateSource = () => {
     this.source?.setData({
       type: 'Feature',
@@ -222,7 +257,7 @@ export class Car implements ICar {
       .setHTML(this.description)
       .addTo(this.map);
 
-    this.popup.on('close', () => {
+    this.popup.once('close', () => {
       this.popup = null;
       this.map?.setLayoutProperty(`car-${this.id}-route`, 'visibility', 'none');
       this.emit('popup-closed', this);
@@ -246,9 +281,12 @@ export class Car implements ICar {
     if (!this.popup) return;
 
     if (!this.map.isMoving()) {
-      this.map.jumpTo({
-        center: this.coordinates as mapboxgl.LngLatLike,
-      });
+      if (euclideanDistance(this.coordinates, this.map.getCenter()) > 1e-3) {
+        this.prevCoordinates = this.map.getCenter();
+        this.map.flyTo({
+          center: this.coordinates as mapboxgl.LngLatLike,
+        });
+      }
     } else {
       this.smoothlyFlyToCar();
     }
@@ -273,14 +311,22 @@ export class Car implements ICar {
   }
 
   private get description() {
-    const description =
+    let description =
       '<h1 class="mapboxgl-popup-title">Car</h1>' + this.props.description;
+    if (this.obstacleDetected) {
+      description += '<p>Obstacle detected</p>';
+    }
     return interpolateString(description, this);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public on(
-    type: 'click' | 'move' | 'popup-closed' | 'props-updated',
+    type:
+      | 'click'
+      | 'move'
+      | 'popup-closed'
+      | 'props-updated'
+      | 'obstacle-detected',
     handler: any
   ) {
     this.subscribe(type, handler);
@@ -289,7 +335,12 @@ export class Car implements ICar {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private subscribe(
-    type: 'click' | 'move' | 'popup-closed' | 'props-updated',
+    type:
+      | 'click'
+      | 'move'
+      | 'popup-closed'
+      | 'props-updated'
+      | 'obstacle-detected',
     handler: (...args: any) => void
   ) {
     if (!this.handlers[type]) this.handlers[type] = [];
@@ -298,7 +349,12 @@ export class Car implements ICar {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private emit(
-    type: 'click' | 'move' | 'popup-closed' | 'props-updated',
+    type:
+      | 'click'
+      | 'move'
+      | 'popup-closed'
+      | 'props-updated'
+      | 'obstacle-detected',
     ...args: any[]
   ) {
     if (!this.handlers[type]) return;
@@ -307,6 +363,28 @@ export class Car implements ICar {
     this.handlers[type].forEach((handler: (...args: any[]) => void) =>
       handler.call(this, ...args)
     );
+  }
+
+  public export() {
+    return {
+      id: this.id,
+      route: this.route,
+      speed: this.speed,
+      lng: this.route[0].lng,
+      lat: this.route[0].lat,
+      type: 'car',
+    };
+  }
+
+  public remove() {
+    this.popup?.remove();
+    this.map.removeLayer(this.sourceId);
+    this.map.removeSource(this.sourceId);
+    this.map.removeLayer(`car-${this.id}-route`);
+    this.map.removeSource(`car-${this.id}-route`);
+    cancelAnimationFrame(this.animationFrame);
+    this.removed = true;
+    this.map.off('click', this.sourceId, this.onClick);
   }
 }
 
