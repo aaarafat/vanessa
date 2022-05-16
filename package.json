@@ -69,6 +69,6 @@
     "regenerator-runtime": "0.13.9",
     "styled-components": "5.3.3",
     "tslib": "^2.0.0",
-    "vanessa-mapbox-gl-directions": "^4.1.1"
+    "vanessa-mapbox-gl-directions": "^4.1.92"
   }
 }

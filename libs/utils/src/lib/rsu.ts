@@ -175,6 +175,21 @@ export class RSU implements IRSU {
       handler.call(this, ...args)
     );
   }
+
+  public export() {
+    return {
+      id: this.id,
+      lng: this.lng,
+      lat: this.lat,
+      radius: this.radius,
+      type: 'rsu',
+    };
+  }
+
+  public remove() {
+    this.map.removeLayer(this.sourceId);
+    this.map.removeSource(this.sourceId);
+  }
 }
 
 export default RSU;

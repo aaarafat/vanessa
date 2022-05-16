@@ -40,7 +40,7 @@ export const Map: React.FC<MapProps> = ({
   currentLng = 31.211,
   cars = [],
 }) => {
-  const { setOptions, mapRef } = useContext(MapContext);
+  const { setOptions, mapRef, map } = useContext(MapContext);
 
   const [lng, setLng] = useState(currentLng);
   const [lat, setLat] = useState(currentLat);
