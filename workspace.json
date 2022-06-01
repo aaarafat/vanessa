@@ -4,6 +4,8 @@
     "car-ui": "apps/car-ui",
     "map": "libs/map",
     "router": "apps/router",
+    "network": "apps/network",
+    "unix": "apps/unix",
     "rsu-ui": "apps/rsu-ui",
     "simulation-ui": "apps/simulation-ui",
     "utils": "libs/utils"

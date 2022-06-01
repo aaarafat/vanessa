@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
+
+	"github.com/AkihiroSuda/go-netfilter-queue"
 )
 
 func isIPv4(address string) bool {
@@ -95,6 +98,27 @@ func SetMaxMSS(ifaceName string, ip net.IP, mss int) {
 	log.Println("Changed MSS to: ", mss)
 }
 
+func StealPackets() {
+	var err error
+
+	nfq, err := netfilter.NewNFQueue(0, 100, netfilter.NF_DEFAULT_PACKET_SIZE)
+	if err != nil {
+					fmt.Println(err)
+					os.Exit(1)
+	}
+	defer nfq.Close()
+	packets := nfq.GetPackets()
+
+	for true {
+					select {
+					case p := <-packets:
+									fmt.Println(p.Packet)
+									// drop tha packet
+									p.SetVerdict(netfilter.NF_DROP)
+					}
+	}
+}
+
 func main() {
 	AddIPTablesRule()
 	if err := RegisterGateway(); err != nil {
@@ -117,4 +141,5 @@ func main() {
 
 	SetMaxMSS(iface.Name, ip, 1400)
 
+	StealPackets()
 }

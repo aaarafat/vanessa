@@ -10,23 +10,23 @@ from mn_wifi.net import Mininet_wifi
 from mn_wifi.vanet import vanet
 from mn_wifi.wmediumdConnector import interference
 
-#ap_scan
-#configureAdhoc
-#configureMacAddr
-#get_default_gw
-#setAdhocMode
-#get_pid_filename
-#setAdhocMode
-#setConnected
+# ap_scan
+# configureAdhoc
+# configureMacAddr
+# get_default_gw
+# setAdhocMode
+# get_pid_filename
+# setAdhocMode
+# setConnected
 
 
-
-HOST = "127.0.0.1"  
-PORT = 65432 
+HOST = "127.0.0.1"
+PORT = 65432
 
 
 "Create a network."
-net = Mininet_wifi(link=wmediumd, wmediumd_mode=interference, autoAssociation = True)
+net = Mininet_wifi(link=wmediumd, wmediumd_mode=interference,
+                   autoAssociation=True)
 stations = {}
 kwargs = dict()
 
@@ -35,13 +35,11 @@ info("*** Creating nodes\n")
 
 #kwargs['range'] = 100
 stations["car1"] = net.addStation('car1', position="50, 100, 0",
-                          **kwargs)
+                                  **kwargs)
 stations["car2"] = net.addStation('car2', position="100, 100, 0",
-                        **kwargs)
+                                  **kwargs)
 stations["car3"] = net.addStation('car3', position="140, 100, 0",
-                        **kwargs)
-
-
+                                  **kwargs)
 
 
 def topology(args):
@@ -60,7 +58,7 @@ def topology(args):
     for proto in args:
         if proto in protocols:
             kwargs['proto'] = proto
-            
+
     net.addLink(stations["car1"], cls=adhoc, intf='car1-wlan0',
                 ssid='adhocNet', mode='g', channel=5,
                 ht_cap='HT40+',  **kwargs)
@@ -70,18 +68,14 @@ def topology(args):
     net.addLink(stations["car3"], cls=adhoc, intf='car3-wlan0',
                 ssid='adhocNet', mode='g', channel=5,
                 ht_cap='HT40+', **kwargs)
-    
-    
-    
+
     info("*** Plotting network\n")
     net.plotGraph(max_x=400, max_y=400)
     # net.setMobilityModel(time=0, model='RandomDirection', max_x=1000, max_y=1000,
     #                      min_v=10, max_v=100, seed=20)
 
-
     info("*** Starting network\n")
     net.build()
-
 
     # info("\n*** Addressing...\n")
     # if 'proto' not in kwargs:
