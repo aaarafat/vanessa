@@ -5,6 +5,11 @@ go 1.18
 require github.com/mdlayher/packet v1.0.0
 
 require (
+	github.com/cornelk/hashmap v1.0.1 // indirect
+	github.com/dchest/siphash v1.1.0 // indirect
+)
+
+require (
 	github.com/josharian/native v1.0.0 // indirect
 	github.com/mdlayher/ethernet v0.0.0-20220221185849-529eae5b6118
 	github.com/mdlayher/socket v0.2.1 // indirect
