@@ -64,7 +64,7 @@ func ConvertBoolToBytes(b bool) []byte {
 
 func ConvertBytes(bytes []byte) []byte {
 	var b []byte
-	b = append(b, ConvertIntToBytes(len(bytes), 1)...)
+	b = append(b, byte(len(bytes)))
 	b = append(b, bytes...)
 	return b
 }

@@ -28,6 +28,13 @@ func NewNeighborEntry(ip net.IP) *VNeighborEntry {
 		IP: ip,
 	}
 }
+
+
+func (t *VNeighborTable) MarshalBinary() []byte {
+
+	return nil
+}
+
 func (nt *VNeighborTable) Set(MAC string, neighbor *VNeighborEntry) {
 	if neighbor == nil {
 		log.Panic("You are trying to add null neighbor")
