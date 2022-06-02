@@ -21,8 +21,10 @@ func neighborUpdate(d *DataLinkLayerChannel, nt *VNeighborTable) {
 		}
 		fmt.Println()
 		log.Printf("Received \"%s\" from: [ %s ]", string(payload), addr.String())
-		ent, _ := nt.Get(addr.String())
-		fmt.Println("table Entry %s", string(ent.IP))
+		// ent, _ := nt.Get(addr.String())
+		// fmt.Println("table Entry ", string(ent.IP))
+		// fmt.Println("number of enries %d ", nt.Len())
+		nt.Print()
 	}
 
 }
