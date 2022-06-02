@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 
+	. "github.com/aaarafat/vanessa/apps/scripts/utils"
 	"github.com/cornelk/hashmap"
 )
 
@@ -18,6 +19,17 @@ type VNeighborEntry struct {
 	IP net.IP
 }
 
+const NeighborsEntryLengths = map[string]PacketMetaData{
+	"MAC": &PacketMetaData{
+		Length: -1,
+		Type:  String,
+	},
+	"IP": &PacketMetaData{
+		Length: -1,
+		Type:  ByteArray,
+	},
+}
+
 func NewNeighborTable() *VNeighborTable {
 	return &VNeighborTable{
 		table: &hashmap.HashMap{},
@@ -29,10 +41,39 @@ func NewNeighborEntry(ip net.IP) *VNeighborEntry {
 	}
 }
 
+func (nt *VNeighborTable) MarshalBinary() []byte {
+	var payload []byte
+	for item := range nt.table.Iter() {
+		itemMAC := item.Key.(string)
+		itemIP := item.Value.(*VNeighborEntry)
 
-func (t *VNeighborTable) MarshalBinary() []byte {
+		data := map[string]any{
+			"MAC": itemMAC,
+			"IP": itemIP.IP,
+		}
 
-	return nil
+		b, err := Marshal(data, NeighborsEntryLengths)
+		if err != nil {
+			log.Panic(err)
+		}
+		payload = append(payload, b...)
+	}
+
+	return payload
+}
+
+func (nt *VNeighborTable) UnmarshalBinary(data []byte) {
+	for len(data) > 0 {
+		item, err := Unmarshal(data, NeighborsEntryLengths)
+		if err != nil {
+			log.Panic(err)
+		}
+
+		itemMAC := item["MAC"].(string)
+		itemIP := item["IP"].(net.IP)
+
+		nt.Set(itemMAC, NewNeighborEntry(itemIP))
+	}
 }
 
 func (nt *VNeighborTable) Set(MAC string, neighbor *VNeighborEntry) {
