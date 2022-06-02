@@ -1,3 +1,7 @@
+github.com/cornelk/hashmap v1.0.1 h1:RXGcy29hEdLLV8T6aK4s+BAd4tq4+3Hq50N2GoG0uIg=
+github.com/cornelk/hashmap v1.0.1/go.mod h1:8wbysTUDnwJGrPZ1Iwsou3m+An6sldFrJItjRhfegCw=
+github.com/dchest/siphash v1.1.0 h1:1Rs9eTUlZLPBEvV+2sTaM8O0NWn0ppbgqS7p11aWawI=
+github.com/dchest/siphash v1.1.0/go.mod h1:q+IRvb2gOSrUnYoPqHiyHXS0FOBBOdl6tONBlVnOnt4=
 github.com/AkihiroSuda/go-netfilter-queue v0.0.0-20210408043041-d1559d12dfd4 h1:8+SPvcPPcDWQBvIXVHjxnFQvxHfvKGBKHfHgkWcyBcI=
 github.com/AkihiroSuda/go-netfilter-queue v0.0.0-20210408043041-d1559d12dfd4/go.mod h1:Er0Qhtk1hQ7qvNIA4mRVc3I3HgVvCN8esgjVcBIl1yk=
 github.com/google/go-cmp v0.5.6/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/gNBxE=
