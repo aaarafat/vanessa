@@ -11,6 +11,7 @@ import (
 
 type VNeighborTable struct {
 	table *hashmap.HashMap
+	entryTypes map[string]TypeEnum
 }
 
 
@@ -19,20 +20,13 @@ type VNeighborEntry struct {
 	IP net.IP
 }
 
-const NeighborsEntryLengths = map[string]PacketMetaData{
-	"MAC": &PacketMetaData{
-		Length: -1,
-		Type:  String,
-	},
-	"IP": &PacketMetaData{
-		Length: -1,
-		Type:  ByteArray,
-	},
-}
-
 func NewNeighborTable() *VNeighborTable {
 	return &VNeighborTable{
 		table: &hashmap.HashMap{},
+		entryTypes: map[string]TypeEnum{
+			"MAC": String,
+			"IP": ByteArray,
+		},
 	}
 }
 func NewNeighborEntry(ip net.IP) *VNeighborEntry {
@@ -42,6 +36,7 @@ func NewNeighborEntry(ip net.IP) *VNeighborEntry {
 }
 
 func (nt *VNeighborTable) MarshalBinary() []byte {
+
 	var payload []byte
 	for item := range nt.table.Iter() {
 		itemMAC := item.Key.(string)
@@ -52,7 +47,7 @@ func (nt *VNeighborTable) MarshalBinary() []byte {
 			"IP": itemIP.IP,
 		}
 
-		b, err := Marshal(data, NeighborsEntryLengths)
+		b, err := Marshal(data, nt.entryTypes)
 		if err != nil {
 			log.Panic(err)
 		}
@@ -64,7 +59,7 @@ func (nt *VNeighborTable) MarshalBinary() []byte {
 
 func (nt *VNeighborTable) UnmarshalBinary(data []byte) {
 	for len(data) > 0 {
-		item, err := Unmarshal(data, NeighborsEntryLengths)
+		item, err := Unmarshal(data, nt.entryTypes)
 		if err != nil {
 			log.Panic(err)
 		}

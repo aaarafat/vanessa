@@ -9,18 +9,14 @@ type TypeEnum string;
 
 const (
 	String TypeEnum = "string"
-	Int     			  = "int"
+	Int32     			= "int32"
+	Int16     			= "int16"
+	Int8     			  = "int8"
 	Bool     				= "bool"
 	ByteArray 			= "bytearray"
 	Frame 					= "frame"
 	
 )
-
-type PacketMetaData struct {
-	// length is -1 if the length is variable (bytearray and string)
-	length int
-	valueType TypeEnum
-}
 
 func ConvertBytesToString(bytes []byte) string {
 	return string(bytes)
@@ -73,7 +69,7 @@ func GetLength(b byte) int {
 	return ConvertBytesToInt([]byte{b}, 1)
 }
 
-func orderedKeys(m map[string]PacketMetaData) []string {
+func orderedKeys(m map[string]TypeEnum) []string {
 	// get ordered keys
 	keys := make([]string, 0)
 	for k, _ := range m {
@@ -84,16 +80,20 @@ func orderedKeys(m map[string]PacketMetaData) []string {
 }
 
 
-func Marshal(packet map[string]any, packetLengths map[string]PacketMetaData) ([]byte, error)  {
+func Marshal(packet map[string]any, packetTypes map[string]TypeEnum) ([]byte, error)  {
 	var packetBytes []byte
 
-	for _, key := range orderedKeys(packetLengths) {
-		meta := packetLengths[key]
-		switch meta.valueType {
+	for _, key := range orderedKeys(packetTypes) {
+		valueType := packetTypes[key]
+		switch valueType {
 		case String:
 			packetBytes = append(packetBytes, ConvertStringToBytes(packet[key].(string))...)
-		case Int:
-			packetBytes = append(packetBytes, ConvertIntToBytes(packet[key].(int), meta.length)...)
+		case Int32:
+			packetBytes = append(packetBytes, ConvertIntToBytes(packet[key].(int), 4)...)
+		case Int16:
+			packetBytes = append(packetBytes, ConvertIntToBytes(packet[key].(int), 2)...)
+		case Int8:
+			packetBytes = append(packetBytes, ConvertIntToBytes(packet[key].(int), 1)...)
 		case Bool:
 			packetBytes = append(packetBytes, ConvertBoolToBytes(packet[key].(bool))...)
 		case ByteArray:
@@ -103,22 +103,28 @@ func Marshal(packet map[string]any, packetLengths map[string]PacketMetaData) ([]
 	return packetBytes, nil
 }
 
-func Unmarshal(packetBytes []byte, packetLengths map[string]PacketMetaData) (map[string]any, error) {
+func Unmarshal(packetBytes []byte, packetTypes map[string]TypeEnum) (map[string]any, error) {
 	packet := make(map[string]any)
 
-	for _, key := range orderedKeys(packetLengths) {
-		meta := packetLengths[key]
-		switch meta.valueType {
+	for _, key := range orderedKeys(packetTypes) {
+		valueType := packetTypes[key]
+		switch valueType {
 		case String:
 			len := GetLength(packetBytes[0])
 			packet[key] = ConvertBytesToString(packetBytes[1:len+1])
 			packetBytes = packetBytes[len+1:]
-		case Int:
-			packet[key] = ConvertBytesToInt(packetBytes[:meta.length], meta.length)
-			packetBytes = packetBytes[meta.length:]
+		case Int32:
+			packet[key] = ConvertBytesToInt(packetBytes[:4], 4)
+			packetBytes = packetBytes[4:]
+		case Int16:
+			packet[key] = ConvertBytesToInt(packetBytes[:2], 2)
+			packetBytes = packetBytes[2:]
+		case Int8:
+			packet[key] = ConvertBytesToInt(packetBytes[:1], 1)
+			packetBytes = packetBytes[1:]
 		case Bool:
-			packet[key] = ConvertBytesToBool(packetBytes[:meta.length])
-			packetBytes = packetBytes[meta.length:]
+			packet[key] = ConvertBytesToBool(packetBytes[:1])
+			packetBytes = packetBytes[1:]
 		case ByteArray:
 			len := GetLength(packetBytes[0])
 			packet[key] = packetBytes[1:len+1]
@@ -143,13 +149,13 @@ func main()  {
 
 	println(ba)
 
-	metadata := map[string]PacketMetaData{
-		"a": {length: -1, valueType: String},
-		"b": {length: 4, valueType: Int},
-		"c": {length: 2, valueType: Int},
-		"d": {length: 1, valueType: Int},
-		"e": {length: 1, valueType: Bool},
-		"f": {length: -1, valueType: ByteArray},
+	metadata := map[string]TypeEnum{
+		"a": String,
+		"b": Int32,
+		"c": Int16,
+		"d": Int8,
+		"e": Bool,
+		"f": ByteArray,
 	}
 
 	obj := map[string]any{
