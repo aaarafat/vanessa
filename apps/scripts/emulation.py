@@ -36,7 +36,7 @@ APP = Flask("mininet")
 sio = SocketIO(APP, cors_allowed_origins="*")
 "Create a network."
 net = Mininet_wifi(link=wmediumd, wmediumd_mode=interference,
-                   autoAssociation=True, ac_method='ssf') #ssf or llf
+                   autoAssociation=True, ac_method='llf') #ssf or llf
 stations = {}
 kwargs = dict(wlans=2)
 
@@ -160,7 +160,6 @@ def topology(args):
         # TODO : remove number of stations so that we can run it on new added cars
         stations[id].cmd(
             f'sudo {os.path.join(os.path.dirname(__file__), "../../dist/apps/router")} {stations[id].name} {len(stations)} &')
-            # f'sudo ./nt {stations[id].name} {stations[id].wintfs[0].ip} &')
     info("*** Running CLI\n")
     CLI(net)
     info("*** Stopping network\n")

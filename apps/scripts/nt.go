@@ -7,10 +7,9 @@ import (
 	"os"
 	"os/exec"
 	"time"
-	
+	"strings"
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
-	"golang.org/x/text/message"
 )
 
 func neighborUpdate(d *DataLinkLayerChannel, nt *VNeighborTable) {
@@ -49,7 +48,12 @@ func main() {
 	}
 	cmdOut := string(out)
 	fmt.Println(cmdOut)
-	if 
+	if strings.Contains(cmdOut, "Not connected") {
+		println(station, "is not associated")
+	} else {
+		println(station, "is associated")
+	}
+	
 	ip := args[2]
 	neibourTable := NewNeighborTable()
 
