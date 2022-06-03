@@ -1,4 +1,4 @@
-package main
+package utils
 
 // ********************** STRING *****************
 type MarshalableString string
