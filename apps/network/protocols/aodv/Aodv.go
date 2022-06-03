@@ -3,7 +3,6 @@ package aodv
 import (
 	"log"
 	"net"
-	"sync"
 	"time"
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
@@ -15,7 +14,6 @@ type Aodv struct {
 	neighborTable *VNeighborTable
 	routingTable *VRoutingTable
 	srcIP net.IP
-	chLock sync.RWMutex
 }
 
 const (
