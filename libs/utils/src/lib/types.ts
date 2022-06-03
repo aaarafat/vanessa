@@ -1,20 +1,26 @@
+import { Socket } from 'socket.io-client';
+
+export type PartialExcept<T, K extends keyof T> = Partial<T> & Pick<T, K>;
+
 export interface Coordinates {
   lng: number;
   lat: number;
 }
 
-export interface ICar {
+export interface ICommon {
   id: number;
   lat: number;
   lng: number;
+  map: mapboxgl.Map;
+  socket: Socket;
+}
+
+export interface ICar extends ICommon {
   speed: number;
   route: Coordinates[];
   originalDirections: GeoJSON.Feature;
 }
-export interface IRSU {
-  id: number;
-  lat: number;
-  lng: number;
+export interface IRSU extends ICommon {
   radius: number;
 }
 

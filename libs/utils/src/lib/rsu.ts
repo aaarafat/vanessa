@@ -1,8 +1,8 @@
 import mapboxgl from 'mapbox-gl';
-import { distanceInKm } from './distance';
 import { interpolateString } from './string-utils';
-import { Coordinates, IRSU, RSUProps } from './types';
+import { Coordinates, IRSU, PartialExcept, RSUProps } from './types';
 import * as turf from '@turf/turf';
+import { Socket } from 'socket.io-client';
 
 const carDefaultProps: RSUProps = {
   title: 'RSU',
@@ -15,7 +15,7 @@ const carDefaultProps: RSUProps = {
 /**
  * Car Class
  */
-export class RSU implements IRSU {
+export class RSU {
   public id: number;
   public lat: number;
   public lng: number;
@@ -25,19 +25,21 @@ export class RSU implements IRSU {
   private layer: mapboxgl.LineLayer | undefined;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private map: mapboxgl.Map;
+  private socket: Socket;
   private popup: mapboxgl.Popup | null;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private handlers: Record<string, ((...arg: any) => void)[]>;
   private wasFlyingToRSU: boolean;
 
-  constructor(rsu: Partial<IRSU> & { map: mapboxgl.Map }) {
+  constructor(rsu: PartialExcept<IRSU, 'map' | 'socket'>) {
     this.id = rsu.id || Date.now();
     this.sourceId = `car-${this.id}`;
     this.lat = rsu.lat || 0;
     this.lng = rsu.lng || 0;
     this.radius = rsu.radius || 10;
     this.map = rsu.map;
+    this.socket = rsu.socket;
     this.popup = null;
 
     this.handlers = {};

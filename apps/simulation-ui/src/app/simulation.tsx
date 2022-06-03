@@ -1,17 +1,12 @@
-import React, {
-  ChangeEvent,
-  ReactEventHandler,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Map, MapContext } from '@vanessa/map';
 import styled, { keyframes } from 'styled-components';
 import { Car, Coordinates, ICar, IRSU, RSU } from '@vanessa/utils';
 import * as turf from '@turf/turf';
 import mapboxgl from 'mapbox-gl';
+import { SocketContext } from '../context';
 
-const rsusData: IRSU[] = [
+const rsusData: Partial<IRSU>[] = [
   {
     id: 1,
     lng: 31.213,
@@ -142,6 +137,7 @@ const LoaderContainer = styled.div`
 
 export const Simulation: React.FC = () => {
   const { map, mapDirections } = useContext(MapContext);
+  const socket = useContext(SocketContext);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [obstacles, setObstacles] = useState<turf.FeatureCollection>({
@@ -150,15 +146,14 @@ export const Simulation: React.FC = () => {
   });
 
   useEffect(() => {
-    if (map) {
+    if (map && socket) {
       map.setMaxZoom(18);
       map.on('load', () => {
-        // cars.map((car) => new Car({ ...car, map }));
-        rsusData.forEach((rsu) => rsus.push(new RSU({ ...rsu, map })));
+        rsusData.forEach((rsu) => rsus.push(new RSU({ ...rsu, map, socket })));
         setMapLoaded(true);
       });
     }
-  }, [map]);
+  }, [map, socket]);
 
   useEffect(() => {
     if (mapLoaded && map) {
@@ -216,6 +211,7 @@ export const Simulation: React.FC = () => {
     const car: Car = new Car({
       ...carInputs,
       map,
+      socket,
     });
 
     // add to cars list
@@ -279,7 +275,7 @@ export const Simulation: React.FC = () => {
             ...item,
           });
         } else if (item.type === 'rsu') {
-          rsus.push(new RSU({ ...item, map }));
+          rsus.push(new RSU({ ...item, map, socket }));
         } else if (item.type === 'obstacles') {
           setObstacles({
             type: 'FeatureCollection',
@@ -314,7 +310,7 @@ export const Simulation: React.FC = () => {
         </LoaderContainer>
       )}
       <div>
-        <Map cars={cars} />
+        <Map />
         <ControlPanel
           onAddCar={handleAddCar}
           onAddObstacle={handleAddObstacle}

@@ -1,9 +1,10 @@
 import mapboxgl from 'mapbox-gl';
 import { distanceInKm, euclideanDistance } from './distance';
 import { interpolateString } from './string-utils';
-import { Coordinates, ICar, CarProps } from './types';
+import { Coordinates, ICar, CarProps, PartialExcept } from './types';
 import { MS_IN_HOUR, FPS } from './constants';
 import * as turf from '@turf/turf';
+import { Socket } from 'socket.io-client';
 
 const carDefaultProps: CarProps = {
   title: 'Car',
@@ -16,7 +17,7 @@ const carDefaultProps: CarProps = {
 /**
  * Car Class
  */
-export class Car implements ICar {
+export class Car {
   public id: number;
   public lat: number;
   public lng: number;
@@ -31,9 +32,9 @@ export class Car implements ICar {
   private directionsSource: mapboxgl.GeoJSONSource | undefined;
   private directionsLayer: mapboxgl.LineLayer | undefined;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private updateIntervalId: any;
   private prevTime: number;
   private map: mapboxgl.Map;
+  private socket: Socket;
   private popup: mapboxgl.Popup | null;
   private obstacleDetected: boolean;
 
@@ -43,7 +44,7 @@ export class Car implements ICar {
   private animationFrame: number;
   private removed = false;
 
-  constructor(car: Partial<ICar> & { map: mapboxgl.Map }) {
+  constructor(car: PartialExcept<ICar, 'map' | 'socket'>) {
     this.id = car.id || Date.now();
     this.sourceId = `car-${this.id}`;
     this.lat = car.lat || 0;
@@ -52,6 +53,7 @@ export class Car implements ICar {
     this.speed = car.speed || 10;
     this.route = car.route || [];
     this.map = car.map;
+    this.socket = car.socket;
     this.popup = null;
     this.originalDirections = turf.lineString(
       this.route.map((r: Coordinates) => [r.lng, r.lat])
@@ -188,15 +190,11 @@ export class Car implements ICar {
         break;
       }
       const dist = distanceInKm(this.coordinates, this.route[this.routeIndex]);
-
       if (movementAmount >= dist) {
         movementAmount -= dist;
         this.lat = this.route[this.routeIndex].lat;
         this.lng = this.route[this.routeIndex].lng;
         this.routeIndex++;
-        if (this.routeIndex === this.route.length) {
-          clearInterval(this.updateIntervalId);
-        }
       } else {
         const vector: Coordinates = {
           lng: (this.route[this.routeIndex].lng - this.coordinates.lng) / dist,
@@ -230,7 +228,12 @@ export class Car implements ICar {
 
     if (!turf.booleanDisjoint(sensorRange, obstacles)) {
       this.obstacleDetected = true;
-      this.emit('obstacle-detected');
+      this.emit('props-updated');
+      this.socket.emit('obstacle-detected', {
+        id: this.id,
+        lat: this.lat,
+        lng: this.lng,
+      });
       return true;
     }
     return false;
