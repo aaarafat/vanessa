@@ -21,8 +21,10 @@ type Ethertype int
 const (
 	// VEtherType is the EtherType used by the Vanessa test.
 	VEtherType = 0x7031
-	VNDEtherType = 0x7032
+	VNDEtherType = 0x7032   // for neighbor discovery
 	VAODVEtherType = 0x7033 // for AODV protocol
+	VIEtherType = 0x7034   // for contacting infrastructure
+
 )
 
 func NewDataLinkLayerChannel(ether Ethertype) (*DataLinkLayerChannel, error) {
