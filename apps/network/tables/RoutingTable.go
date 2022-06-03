@@ -14,7 +14,7 @@ type VRoutingTable struct {
 type VRoutingTableEntry struct {
 	Destination net.IP
 	NextHop net.HardwareAddr
-	NoOfHops int
+	NoOfHops uint8
 }
 
 func NewVRoutingTable() *VRoutingTable {
@@ -23,7 +23,7 @@ func NewVRoutingTable() *VRoutingTable {
 	}
 }
 
-func (r* VRoutingTable) Update(nextHopMac net.HardwareAddr, destination net.IP, hopCount int) {
+func (r* VRoutingTable) Update(nextHopMac net.HardwareAddr, destination net.IP, hopCount uint8) {
 	// check if entry exists
 	entry, exists := r.table.Get(destination.String())
 	if exists {

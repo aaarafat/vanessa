@@ -9,7 +9,7 @@ import (
 )
 
 type DataLinkLayerChannel struct {
-	Source    net.HardwareAddr
+	source    net.HardwareAddr
 	etherType Ethertype
 	channel   *packet.Conn
 }
@@ -20,7 +20,7 @@ const (
 	// VEtherType is the EtherType used by the Vanessa test.
 	VEtherType = 0x7031
 	VNDEtherType = 0x7032
-	VDSVEtherType = 0x7033 // for distance vector
+	VAODVEtherType = 0x7033 // for AODV protocol
 )
 
 func NewDataLinkLayerChannel(ether Ethertype) (*DataLinkLayerChannel, error) {
@@ -42,7 +42,7 @@ func NewDataLinkLayerChannel(ether Ethertype) (*DataLinkLayerChannel, error) {
 	return &DataLinkLayerChannel{
 		etherType: ether, // Set the channel type
 		channel:   c,
-		Source:    ifi.HardwareAddr, // Identify the car as the sender.
+		source:    ifi.HardwareAddr, // Identify the car as the sender.
 	}, nil
 
 }
@@ -52,7 +52,7 @@ func (d *DataLinkLayerChannel) SendTo(payload []byte, destination net.HardwareAd
 		// Set the destination MAC address
 		Destination: destination,
 		// Identify the car as the sender.
-		Source: d.Source,
+		Source: d.source,
 		// Identify frame with the same type as channel
 		EtherType: ethernet.EtherType(d.etherType),
 		Payload:   payload,

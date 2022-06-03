@@ -2,21 +2,74 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net"
+	"strings"
 
 	. "github.com/aaarafat/vanessa/apps/network/protocols/aodv"
 )
 
-func main() {
 
-	rreq := NewRREQMessage(net.IPv4(1,2,3,4), net.IPv4(5,6,7,8))
-	bytes := rreq.Marshal()
+func isIPv4(address string) bool {
+	return strings.Count(address, ":") < 2
+}
 
-	fmt.Println(rreq.String())
+func isIPv6(address string) bool {
+	return strings.Count(address, ":") >= 2
+}
 
-	rreq2, err := UnmarshalRREQ(bytes)
+
+func GetMyIPs(iface *net.Interface) (net.IP, net.IP, error) {
+	addrs, err := iface.Addrs()
 	if err != nil {
-		panic(err)
+		return nil, nil, err
 	}
-	fmt.Println(rreq2.String())
+
+	var ip4, ip6 net.IP
+	for _, addr := range addrs {
+		var ip net.IP
+
+		switch v := addr.(type) {
+		case *net.IPNet:
+			ip = v.IP
+		case *net.IPAddr:
+			ip = v.IP
+		}
+
+		if isIPv4(ip.String()) {
+			ip4 = ip
+		} else if isIPv6(ip.String()) {
+			ip6 = ip
+		} else {
+			return nil, nil, fmt.Errorf("ip is not ip4 or ip6")
+		}
+	}
+
+	return ip4, ip6, nil
+}
+
+
+func main() {
+	interfaces, err := net.Interfaces()
+	iface := interfaces[1]
+
+	ip, _, err := GetMyIPs(&iface)
+
+	log.Printf("My IP is %s", ip.String())
+
+	if err != nil {
+		log.Fatalf("failed to open interface: %v", err)
+		return
+	}
+
+	aodv := NewAodv(ip)
+
+	go aodv.Start()
+
+	if ip.Equal(net.ParseIP("10.0.0.1")) {
+		go aodv.SendRREQ(net.ParseIP("10.0.0.3"))
+	}
+
+	// wait for ever
+	select {}
 }

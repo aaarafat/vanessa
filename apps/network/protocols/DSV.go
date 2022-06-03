@@ -29,7 +29,7 @@ func (msg *DSVMessage) Print() {
 }
 
 func NewDSV() *DSV {
-	d, err := NewDataLinkLayerChannel(VDSVEtherType)
+	d, err := NewDataLinkLayerChannel(VAODVEtherType)
 	if err != nil {
 		log.Fatalf("failed to create channel: %v", err)
 	}
@@ -38,7 +38,7 @@ func NewDSV() *DSV {
 	routingTable := NewVRoutingTable()
 
 	return &DSV{
-		etherType: VDSVEtherType,
+		etherType: VAODVEtherType,
 		datalink: d,
 		neighborTable: neighborTable,
 		routingTable: routingTable,
@@ -101,11 +101,11 @@ func (dsv* DSV) Read() {
 		}
 
 		// update Routing Table
-		dsv.routingTable.Update(addr, payload.Source, payload.HopCount)
+		dsv.routingTable.Update(addr, payload.Source, uint8(payload.HopCount))
 
 
 		// check if it is a neighbor message
-		if payload.Destination.Equal(net.IP(dsv.datalink.Source)) {
+		/*if payload.Destination.Equal(net.IP(dsv.datalink.Source)) {
 			// send reply
 			log.Printf("Sending reply........... to : %s", payload.Source.String())
 			dsv.SendTo(&payload, addr)
@@ -113,7 +113,7 @@ func (dsv* DSV) Read() {
 			payload.HopCount = payload.HopCount + 1 // increase hop count
 			payload_byte, _ := json.Marshal(payload)
 			dsv.datalink.Broadcast(payload_byte)
-		}
+		}*/
 
 	}
 
