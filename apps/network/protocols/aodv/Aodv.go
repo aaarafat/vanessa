@@ -3,6 +3,7 @@ package aodv
 import (
 	"log"
 	"net"
+	"sync"
 	"time"
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
@@ -14,6 +15,7 @@ type Aodv struct {
 	neighborTable *VNeighborTable
 	routingTable *VRoutingTable
 	srcIP net.IP
+	chLock sync.RWMutex
 }
 
 const (
@@ -60,12 +62,16 @@ func (a *Aodv) Send(payload []byte, dest net.IP) {
 	}
 }
 
+func (a *Aodv) Broadcast(payload []byte) {
+	a.channel.Broadcast(payload)
+}
+
 func (a *Aodv) SendRREQ(destination net.IP) {
 	rreq := NewRREQMessage(a.srcIP, destination)
 	log.Printf("Sending: %s\n", rreq.String())
 
 	// broadcast the RREQ
-	a.channel.Broadcast(rreq.Marshal())
+	go a.Broadcast(rreq.Marshal())
 }
 
 func (a *Aodv) SendRREP(destination net.IP) {
@@ -73,8 +79,7 @@ func (a *Aodv) SendRREP(destination net.IP) {
 	log.Printf("Sending: %s\n", rrep.String())
 
 	// broadcast the RREP
-	a.Send(rrep.Marshal(), destination)
-	
+	go a.Send(rrep.Marshal(), destination)
 }
 
 func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr) {
@@ -101,8 +106,7 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr) {
 		// increment hop count
 		rreq.HopCount = rreq.HopCount + 1
 		// forward the RREQ
-		rreqBytes := rreq.Marshal()
-		go a.sendToAllExcept(rreqBytes, from)
+		go a.sendToAllExcept(rreq.Marshal(), from)
 	}
 }
 

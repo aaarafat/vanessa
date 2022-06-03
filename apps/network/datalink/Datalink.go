@@ -3,6 +3,7 @@ package datalink
 import (
 	"log"
 	"net"
+	"sync"
 
 	"github.com/mdlayher/ethernet"
 	"github.com/mdlayher/packet"
@@ -12,6 +13,7 @@ type DataLinkLayerChannel struct {
 	source    net.HardwareAddr
 	etherType Ethertype
 	channel   *packet.Conn
+	lock 		  sync.Mutex
 }
 
 type Ethertype int
@@ -43,11 +45,14 @@ func NewDataLinkLayerChannel(ether Ethertype) (*DataLinkLayerChannel, error) {
 		etherType: ether, // Set the channel type
 		channel:   c,
 		source:    ifi.HardwareAddr, // Identify the car as the sender.
+		lock: 		sync.Mutex{},
 	}, nil
 
 }
 
 func (d *DataLinkLayerChannel) SendTo(payload []byte, destination net.HardwareAddr) {
+	d.lock.Lock()
+	defer d.lock.Unlock()
 	frame := &ethernet.Frame{
 		// Set the destination MAC address
 		Destination: destination,
@@ -69,10 +74,14 @@ func (d *DataLinkLayerChannel) SendTo(payload []byte, destination net.HardwareAd
 }
 
 func (d *DataLinkLayerChannel) Broadcast(payload []byte) {
+	d.lock.Lock()
+	defer d.lock.Unlock()
 	d.SendTo(payload, ethernet.Broadcast)
 }
 
 func (d *DataLinkLayerChannel) Read() ([]byte, net.HardwareAddr, error) {
+	d.lock.Lock()
+	defer d.lock.Unlock()
 	buf := make([]byte, 1500)
 	n, addr, err := d.channel.ReadFrom(buf)
 	if err != nil {
