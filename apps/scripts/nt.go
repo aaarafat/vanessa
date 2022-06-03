@@ -52,8 +52,16 @@ func main() {
 		println(station, "is not associated")
 	} else {
 		println(station, "is associated")
+		arr := strings.Fields(cmdOut)  
+		for ind, v := range arr {    
+			if strings.Contains(v, "ssid_"){
+				println(ind, v)
+
+				break
+			}
+  }
 	}
-	
+
 	ip := args[2]
 	neibourTable := NewNeighborTable()
 
