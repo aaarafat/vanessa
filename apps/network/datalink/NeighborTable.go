@@ -10,7 +10,7 @@ import (
 
 type VNeighborTable struct {
 	table *hashmap.HashMap
-s}
+}
 
 
 type VNeighborEntry struct {
