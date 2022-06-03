@@ -5,14 +5,12 @@ import (
 	"log"
 	"net"
 
-	. "github.com/aaarafat/vanessa/apps/network/utils"
 	"github.com/cornelk/hashmap"
 )
 
 type VNeighborTable struct {
 	table *hashmap.HashMap
-	entryTypes map[string]TypeEnum
-}
+s}
 
 
 type VNeighborEntry struct {
@@ -23,10 +21,6 @@ type VNeighborEntry struct {
 func NewNeighborTable() *VNeighborTable {
 	return &VNeighborTable{
 		table: &hashmap.HashMap{},
-		entryTypes: map[string]TypeEnum{
-			"MAC": String,
-			"IP": ByteArray,
-		},
 	}
 }
 func NewNeighborEntry(ip net.IP) *VNeighborEntry {
@@ -35,6 +29,7 @@ func NewNeighborEntry(ip net.IP) *VNeighborEntry {
 	}
 }
 
+/*
 func (nt *VNeighborTable) MarshalBinary() []byte {
 
 	var payload []byte
@@ -70,6 +65,7 @@ func (nt *VNeighborTable) UnmarshalBinary(data []byte) {
 		nt.Set(itemMAC, NewNeighborEntry(itemIP))
 	}
 }
+*/
 
 func (nt *VNeighborTable) Set(MAC string, neighbor *VNeighborEntry) {
 	if neighbor == nil {
