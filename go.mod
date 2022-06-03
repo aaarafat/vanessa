@@ -7,6 +7,7 @@ require github.com/mdlayher/packet v1.0.0
 require (
 	github.com/cornelk/hashmap v1.0.1 // indirect
 	github.com/dchest/siphash v1.1.0 // indirect
+	github.com/google/gopacket v1.1.19 // indirect
 )
 
 require (
