@@ -5,7 +5,6 @@ import (
 	"log"
 	"net"
 	"strings"
-	"time"
 
 	. "github.com/aaarafat/vanessa/apps/network/protocols/aodv"
 )
@@ -67,12 +66,11 @@ func main() {
 
 	aodv.Start()
 
-	time.Sleep(time.Second * 2) // wait for aodv to start
-
-	if ip.Equal(net.ParseIP("10.0.0.1")) {
-		go aodv.SendRREQ(net.ParseIP("10.0.0.3"))
-	}
-
 	// wait for ever
-	select {}
+	var ipString string
+	for {
+		fmt.Scanf("%s", &ipString)
+		ip := net.ParseIP(ipString)
+		aodv.SendRREQ(ip)
+	}
 }

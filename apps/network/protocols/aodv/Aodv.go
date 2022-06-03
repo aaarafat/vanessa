@@ -3,7 +3,6 @@ package aodv
 import (
 	"log"
 	"net"
-	"time"
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
 	. "github.com/aaarafat/vanessa/apps/network/tables"
@@ -43,7 +42,7 @@ func (a *Aodv) sendToAllExcept(payload []byte, addr net.HardwareAddr) {
 
 		if stringMac != addr.String() {
 			log.Println("Sending to: ", stringMac)
-			go a.channel.SendTo(payload, neighborMac)
+			a.channel.SendTo(payload, neighborMac)
 		}
 	}
 }
@@ -53,10 +52,10 @@ func (a *Aodv) Send(payload []byte, dest net.IP) {
 	item, ok := a.routingTable.Get(dest);
 	if ok {
 		// send the packet
-		go a.channel.SendTo(payload, item.NextHop)
+		a.channel.SendTo(payload, item.NextHop)
 	} else {
 		// send a RREQ or RRER
-		go a.SendRREQ(dest)
+		a.SendRREQ(dest)
 	}
 }
 
@@ -69,7 +68,7 @@ func (a *Aodv) SendRREQ(destination net.IP) {
 	log.Printf("Sending: %s\n", rreq.String())
 
 	// broadcast the RREQ
-	go a.Broadcast(rreq.Marshal())
+	a.Broadcast(rreq.Marshal())
 }
 
 func (a *Aodv) SendRREP(destination net.IP) {
@@ -77,7 +76,7 @@ func (a *Aodv) SendRREP(destination net.IP) {
 	log.Printf("Sending: %s\n", rrep.String())
 
 	// broadcast the RREP
-	go a.Send(rrep.Marshal(), destination)
+	a.Send(rrep.Marshal(), destination)
 }
 
 func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr) {
@@ -99,12 +98,12 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr) {
 	// check if the RREQ is for me
 	if rreq.DestinationIP.Equal(a.srcIP) {
 		// send a RREP
-		go a.SendRREP(rreq.OriginatorIP)
+		a.SendRREP(rreq.OriginatorIP)
 	} else {
 		// increment hop count
 		rreq.HopCount = rreq.HopCount + 1
 		// forward the RREQ
-		go a.sendToAllExcept(rreq.Marshal(), from)
+		a.sendToAllExcept(rreq.Marshal(), from)
 	}
 }
 
@@ -132,16 +131,13 @@ func (a *Aodv) handleRREP(payload []byte, from net.HardwareAddr) {
 		// increment hop count
 		rrep.HopCount = rrep.HopCount + 1
 		// forward the RREP
-		go a.Send(rrep.Marshal(), rrep.OriginatorIP)
+		a.Send(rrep.Marshal(), rrep.OriginatorIP)
 	}
 }
 
 func (a *Aodv) Listen() {
 	log.Println("Listening for AODV packets...")
 	for {
-		// TODO : Remove this sleep
-		time.Sleep(time.Second * 5) 
-
 		payload, addr, err := a.channel.Read()
 		if err != nil {
 			log.Fatalf("failed to read from channel: %v", err)
@@ -153,9 +149,9 @@ func (a *Aodv) Listen() {
 		// handle the message
 		switch msgType {
 		case RREQType:
-			go a.handleRREQ(payload, addr)
+			a.handleRREQ(payload, addr)
 		case RREPType:
-			go a.handleRREP(payload, addr)
+			a.handleRREP(payload, addr)
 		default:
 			log.Println("Unknown message type: ", msgType)
 		}
