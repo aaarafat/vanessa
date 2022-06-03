@@ -21,7 +21,7 @@ type VNeighborEntry struct {
 }
 
 const (
-	VNeighborTable_UPDATE_INTERVAL = 30
+	VNeighborTable_UPDATE_INTERVAL = 5
 )
 
 func NewNeighborTable(srcIP  net.IP) *VNeighborTable {
