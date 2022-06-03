@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 
-	. "github.com/aaarafat/vanessa/apps/scripts/utils"
+	. "github.com/aaarafat/vanessa/apps/network/utils"
 	"github.com/cornelk/hashmap"
 )
 

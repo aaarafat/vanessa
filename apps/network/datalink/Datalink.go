@@ -9,7 +9,7 @@ import (
 )
 
 type DataLinkLayerChannel struct {
-	source    net.HardwareAddr
+	Source    net.HardwareAddr
 	etherType Ethertype
 	channel   *packet.Conn
 }
@@ -42,7 +42,7 @@ func NewDataLinkLayerChannel(ether Ethertype) (*DataLinkLayerChannel, error) {
 	return &DataLinkLayerChannel{
 		etherType: ether, // Set the channel type
 		channel:   c,
-		source:    ifi.HardwareAddr, // Identify the car as the sender.
+		Source:    ifi.HardwareAddr, // Identify the car as the sender.
 	}, nil
 
 }
@@ -52,7 +52,7 @@ func (d *DataLinkLayerChannel) SendTo(payload []byte, destination net.HardwareAd
 		// Set the destination MAC address
 		Destination: destination,
 		// Identify the car as the sender.
-		Source: d.source,
+		Source: d.Source,
 		// Identify frame with the same type as channel
 		EtherType: ethernet.EtherType(d.etherType),
 		Payload:   payload,
@@ -72,7 +72,7 @@ func (d *DataLinkLayerChannel) Broadcast(payload []byte) {
 	d.SendTo(payload, ethernet.Broadcast)
 }
 
-func (d *DataLinkLayerChannel) Read() ([]byte, net.Addr, error) {
+func (d *DataLinkLayerChannel) Read() ([]byte, net.HardwareAddr, error) {
 	buf := make([]byte, 1500)
 	n, addr, err := d.channel.ReadFrom(buf)
 	if err != nil {
@@ -84,7 +84,11 @@ func (d *DataLinkLayerChannel) Read() ([]byte, net.Addr, error) {
 	if err := (&f).UnmarshalBinary(buf[:n]); err != nil {
 		log.Fatalf("failed to unmarshal ethernet frame: %v", err)
 	}
-	return f.Payload, addr, nil
+	mac, err := net.ParseMAC(addr.String())
+	if err != nil {
+		log.Panic(err)
+	}
+	return f.Payload, mac, nil
 }
 
 func (d *DataLinkLayerChannel) Close() {

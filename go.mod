@@ -13,6 +13,7 @@ require (
 
 require (
 	github.com/AkihiroSuda/go-netfilter-queue v0.0.0-20210408043041-d1559d12dfd4
+	github.com/fatih/structs v1.1.0
 	github.com/josharian/native v1.0.0 // indirect
 	github.com/mdlayher/ethernet v0.0.0-20220221185849-529eae5b6118
 	github.com/mdlayher/socket v0.2.1 // indirect
