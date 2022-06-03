@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"os"
+	// "os"
 	"os/exec"
 	"time"
 	"strings"
@@ -17,7 +17,7 @@ func neighborUpdate(d *DataLinkLayerChannel, nt *VNeighborTable) {
 		
 		payload, addr, err := d.Read()
 		// fmt.Println(net.HardwareAddr(addr.String()))
-		entry := NewNeighborEntry(net.IP(payload))
+		entry := NewNeighborEntry(net.IP(payload), addr)
 		nt.Set(addr.String() ,entry)
 		if err != nil {
 			log.Fatalf("failed to read from channel: %v", err)
@@ -33,26 +33,26 @@ func neighborUpdate(d *DataLinkLayerChannel, nt *VNeighborTable) {
 }
 
 func main() {
-	args := os.Args
-	if len(args) < 3 {
-			fmt.Println("Please put station name and stations length");
-			os.Exit(1);
-	}
 	
-	station := args[1]
-	fmt.Println(station)
-	intf := station+"-wlan1"
-	out, err := exec.Command("iw", "dev", intf, "link").Output()
+	interfaces, err := net.Interfaces()
+	adhoc_ifi, err := net.InterfaceByName(interfaces[1].Name)
+	net_ifi, err := net.InterfaceByName(interfaces[2].Name)
+	addrs , _ := adhoc_ifi.Addrs()
+	println(net_ifi.Name, net_ifi.HardwareAddr.String())
+	ip := strings.Split(addrs[0].String(), "/")[0]
+	println(ip)
+
+	out, err := exec.Command("iw", "dev", net_ifi.Name, "link").Output()
 	if err != nil {
 		log.Panic(err)
 	}
 	cmdOut := string(out)
-	fmt.Println(cmdOut)
+	// println(cmdOut)
 	rsuMAC := "" 
 	if strings.Contains(cmdOut, "Not connected") {
-		println(station, "is not associated")
+		println(net_ifi.Name, "is not associated")
 	} else {
-		println(station, "is associated")
+		println(net_ifi.Name, "is associated")
 		arr := strings.Fields(cmdOut) 
 		rsuMAC = arr[2] 
 		for ind, v := range arr {    
@@ -65,8 +65,7 @@ func main() {
 	}
 
 
-	ip := args[2]
-	neibourTable := NewNeighborTable()
+	neibourTable := NewNeighborTable(net.IP(ip))
 
 	d, err := NewDataLinkLayerChannel(VNDEtherType)
 	if err != nil {
