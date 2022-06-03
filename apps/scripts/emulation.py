@@ -35,7 +35,7 @@ sio = SocketIO(APP, cors_allowed_origins="*")
 net = Mininet_wifi(link=wmediumd, wmediumd_mode=interference,
                    autoAssociation=True)
 stations = {}
-kwargs = dict()
+kwargs = dict(wlans=2)
 
 
 @sio.on('connect')
@@ -136,9 +136,9 @@ def topology(args):
     #     sta3.setIP6('2001::3/64', intf="sta3-wlan0")
     # sta1.cmd("ip route add 10.0.0.3 via 10.0.0.2")
     # sta3.cmd("ip route add 10.0.0.1 via 10.0.0.2")
-    stations["car1"].cmd('sysctl net.ipv4.ip_forward=1')
-    stations["car2"].cmd('echo 1 > /proc/sys/net/ipv4/ip_forward')
-    stations["car3"].cmd('sysctl net.ipv4.ip_forward=1')
+    # stations["car1"].cmd('sysctl net.ipv4.ip_forward=1')
+    # stations["car2"].cmd('echo 1 > /proc/sys/net/ipv4/ip_forward')
+    # stations["car3"].cmd('sysctl net.ipv4.ip_forward=1')
     f = open("ips", "w")
     for id in stations:
         f.write(stations[id].wintfs[0].ip+"\n")
