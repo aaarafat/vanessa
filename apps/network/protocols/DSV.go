@@ -7,14 +7,13 @@ import (
 	"net"
 	"strings"
 
-	"github.com/aaarafat/vanessa/apps/network/datalink"
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
 	. "github.com/aaarafat/vanessa/apps/network/tables"
 )
 type DSV struct {
 	etherType Ethertype
-	datalink	*datalink.DataLinkLayerChannel
-	neighborTable		*datalink.VNeighborTable
+	datalink	*DataLinkLayerChannel
+	neighborTable		*VNeighborTable
 	routingTable 		*VRoutingTable
 }	
 type DSVMessage struct {
