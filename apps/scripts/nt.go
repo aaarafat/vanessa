@@ -3,10 +3,14 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 	"net"
+	"os"
+	"os/exec"
 	"time"
+	
+
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
+	"golang.org/x/text/message"
 )
 
 func neighborUpdate(d *DataLinkLayerChannel, nt *VNeighborTable) {
@@ -35,9 +39,17 @@ func main() {
 			fmt.Println("Please put station name and stations length");
 			os.Exit(1);
 	}
-
+	
 	station := args[1]
 	fmt.Println(station)
+	intf := station+"-wlan1"
+	out, err := exec.Command("iw", "dev", intf, "link").Output()
+	if err != nil {
+		log.Panic(err)
+	}
+	cmdOut := string(out)
+	fmt.Println(cmdOut)
+	if 
 	ip := args[2]
 	neibourTable := NewNeighborTable()
 

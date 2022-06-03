@@ -96,6 +96,10 @@ stations["car3"] = net.addStation('car3', position="140, 100, 0",
 
 def topology(args):
     net.setPropagationModel(model="logDistance", exp=4)
+    ap1 = net.addAccessPoint('ap1', ssid='ssid_1', mode='g', channel='1',
+                            failMode="standalone", position='15,30,0', range=100)
+    ap2 = net.addAccessPoint('ap2', ssid='ssid_2', mode='g', channel='6',
+                            failMode="standalone", position='55,30,0', range=100)
 
     info("*** Configuring wifi nodes\n")
     net.configureWifiNodes()
@@ -121,21 +125,21 @@ def topology(args):
                 ssid='adhocNet', mode='g', channel=5,
                 ht_cap='HT40+', **kwargs)
 
-    #info("*** Plotting network\n")
-    #net.plotGraph(max_x=1000, max_y=1000)
+    info("*** Plotting network\n")
+    net.plotGraph(max_x=500, max_y=500)
     # net.setMobilityModel(time=0, model='RandomDirection', max_x=1000, max_y=1000,
     #                      min_v=10, max_v=100, seed=20)
 
+    # 802.11b standard defines 13 channels on the 2.4 GHz band at 2.4835 Ghz,
+    # allocating 22 MHz for each channel, with a spacing of 5 MHz among them.
+    # With this arrangement, only channels 1, 6 and 11 can operate without band
+    # overlap.
     info("*** Starting network\n")
     net.build()
 
-    # info("\n*** Addressing...\n")
-    # if 'proto' not in kwargs:
-    #     sta1.setIP6('2001::1/64', intf="sta1-wlan0")
-    #     sta2.setIP6('2001::2/64', intf="sta2-wlan0")
-    #     sta3.setIP6('2001::3/64', intf="sta3-wlan0")
-    # sta1.cmd("ip route add 10.0.0.3 via 10.0.0.2")
-    # sta3.cmd("ip route add 10.0.0.1 via 10.0.0.2")
+    ap1.start([])
+    ap2.start([])
+   
     # stations["car1"].cmd('sysctl net.ipv4.ip_forward=1')
     # stations["car2"].cmd('echo 1 > /proc/sys/net/ipv4/ip_forward')
     # stations["car3"].cmd('sysctl net.ipv4.ip_forward=1')
