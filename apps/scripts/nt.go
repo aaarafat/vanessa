@@ -3,9 +3,12 @@ package main
 import (
 	"fmt"
 	"log"
-	"os"
 	"net"
+	"os"
+	"os/exec"
 	"time"
+	"strings"
+
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
 )
 
@@ -35,9 +38,33 @@ func main() {
 			fmt.Println("Please put station name and stations length");
 			os.Exit(1);
 	}
-
+	
 	station := args[1]
 	fmt.Println(station)
+	intf := station+"-wlan1"
+	out, err := exec.Command("iw", "dev", intf, "link").Output()
+	if err != nil {
+		log.Panic(err)
+	}
+	cmdOut := string(out)
+	fmt.Println(cmdOut)
+	rsuMAC := "" 
+	if strings.Contains(cmdOut, "Not connected") {
+		println(station, "is not associated")
+	} else {
+		println(station, "is associated")
+		arr := strings.Fields(cmdOut) 
+		rsuMAC = arr[2] 
+		for ind, v := range arr {    
+			if strings.Contains(v, "ssid_"){
+				println(ind, v)
+				println("mac:", rsuMAC)
+				break
+			}
+  		}
+	}
+
+
 	ip := args[2]
 	neibourTable := NewNeighborTable()
 
