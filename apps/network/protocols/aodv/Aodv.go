@@ -28,11 +28,26 @@ func NewAodv(srcIP net.IP) *Aodv {
 
 	return &Aodv{
 		channel: d,
-		neighborTable: NewNeighborTable(),
+		neighborTable: NewNeighborTable(srcIP),
 		routingTable: NewVRoutingTable(),
 		srcIP: srcIP,
 	}
 }
+
+func (a *Aodv) sendToAllExcept(payload []byte, addr net.HardwareAddr) {
+	a.neighborTable.Print()
+	for item := range a.neighborTable.Iter() {
+		stringMac := item.MAC.String()
+		log.Println("Mac = ", stringMac)
+		neighborMac := item.MAC
+
+		if stringMac != addr.String() {
+			log.Println("Sending to: ", stringMac)
+			go a.channel.SendTo(payload, neighborMac)
+		}
+	}
+}
+
 
 
 func (a *Aodv) SendRREQ(destination net.IP) {
@@ -68,7 +83,8 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr) {
 		// increment hop count
 		rreq.HopCount = rreq.HopCount + 1
 		// forward the RREQ
-		go a.channel.Broadcast(rreq.Marshal())
+		rreqBytes := rreq.Marshal()
+		go a.sendToAllExcept(rreqBytes, from)
 	}
 }
 
@@ -98,6 +114,7 @@ func (a *Aodv) Listen() {
 
 func (a *Aodv) Start() {
 	log.Printf("Starting AODV for IP: %s.....\n", a.srcIP)
+	go a.neighborTable.Run()
 	go a.Listen()
 }
 

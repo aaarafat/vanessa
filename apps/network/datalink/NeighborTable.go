@@ -4,28 +4,42 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 
 	"github.com/cornelk/hashmap"
 )
 
 type VNeighborTable struct {
 	table *hashmap.HashMap
+	channel *DataLinkLayerChannel
+	SrcIP net.IP
 }
 
-
 type VNeighborEntry struct {
-	// MAC  net.HardwareAddr
+	MAC  net.HardwareAddr
 	IP net.IP
 }
 
-func NewNeighborTable() *VNeighborTable {
+const (
+	VNeighborTable_UPDATE_INTERVAL = 30
+)
+
+func NewNeighborTable(srcIP  net.IP) *VNeighborTable {
+	d, err := NewDataLinkLayerChannel(VNDEtherType)
+	if err != nil {
+		log.Fatalf("failed to create channel: %v", err)
+	}
+
 	return &VNeighborTable{
 		table: &hashmap.HashMap{},
+		channel: d,
+		SrcIP: srcIP,
 	}
 }
-func NewNeighborEntry(ip net.IP) *VNeighborEntry {
+func NewNeighborEntry(ip net.IP, mac net.HardwareAddr) *VNeighborEntry {
 	return &VNeighborEntry{
 		IP: ip,
+		MAC: mac,
 	}
 }
 
@@ -94,5 +108,35 @@ func (nt *VNeighborTable) Print() {
 		itemMAC := item.Key.(string)
 		itemIP := item.Value.(*VNeighborEntry)
 		fmt.Printf("key: %s, Value %s", itemMAC, string(itemIP.IP))
+	}
+}
+
+func (nt *VNeighborTable) Iter() <-chan *VNeighborEntry {
+	ch := make(chan *VNeighborEntry)
+	go func() {
+		for item := range nt.table.Iter() {
+			value := item.Value.(*VNeighborEntry)
+			ch <- value
+		}
+		close(ch)
+	}()
+	return ch
+}
+func (nt *VNeighborTable) Update() {
+	for {
+		payload, addr, err := nt.channel.Read()
+		entry := NewNeighborEntry(net.IP(payload), addr)
+		nt.Set(addr.String() ,entry)
+		if err != nil {
+			log.Fatalf("failed to read from channel: %v", err)
+		}
+	}
+}
+
+func (nt *VNeighborTable) Run() {
+	go nt.Update()
+	for {
+		nt.channel.Broadcast([]byte(nt.SrcIP))
+		time.Sleep(VNeighborTable_UPDATE_INTERVAL * time.Second)
 	}
 }

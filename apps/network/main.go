@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"strings"
+	"time"
 
 	. "github.com/aaarafat/vanessa/apps/network/protocols/aodv"
 )
@@ -64,7 +65,9 @@ func main() {
 
 	aodv := NewAodv(ip)
 
-	go aodv.Start()
+	aodv.Start()
+
+	time.Sleep(time.Second * 2) // wait for aodv to start
 
 	if ip.Equal(net.ParseIP("10.0.0.1")) {
 		go aodv.SendRREQ(net.ParseIP("10.0.0.3"))
