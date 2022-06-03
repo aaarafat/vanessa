@@ -48,19 +48,22 @@ func main() {
 	}
 	cmdOut := string(out)
 	fmt.Println(cmdOut)
+	rsuMAC := "" 
 	if strings.Contains(cmdOut, "Not connected") {
 		println(station, "is not associated")
 	} else {
 		println(station, "is associated")
-		arr := strings.Fields(cmdOut)  
+		arr := strings.Fields(cmdOut) 
+		rsuMAC = arr[2] 
 		for ind, v := range arr {    
 			if strings.Contains(v, "ssid_"){
 				println(ind, v)
-
+				println("mac:", rsuMAC)
 				break
 			}
-  }
+  		}
 	}
+
 
 	ip := args[2]
 	neibourTable := NewNeighborTable()
