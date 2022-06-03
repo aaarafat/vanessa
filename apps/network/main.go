@@ -1,40 +1,22 @@
 package main
 
 import (
-	"encoding/json"
-	"log"
+	"fmt"
 	"net"
 
-	. "github.com/aaarafat/vanessa/apps/network/protocols"
+	. "github.com/aaarafat/vanessa/apps/network/protocols/aodv"
 )
 
 func main() {
-	dsv := NewDSV()
 
-	log.Println("DSV: ", dsv)
+	rreq := NewRREQMessage(net.IPv4(1,2,3,4), net.IPv4(5,6,7,8))
+	bytes := rreq.Marshal()
 
-	interfaces, err := net.Interfaces()
-	iface := interfaces[1]
+	fmt.Println(rreq.String())
 
-	ip, _, err := GetMyIPs(&iface)
-
-	log.Println(ip)
-
+	rreq2, err := UnmarshalRREQ(bytes)
 	if err != nil {
-		log.Fatalf("failed to open interface: %v", err)
-		return
+		panic(err)
 	}
-
-	log.Println("Starting DSV on: ", iface.Name)
-	bs, _ := json.Marshal(dsv)
-	log.Println()
-	log.Printf("Received \"%s\"", bs)
-
-	
-	if ip.String() != "10.0.0.3" {
-		go dsv.Send(ip, net.ParseIP("10.0.0.3"))
-	}
-	
-	dsv.Read()
-
+	fmt.Println(rreq2.String())
 }

@@ -20,6 +20,7 @@ require (
 )
 
 require (
+	github.com/encodingx/binary v1.2.2
 	github.com/fatih/structs v1.1.0
 	github.com/golang/protobuf v1.5.2
 	github.com/josharian/native v1.0.0 // indirect
