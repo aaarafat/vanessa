@@ -46,9 +46,10 @@ func (r* VRoutingTable) Update(nextHopMac net.HardwareAddr, destination net.IP, 
 }
 
 func (r* VRoutingTable) Get(destination net.IP) (*VRoutingTableEntry, bool) {
-	item, exists := r.table.Get(destination)
+	item, exists := r.table.Get(destination.String())
 	if exists {
-		return item.(*VRoutingTableEntry), true
+		entry := item.(VRoutingTableEntry)
+		return &entry, true
 	}
 	return nil, false
 }

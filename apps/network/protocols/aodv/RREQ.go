@@ -27,10 +27,6 @@ type RREQMessage struct {
 	OriginatorSequenceNumber uint32 
 }
 
-const (
-	RREQMessageLen = 192
-)
-
 
 func NewRREQMessage(SrcIP, DestIP net.IP) *RREQMessage {
 	return &RREQMessage{

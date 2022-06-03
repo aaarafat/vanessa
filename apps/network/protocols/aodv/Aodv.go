@@ -17,7 +17,7 @@ type Aodv struct {
 }
 
 const (
-	HopThreshold = 3
+	HopThreshold = 20
 )
 
 func NewAodv(srcIP net.IP) *Aodv {
@@ -48,7 +48,17 @@ func (a *Aodv) sendToAllExcept(payload []byte, addr net.HardwareAddr) {
 	}
 }
 
-
+func (a *Aodv) Send(payload []byte, dest net.IP) {
+	// check if the destination in the routing table
+	item, ok := a.routingTable.Get(dest);
+	if ok {
+		// send the packet
+		go a.channel.SendTo(payload, item.NextHop)
+	} else {
+		// send a RREQ or RRER
+		go a.SendRREQ(dest)
+	}
+}
 
 func (a *Aodv) SendRREQ(destination net.IP) {
 	rreq := NewRREQMessage(a.srcIP, destination)
@@ -56,6 +66,15 @@ func (a *Aodv) SendRREQ(destination net.IP) {
 
 	// broadcast the RREQ
 	a.channel.Broadcast(rreq.Marshal())
+}
+
+func (a *Aodv) SendRREP(destination net.IP) {
+	rrep := NewRREPMessage(destination, a.srcIP)
+	log.Printf("Sending: %s\n", rrep.String())
+
+	// broadcast the RREP
+	a.Send(rrep.Marshal(), destination)
+	
 }
 
 func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr) {
@@ -77,14 +96,41 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr) {
 	// check if the RREQ is for me
 	if rreq.DestinationIP.Equal(a.srcIP) {
 		// send a RREP
-
-		log.Println("Sending RREP to: ", from)
+		go a.SendRREP(rreq.OriginatorIP)
 	} else {
 		// increment hop count
 		rreq.HopCount = rreq.HopCount + 1
 		// forward the RREQ
 		rreqBytes := rreq.Marshal()
 		go a.sendToAllExcept(rreqBytes, from)
+	}
+}
+
+func (a *Aodv) handleRREP(payload []byte, from net.HardwareAddr) {
+	rrep, err := UnmarshalRREP(payload)
+	if err != nil {
+		log.Printf("Failed to unmarshal RREP: %v\n", err)
+		return
+	}
+
+	if rrep.HopCount > HopThreshold {
+		// drop the packet
+		return
+	}
+
+	log.Printf("Received: %s\n", rrep.String())
+	// update the routing table
+	go a.routingTable.Update(from, rrep.DestinationIP, rrep.HopCount)
+
+	// check if the RREP is for me
+	if rrep.OriginatorIP.Equal(a.srcIP) {
+		// Arrived Successfully
+		log.Printf("Path Descovery is successful for ip=%s !!!!", rrep.DestinationIP)
+	} else {
+		// increment hop count
+		rrep.HopCount = rrep.HopCount + 1
+		// forward the RREP
+		go a.Send(rrep.Marshal(), rrep.OriginatorIP)
 	}
 }
 
@@ -106,6 +152,8 @@ func (a *Aodv) Listen() {
 		switch msgType {
 		case RREQType:
 			go a.handleRREQ(payload, addr)
+		case RREPType:
+			go a.handleRREP(payload, addr)
 		default:
 			log.Println("Unknown message type: ", msgType)
 		}
