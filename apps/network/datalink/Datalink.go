@@ -20,6 +20,7 @@ const (
 	// VEtherType is the EtherType used by the Vanessa test.
 	VEtherType = 0x7031
 	VNDEtherType = 0x7032
+	VDSVEtherType = 0x7033 // for distance vector
 )
 
 func NewDataLinkLayerChannel(ether Ethertype) (*DataLinkLayerChannel, error) {
