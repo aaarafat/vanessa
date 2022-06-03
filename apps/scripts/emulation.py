@@ -23,6 +23,9 @@ import json
 # get_pid_filename
 # setAdhocMode
 # setConnected
+# py car1.wintfs[1].apsInRange
+# py car3.wintfs[1].ssid
+# py car1.wintfs[1].associatedTo
 
 
 HOST = "127.0.0.1"
@@ -33,7 +36,7 @@ APP = Flask("mininet")
 sio = SocketIO(APP, cors_allowed_origins="*")
 "Create a network."
 net = Mininet_wifi(link=wmediumd, wmediumd_mode=interference,
-                   autoAssociation=True)
+                   autoAssociation=True, ac_method='ssf') #ssf or llf
 stations = {}
 kwargs = dict(wlans=2)
 
@@ -168,3 +171,4 @@ if __name__ == '__main__':
     setLogLevel('info')
     threading.Thread(target=run_socket, daemon=True).start()
     topology(sys.argv)
+    
