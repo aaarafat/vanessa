@@ -13,8 +13,10 @@ type Aodv struct {
 	forwarder *Forwarder
 	routingTable *VRoutingTable
 	seqTable *VFloodingSeqTable
+	dataSeqTable *VFloodingSeqTable
 	srcIP net.IP
 	seqNum uint32
+	dataSeqNum uint32
 	rreqID uint32
 }
 
@@ -29,8 +31,10 @@ func NewAodv(srcIP net.IP) *Aodv {
 		forwarder: NewForwarder(srcIP, d),
 		routingTable: NewVRoutingTable(),
 		seqTable: NewVFloodingSeqTable(),
+		dataSeqTable: NewVFloodingSeqTable(),
 		srcIP: srcIP,
 		seqNum: 0,
+		dataSeqNum: 0,
 		rreqID: 0,
 	}
 }
@@ -51,6 +55,17 @@ func (a *Aodv) Send(payload []byte, dest net.IP) {
 		// send a RREQ or RRER
 		a.SendRREQ(dest)
 	}
+}
+
+func (a *Aodv) SendData(payload []byte) {
+	// update the sequence number
+	a.dataSeqNum = a.dataSeqNum + 1
+	// create the data packet
+	data := NewDataMessage(a.srcIP, a.dataSeqNum, payload)
+	// broadcast the data packet
+	log.Printf("Sending: %s\n", data.String())
+	
+	a.forwarder.ForwardToAll(data.Marshal())
 }
 
 func (a *Aodv) SendRREQ(destination net.IP) {
@@ -95,6 +110,8 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr) {
 	log.Printf("Received: %s\n", rreq.String())
 	// update the routing table
 	go a.routingTable.Update(rreq.OriginatorIP, from, rreq.HopCount, ActiveRouteTimeMS, rreq.OriginatorSequenceNumber)
+	// update seq table
+	go a.seqTable.Set(rreq.OriginatorIP, rreq.RREQID)
 
 	// check if the RREQ is for me
 	if rreq.DestinationIP.Equal(a.srcIP) {
@@ -142,6 +159,27 @@ func (a *Aodv) handleRREP(payload []byte, from net.HardwareAddr) {
 	}
 }
 
+func (a *Aodv) handleData(payload []byte, from net.HardwareAddr) {
+	data, err := UnmarshalData(payload)
+	if err != nil {
+		log.Printf("Failed to unmarshal data: %v\n", err)
+		return
+	}
+
+	if data.OriginatorIP.Equal(a.srcIP) || a.dataSeqTable.Exists(data.OriginatorIP, data.SeqNumber) {
+		// drop the packet
+		log.Printf("Dropping %s\n", data.String())
+		return
+	} 
+
+	log.Printf("Received: %s\n", data.String())
+	// update seq table
+	go a.dataSeqTable.Set(data.OriginatorIP, data.SeqNumber)
+
+	// forward the data
+	a.forwarder.ForwardToAllExcept(data.Marshal(), from)
+}
+
 func (a *Aodv) handleMessage(payload []byte, from net.HardwareAddr) {
 	msgType := uint8(payload[0])
 	// handle the message
@@ -150,6 +188,8 @@ func (a *Aodv) handleMessage(payload []byte, from net.HardwareAddr) {
 		a.handleRREQ(payload, from)
 	case RREPType:
 		a.handleRREP(payload, from)
+	case DataType:
+		a.handleData(payload, from)
 	default:
 		log.Println("Unknown message type: ", msgType)
 	}
