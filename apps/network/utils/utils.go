@@ -3,6 +3,7 @@ package utils
 import (
 	"fmt"
 	"sort"
+	"time"
 )
 
 type TypeEnum string;
@@ -17,6 +18,11 @@ const (
 	Frame 					= "frame"
 	
 )
+
+// Get the current time in milliseconds
+func TimeInMs() int64 {
+	return time.Now().UnixNano() / int64(time.Millisecond)
+}
 
 func ConvertBytesToString(bytes []byte) string {
 	return string(bytes)

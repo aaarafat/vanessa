@@ -3,6 +3,7 @@ package aodv
 import (
 	"log"
 	"net"
+	"time"
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
 	. "github.com/aaarafat/vanessa/apps/network/tables"
@@ -13,11 +14,9 @@ type Aodv struct {
 	neighborTable *VNeighborTable
 	routingTable *VRoutingTable
 	srcIP net.IP
+	seqNum uint32
+	rreqID uint32
 }
-
-const (
-	HopThreshold = 20
-)
 
 func NewAodv(srcIP net.IP) *Aodv {
 	d, err := NewDataLinkLayerChannel(VAODVEtherType)
@@ -30,18 +29,33 @@ func NewAodv(srcIP net.IP) *Aodv {
 		neighborTable: NewNeighborTable(srcIP),
 		routingTable: NewVRoutingTable(),
 		srcIP: srcIP,
+		seqNum: 0,
+		rreqID: 0,
 	}
 }
 
-func (a *Aodv) sendToAllExcept(payload []byte, addr net.HardwareAddr) {
-	a.neighborTable.Print()
-	for item := range a.neighborTable.Iter() {
-		stringMac := item.MAC.String()
-		log.Println("Mac = ", stringMac)
-		neighborMac := item.MAC
+func (a *Aodv) updateSeqNum(newSeqNum uint32) {
+	if newSeqNum > a.seqNum {
+		a.seqNum = newSeqNum
+	}
+}
 
-		if stringMac != addr.String() {
-			log.Println("Sending to: ", stringMac)
+func (a *Aodv) updateRoutingTable(destIP net.IP, nextHop net.HardwareAddr, hopCount uint8, lifeTime, seqNum uint32) {	
+	entry := &VRoutingTableEntry{
+		Destination: destIP,
+		NextHop: nextHop,
+		NoOfHops: hopCount,
+		SeqNum: a.seqNum,
+		LifeTime: time.Now().Add(time.Duration(lifeTime) * time.Millisecond),
+	}
+
+	a.routingTable.Update(entry)
+}
+
+func (a *Aodv) sendToAllExcept(payload []byte, addr net.HardwareAddr) {
+	for item := range a.neighborTable.Iter() {
+		neighborMac := item.MAC
+		if neighborMac.String() != addr.String() {
 			a.channel.SendTo(payload, neighborMac)
 		}
 	}
@@ -65,17 +79,27 @@ func (a *Aodv) Broadcast(payload []byte) {
 
 func (a *Aodv) SendRREQ(destination net.IP) {
 	rreq := NewRREQMessage(a.srcIP, destination)
-	log.Printf("Sending: %s\n", rreq.String())
+	a.updateSeqNum(a.seqNum + 1)
+	a.rreqID = a.rreqID + 1
+	rreq.RREQID = a.rreqID
+	rreq.OriginatorSequenceNumber = a.seqNum
+	item, ok := a.routingTable.Get(destination)
+	if ok {
+		rreq.DestinationSeqNum = item.SeqNum
+		rreq.ClearFlag(RREQFlagU)
+	}	
 
 	// broadcast the RREQ
+	log.Printf("Sending: %s\n", rreq.String())
 	a.Broadcast(rreq.Marshal())
 }
 
 func (a *Aodv) SendRREP(destination net.IP) {
 	rrep := NewRREPMessage(destination, a.srcIP)
-	log.Printf("Sending: %s\n", rrep.String())
-
+	rrep.DestinationSeqNum = a.seqNum
+	
 	// broadcast the RREP
+	log.Printf("Sending: %s\n", rrep.String())
 	a.Send(rrep.Marshal(), destination)
 }
 
@@ -86,17 +110,22 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr) {
 		return
 	}
 	
-	if rreq.HopCount > HopThreshold || rreq.OriginatorIP.Equal(a.srcIP) {
+	if rreq.HopCount > HopCountLimit || rreq.OriginatorIP.Equal(a.srcIP) {
 		// drop the packet
+		log.Printf("Dropping %s\n", rreq.String())
 		return
 	}
 
 	log.Printf("Received: %s\n", rreq.String())
 	// update the routing table
-	go a.routingTable.Update(from, rreq.OriginatorIP, rreq.HopCount)
+	go a.updateRoutingTable(rreq.OriginatorIP, from, rreq.HopCount, ActiveRouteTimeMS, rreq.OriginatorSequenceNumber)
 
 	// check if the RREQ is for me
 	if rreq.DestinationIP.Equal(a.srcIP) {
+		// update the sequence number if it is not unknown
+		if !rreq.HasFlag(RREQFlagU) {
+			a.updateSeqNum(rreq.DestinationSeqNum)
+		}
 		// send a RREP
 		a.SendRREP(rreq.OriginatorIP)
 	} else {
@@ -114,14 +143,16 @@ func (a *Aodv) handleRREP(payload []byte, from net.HardwareAddr) {
 		return
 	}
 
-	if rrep.HopCount > HopThreshold {
+	// check RREP hop count and life time
+	if rrep.HopCount > HopCountLimit {
 		// drop the packet
+		log.Printf("Dropping %s\n", rrep.String())
 		return
 	}
 
 	log.Printf("Received: %s\n", rrep.String())
 	// update the routing table
-	go a.routingTable.Update(from, rrep.DestinationIP, rrep.HopCount)
+	go a.updateRoutingTable(rrep.DestinationIP, from, rrep.HopCount, rrep.LifeTime, rrep.DestinationSeqNum)
 
 	// check if the RREP is for me
 	if rrep.OriginatorIP.Equal(a.srcIP) {
@@ -135,6 +166,19 @@ func (a *Aodv) handleRREP(payload []byte, from net.HardwareAddr) {
 	}
 }
 
+func (a *Aodv) handleMessage(payload []byte, from net.HardwareAddr) {
+	msgType := uint8(payload[0])
+	// handle the message
+	switch msgType {
+	case RREQType:
+		a.handleRREQ(payload, from)
+	case RREPType:
+		a.handleRREP(payload, from)
+	default:
+		log.Println("Unknown message type: ", msgType)
+	}
+}
+
 func (a *Aodv) Listen() {
 	log.Println("Listening for AODV packets...")
 	for {
@@ -142,19 +186,7 @@ func (a *Aodv) Listen() {
 		if err != nil {
 			log.Fatalf("failed to read from channel: %v", err)
 		}
-
-		// get the type
-		msgType := uint8(payload[0])
-
-		// handle the message
-		switch msgType {
-		case RREQType:
-			a.handleRREQ(payload, addr)
-		case RREPType:
-			a.handleRREP(payload, addr)
-		default:
-			log.Println("Unknown message type: ", msgType)
-		}
+		a.handleMessage(payload, addr)
 	}
 }
 

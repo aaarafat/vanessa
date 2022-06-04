@@ -4,7 +4,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
-	"time"
 )
 
 // https://datatracker.ietf.org/doc/html/rfc3561#section-5.2
@@ -33,7 +32,7 @@ func NewRREPMessage(SrcIP, DestIP net.IP) *RREPMessage {
 		DestinationIP: DestIP,
 		OriginatorIP: SrcIP,
 		DestinationSeqNum: 0,
-		LifeTime: RREPDefaultLifeTimeMS + uint32(time.Now().UnixNano() / int64(time.Millisecond)),
+		LifeTime: RREPDefaultLifeTimeMS,
 	}
 }
 

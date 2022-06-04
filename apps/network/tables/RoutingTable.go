@@ -1,8 +1,9 @@
 package tables
 
 import (
-	"fmt"
+	"log"
 	"net"
+	"time"
 
 	"github.com/cornelk/hashmap"
 )
@@ -15,6 +16,8 @@ type VRoutingTableEntry struct {
 	Destination net.IP
 	NextHop net.HardwareAddr
 	NoOfHops uint8
+	SeqNum uint32
+	LifeTime time.Time
 }
 
 func NewVRoutingTable() *VRoutingTable {
@@ -23,24 +26,28 @@ func NewVRoutingTable() *VRoutingTable {
 	}
 }
 
-func (r* VRoutingTable) Update(nextHopMac net.HardwareAddr, destination net.IP, hopCount uint8) {
-	// check if entry exists
-	entry, exists := r.table.Get(destination.String())
+func (r* VRoutingTable) isNewEntry(newEntry *VRoutingTableEntry) bool {
+	// https://datatracker.ietf.org/doc/html/rfc3561#section-6.2
+	entry, exists := r.Get(newEntry.Destination);
 	if exists {
-		// update entry if hop count is less than current entry
-		if hopCount < entry.(VRoutingTableEntry).NoOfHops {
-			r.table.Set(destination.String(), VRoutingTableEntry{
-				Destination: destination,
-				NextHop: nextHopMac,
-				NoOfHops: hopCount,
-			})
+		if entry.LifeTime.Before(time.Now()) {
+			return true
 		}
-	} else {
-		r.table.Set(destination.String(), VRoutingTableEntry{
-			Destination: destination,
-			NextHop: nextHopMac,
-			NoOfHops: hopCount,
-		})
+		if entry.SeqNum < newEntry.SeqNum {
+			return true
+		}
+		if entry.SeqNum == newEntry.SeqNum && entry.NoOfHops > newEntry.NoOfHops {
+			return true
+		}
+		return false
+	}
+
+	return true
+}
+
+func (r* VRoutingTable) Update(newEntry *VRoutingTableEntry) {
+	if r.isNewEntry(newEntry) {
+		r.set(newEntry)
 	}
 	r.Print()
 }
@@ -54,14 +61,22 @@ func (r* VRoutingTable) Get(destination net.IP) (*VRoutingTableEntry, bool) {
 	return nil, false
 }
 
+func (r* VRoutingTable) set(entry *VRoutingTableEntry) {
+	r.table.Set(entry.Destination.String(), *entry)
+}
+
 func (r* VRoutingTable) Len() int {
 	return r.table.Len()
 }
 
 func (r *VRoutingTable) Print() {
-	
+	log.Println()
+	log.Println("Routing Table:")
 	for item := range r.table.Iter() {
 		itemEntry := item.Value.(VRoutingTableEntry)
-		fmt.Printf("ip: %s, next hop %s,  no_hops  %d\n",itemEntry.Destination.String(), itemEntry.NextHop.String(), itemEntry.NoOfHops)
+		log.Printf("ip: %s, next hop %s, no hops %d, seq num %d, life time %s\n",
+		itemEntry.Destination.String(), itemEntry.NextHop.String(), 
+		itemEntry.NoOfHops, itemEntry.SeqNum, itemEntry.LifeTime.String())
 	}
+	log.Println()
 }
