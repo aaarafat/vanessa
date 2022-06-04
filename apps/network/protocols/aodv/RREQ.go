@@ -11,7 +11,7 @@ import (
 type RREQMessage struct {
 	// Type
 	Type uint8  
-	// Flags
+	// Flags J|R|G|D|U|   Reserved
 	Flags uint16 
 	// The number of hops that the RREQ has already made.
 	HopCount uint8 
@@ -29,7 +29,7 @@ type RREQMessage struct {
 
 
 func NewRREQMessage(SrcIP, DestIP net.IP) *RREQMessage {
-	return &RREQMessage{
+	rreq := &RREQMessage{
 		Type: RREQType,
 		Flags: 0,
 		HopCount: 0,
@@ -39,6 +39,11 @@ func NewRREQMessage(SrcIP, DestIP net.IP) *RREQMessage {
 		DestinationSeqNum: 0,
 		OriginatorSequenceNumber: 0,
 	}
+
+	// Destination sequence number is not defined
+	rreq.SetFlag(RREQFlagU)
+
+	return rreq
 }
 
 func (rreq* RREQMessage) Marshal() []byte {
@@ -72,6 +77,25 @@ func UnmarshalRREQ(data []byte) (*RREQMessage, error) {
 	rreq.OriginatorSequenceNumber = binary.LittleEndian.Uint32(data[20:24])
 
 	return rreq, nil
+}
+
+func (rreq* RREQMessage) SetFlag(flag uint16) *RREQMessage {
+	rreq.Flags |= flag
+	return rreq
+}
+
+func (rreq* RREQMessage) ClearFlag(flag uint16) *RREQMessage {
+	rreq.Flags &= ^flag
+	return rreq
+}
+
+func (rreq* RREQMessage) ToggleFlag(flag uint16) *RREQMessage {
+	rreq.Flags ^= flag
+	return rreq
+}
+
+func (rreq* RREQMessage) HasFlag(flag uint16) bool {
+	return rreq.Flags & flag != 0
 }
 
 
