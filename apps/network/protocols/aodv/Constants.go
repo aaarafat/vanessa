@@ -23,7 +23,7 @@ const (
 	RREQMessageLen = 192
 	RREPMessageLen = 160
 	RERRMessageLen = 96
-	DataMessageLen = 96
+	DataMessageLen = 128
 )
 
 // Default values
@@ -35,4 +35,9 @@ const (
 // Limits 
 const (
 	HopCountLimit = 20
+)
+
+
+const (
+	BroadcastIP = "255.255.255.255"
 )

@@ -67,10 +67,12 @@ func main() {
 	aodv.Start()
 
 	// wait for ever
-	var ipString string
+	var ipString, msg string
 	for {
-		fmt.Scanf("%s", &ipString)
+		fmt.Scanf("%s %s", &ipString, &msg)
+
 		ip := net.ParseIP(ipString)
-		aodv.SendRREQ(ip)
+
+		aodv.SendData([]byte(msg), ip)
 	}
 }

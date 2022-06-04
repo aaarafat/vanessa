@@ -12,6 +12,7 @@ type DataMessage struct {
 	HopCount uint8
 	SeqNumber uint32
 	OriginatorIP net.IP
+	DestenationIP net.IP
 	Data []byte
 }
 
@@ -22,6 +23,7 @@ func NewDataMessage(SrcIP net.IP, SeqNum uint32, data []byte) *DataMessage {
 		HopCount: 0,
 		SeqNumber: SeqNum,
 		OriginatorIP: SrcIP,
+		DestenationIP: net.ParseIP(BroadcastIP),
 		Data: data,
 	}
 }
@@ -34,6 +36,7 @@ func (data *DataMessage) Marshal() []byte {
 	bytes[3] = byte(data.HopCount)
 	binary.LittleEndian.PutUint32(bytes[4:], data.SeqNumber)
 	copy(bytes[8:12], data.OriginatorIP.To4())
+	copy(bytes[12:16], data.DestenationIP.To4())
 
 	bytes = append(bytes, data.Data...)
 
@@ -51,13 +54,14 @@ func UnmarshalData(data []byte) (*DataMessage, error) {
 	dataMsg.HopCount = data[3]
 	dataMsg.SeqNumber = binary.LittleEndian.Uint32(data[4:8])
 	dataMsg.OriginatorIP = net.IPv4(data[8], data[9], data[10], data[11])
+	dataMsg.DestenationIP = net.IPv4(data[12], data[13], data[14], data[15])
 
-	dataMsg.Data = data[12:]
+	dataMsg.Data = data[16:]
 
 	return dataMsg, nil
 }
 
 func (data *DataMessage) String() string {
-	return fmt.Sprintf("DataMessage{Type: %d, Flags: %d, HopCount: %d, SeqNumber: %d, OriginatorIP: %s, Data: %s}",
-		data.Type, data.Flags, data.HopCount, data.SeqNumber, data.OriginatorIP, string(data.Data))
+	return fmt.Sprintf("DataMessage{Type: %d, Flags: %d, HopCount: %d, SeqNumber: %d, OriginatorIP: %s, DestintionIO: %s, Data: %s}",
+		data.Type, data.Flags, data.HopCount, data.SeqNumber, data.OriginatorIP, data.DestenationIP, string(data.Data))
 }

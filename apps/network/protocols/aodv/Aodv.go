@@ -6,6 +6,7 @@ import (
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
 	. "github.com/aaarafat/vanessa/apps/network/tables"
+	"github.com/cornelk/hashmap"
 )
 
 type Aodv struct {
@@ -14,6 +15,7 @@ type Aodv struct {
 	routingTable *VRoutingTable
 	seqTable *VFloodingSeqTable
 	dataSeqTable *VFloodingSeqTable
+	dataBuffer *hashmap.HashMap
 	srcIP net.IP
 	seqNum uint32
 	dataSeqNum uint32
@@ -32,6 +34,7 @@ func NewAodv(srcIP net.IP) *Aodv {
 		routingTable: NewVRoutingTable(),
 		seqTable: NewVFloodingSeqTable(),
 		dataSeqTable: NewVFloodingSeqTable(),
+		dataBuffer: &hashmap.HashMap{},
 		srcIP: srcIP,
 		seqNum: 0,
 		dataSeqNum: 0,
@@ -57,15 +60,33 @@ func (a *Aodv) Send(payload []byte, dest net.IP) {
 	}
 }
 
-func (a *Aodv) SendData(payload []byte) {
+func (a *Aodv) forwardData(data *DataMessage) {
+	// check if the destination in the routing table
+	item, ok := a.routingTable.Get(data.DestenationIP);
+	if ok {
+		// forward the packet
+		a.forwarder.ForwardTo(data.Marshal(), item.NextHop)
+	} else {
+		// send a RREQ or RRER
+		a.dataBuffer.Set(data.DestenationIP.String(), *data)
+		a.SendRREQ(data.DestenationIP)
+	}
+}
+
+func (a *Aodv) SendData(payload []byte, dest net.IP) {
 	// update the sequence number
 	a.dataSeqNum = a.dataSeqNum + 1
 	// create the data packet
 	data := NewDataMessage(a.srcIP, a.dataSeqNum, payload)
+	data.DestenationIP = dest
 	// broadcast the data packet
 	log.Printf("Sending: %s\n", data.String())
 	
-	a.forwarder.ForwardToAll(data.Marshal())
+	if data.DestenationIP.Equal(net.ParseIP(BroadcastIP)) {
+		a.forwarder.ForwardToAll(data.Marshal())
+	} else {
+		a.forwardData(data)
+	}
 }
 
 func (a *Aodv) SendRREQ(destination net.IP) {
@@ -151,6 +172,15 @@ func (a *Aodv) handleRREP(payload []byte, from net.HardwareAddr) {
 	if rrep.OriginatorIP.Equal(a.srcIP) {
 		// Arrived Successfully
 		log.Printf("Path Descovery is successful for ip=%s !!!!", rrep.DestinationIP)
+		// handle data in the buffer
+		data, ok := a.dataBuffer.Get(rrep.DestinationIP.String())
+		if ok {
+			// send the data
+			msg := data.(DataMessage)
+			a.SendData(msg.Marshal(), msg.DestenationIP)
+			// remove the data from the buffer
+			a.dataBuffer.Del(rrep.DestinationIP.String())
+		}
 	} else {
 		// increment hop count
 		rrep.HopCount = rrep.HopCount + 1
@@ -172,12 +202,18 @@ func (a *Aodv) handleData(payload []byte, from net.HardwareAddr) {
 		return
 	} 
 
-	log.Printf("Received: %s\n", data.String())
+	if data.DestenationIP.Equal(a.srcIP) || data.DestenationIP.Equal(net.ParseIP(BroadcastIP)) {
+		log.Printf("Received: %s\n", data.String())
+	}
 	// update seq table
 	go a.dataSeqTable.Set(data.OriginatorIP, data.SeqNumber)
 
 	// forward the data
-	a.forwarder.ForwardToAllExcept(data.Marshal(), from)
+	if data.DestenationIP.Equal(net.ParseIP(BroadcastIP)) {
+		a.forwarder.ForwardToAllExcept(data.Marshal(), from)
+	} else {
+		a.forwardData(data)
+	}
 }
 
 func (a *Aodv) handleMessage(payload []byte, from net.HardwareAddr) {
