@@ -40,6 +40,12 @@ stations["car2"] = net.addStation('car2', position="100, 100, 0",
                                   **kwargs)
 stations["car3"] = net.addStation('car3', position="140, 100, 0",
                                   **kwargs)
+stations["car4"] = net.addStation('car4', position="100, 150, 0",
+                                  **kwargs)
+stations["car5"] = net.addStation('car5', position="100, 200, 0",
+                                  **kwargs)
+stations["car6"] = net.addStation('car6', position="100, 250, 0",
+                                  **kwargs)
 
 
 def topology(args):
@@ -68,6 +74,15 @@ def topology(args):
     net.addLink(stations["car3"], cls=adhoc, intf='car3-wlan0',
                 ssid='adhocNet', mode='g', channel=5,
                 ht_cap='HT40+', **kwargs)
+    net.addLink(stations["car4"], cls=adhoc, intf='car4-wlan0',
+                ssid='adhocNet', mode='g', channel=5,
+                ht_cap='HT40+', **kwargs)
+    net.addLink(stations["car5"], cls=adhoc, intf='car5-wlan0',
+                ssid='adhocNet', mode='g', channel=5,
+                ht_cap='HT40+', **kwargs)
+    net.addLink(stations["car6"], cls=adhoc, intf='car6-wlan0',
+                ssid='adhocNet', mode='g', channel=5,
+                ht_cap='HT40+', **kwargs)
 
     info("*** Plotting network\n")
     net.plotGraph(max_x=400, max_y=400)
@@ -87,6 +102,9 @@ def topology(args):
     stations["car1"].cmd('sysctl net.ipv4.ip_forward=1')
     stations["car2"].cmd('echo 1 > /proc/sys/net/ipv4/ip_forward')
     stations["car3"].cmd('sysctl net.ipv4.ip_forward=1')
+    stations["car4"].cmd('sysctl net.ipv4.ip_forward=1')
+    stations["car5"].cmd('sysctl net.ipv4.ip_forward=1')
+    stations["car6"].cmd('sysctl net.ipv4.ip_forward=1')
     # f = open("ips", "w")
     # for id in stations:
     #     f.write(stations[id].wintfs[0].ip+"\n")

@@ -46,10 +46,10 @@ func (a *Aodv) Send(payload []byte, dest net.IP) {
 	item, ok := a.routingTable.Get(dest);
 	if ok {
 		// forward the packet
-		go a.forwarder.ForwardTo(payload, item.NextHop)
+		a.forwarder.ForwardTo(payload, item.NextHop)
 	} else {
 		// send a RREQ or RRER
-		go a.SendRREQ(dest)
+		a.SendRREQ(dest)
 	}
 }
 
@@ -67,7 +67,7 @@ func (a *Aodv) SendRREQ(destination net.IP) {
 
 	// broadcast the RREQ
 	log.Printf("Sending: %s\n", rreq.String())
-	go a.forwarder.ForwardToAll(rreq.Marshal())
+	a.forwarder.ForwardToAll(rreq.Marshal())
 }
 
 func (a *Aodv) SendRREP(destination net.IP) {
@@ -76,7 +76,7 @@ func (a *Aodv) SendRREP(destination net.IP) {
 	
 	// broadcast the RREP
 	log.Printf("Sending: %s\n", rrep.String())
-	go a.Send(rrep.Marshal(), destination)
+	a.Send(rrep.Marshal(), destination)
 }
 
 func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr) {
@@ -103,12 +103,12 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr) {
 			a.updateSeqNum(rreq.DestinationSeqNum)
 		}
 		// send a RREP
-		go a.SendRREP(rreq.OriginatorIP)
+		a.SendRREP(rreq.OriginatorIP)
 	} else {
 		// increment hop count
 		rreq.HopCount = rreq.HopCount + 1
 		// forward the RREQ
-		go a.forwarder.ForwardToAllExcept(rreq.Marshal(), from)
+		a.forwarder.ForwardToAllExcept(rreq.Marshal(), from)
 	}
 }
 
@@ -138,7 +138,7 @@ func (a *Aodv) handleRREP(payload []byte, from net.HardwareAddr) {
 		// increment hop count
 		rrep.HopCount = rrep.HopCount + 1
 		// forward the RREP
-		go a.Send(rrep.Marshal(), rrep.OriginatorIP)
+		a.Send(rrep.Marshal(), rrep.OriginatorIP)
 	}
 }
 
@@ -147,9 +147,9 @@ func (a *Aodv) handleMessage(payload []byte, from net.HardwareAddr) {
 	// handle the message
 	switch msgType {
 	case RREQType:
-		go a.handleRREQ(payload, from)
+		a.handleRREQ(payload, from)
 	case RREPType:
-		go a.handleRREP(payload, from)
+		a.handleRREP(payload, from)
 	default:
 		log.Println("Unknown message type: ", msgType)
 	}
