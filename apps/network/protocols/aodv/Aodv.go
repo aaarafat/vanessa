@@ -10,7 +10,7 @@ import (
 
 type Aodv struct {
 	channel *DataLinkLayerChannel
-	neighborTable *VNeighborTable
+	forwarder *Forwarder
 	routingTable *VRoutingTable
 	seqTable *VFloodingSeqTable
 	srcIP net.IP
@@ -26,7 +26,7 @@ func NewAodv(srcIP net.IP) *Aodv {
 
 	return &Aodv{
 		channel: d,
-		neighborTable: NewNeighborTable(srcIP),
+		forwarder: NewForwarder(srcIP, d),
 		routingTable: NewVRoutingTable(),
 		seqTable: NewVFloodingSeqTable(),
 		srcIP: srcIP,
@@ -41,29 +41,16 @@ func (a *Aodv) updateSeqNum(newSeqNum uint32) {
 	}
 }
 
-func (a *Aodv) sendToAllExcept(payload []byte, addr net.HardwareAddr) {
-	for item := range a.neighborTable.Iter() {
-		neighborMac := item.MAC
-		if neighborMac.String() != addr.String() {
-			a.channel.SendTo(payload, neighborMac)
-		}
-	}
-}
-
 func (a *Aodv) Send(payload []byte, dest net.IP) {
 	// check if the destination in the routing table
 	item, ok := a.routingTable.Get(dest);
 	if ok {
-		// send the packet
-		a.channel.SendTo(payload, item.NextHop)
+		// forward the packet
+		a.forwarder.ForwardTo(payload, item.NextHop)
 	} else {
 		// send a RREQ or RRER
 		a.SendRREQ(dest)
 	}
-}
-
-func (a *Aodv) Broadcast(payload []byte) {
-	a.channel.Broadcast(payload)
 }
 
 func (a *Aodv) SendRREQ(destination net.IP) {
@@ -80,7 +67,7 @@ func (a *Aodv) SendRREQ(destination net.IP) {
 
 	// broadcast the RREQ
 	log.Printf("Sending: %s\n", rreq.String())
-	a.Broadcast(rreq.Marshal())
+	a.forwarder.ForwardToAll(rreq.Marshal())
 }
 
 func (a *Aodv) SendRREP(destination net.IP) {
@@ -121,7 +108,7 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr) {
 		// increment hop count
 		rreq.HopCount = rreq.HopCount + 1
 		// forward the RREQ
-		a.sendToAllExcept(rreq.Marshal(), from)
+		a.forwarder.ForwardToAllExcept(rreq.Marshal(), from)
 	}
 }
 
@@ -181,7 +168,7 @@ func (a *Aodv) Listen() {
 
 func (a *Aodv) Start() {
 	log.Printf("Starting AODV for IP: %s.....\n", a.srcIP)
-	go a.neighborTable.Run()
+	go a.forwarder.Start()
 	go a.Listen()
 }
 
