@@ -3,7 +3,6 @@ package aodv
 import (
 	"log"
 	"net"
-	"time"
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
 	. "github.com/aaarafat/vanessa/apps/network/tables"
@@ -13,6 +12,7 @@ type Aodv struct {
 	channel *DataLinkLayerChannel
 	neighborTable *VNeighborTable
 	routingTable *VRoutingTable
+	seqTable *VFloodingSeqTable
 	srcIP net.IP
 	seqNum uint32
 	rreqID uint32
@@ -28,6 +28,7 @@ func NewAodv(srcIP net.IP) *Aodv {
 		channel: d,
 		neighborTable: NewNeighborTable(srcIP),
 		routingTable: NewVRoutingTable(),
+		seqTable: NewVFloodingSeqTable(),
 		srcIP: srcIP,
 		seqNum: 0,
 		rreqID: 0,
@@ -38,18 +39,6 @@ func (a *Aodv) updateSeqNum(newSeqNum uint32) {
 	if newSeqNum > a.seqNum {
 		a.seqNum = newSeqNum
 	}
-}
-
-func (a *Aodv) updateRoutingTable(destIP net.IP, nextHop net.HardwareAddr, hopCount uint8, lifeTime, seqNum uint32) {	
-	entry := &VRoutingTableEntry{
-		Destination: destIP,
-		NextHop: nextHop,
-		NoOfHops: hopCount,
-		SeqNum: a.seqNum,
-		LifeTime: time.Now().Add(time.Duration(lifeTime) * time.Millisecond),
-	}
-
-	a.routingTable.Update(entry)
 }
 
 func (a *Aodv) sendToAllExcept(payload []byte, addr net.HardwareAddr) {
@@ -110,7 +99,7 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr) {
 		return
 	}
 	
-	if rreq.HopCount > HopCountLimit || rreq.OriginatorIP.Equal(a.srcIP) {
+	if rreq.Invalid(a.seqTable, a.srcIP) {
 		// drop the packet
 		log.Printf("Dropping %s\n", rreq.String())
 		return
@@ -118,7 +107,7 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr) {
 
 	log.Printf("Received: %s\n", rreq.String())
 	// update the routing table
-	go a.updateRoutingTable(rreq.OriginatorIP, from, rreq.HopCount, ActiveRouteTimeMS, rreq.OriginatorSequenceNumber)
+	go a.routingTable.Update(rreq.OriginatorIP, from, rreq.HopCount, ActiveRouteTimeMS, rreq.OriginatorSequenceNumber)
 
 	// check if the RREQ is for me
 	if rreq.DestinationIP.Equal(a.srcIP) {
@@ -143,8 +132,8 @@ func (a *Aodv) handleRREP(payload []byte, from net.HardwareAddr) {
 		return
 	}
 
-	// check RREP hop count and life time
-	if rrep.HopCount > HopCountLimit {
+	// check RREP hop count
+	if rrep.Invalid() {
 		// drop the packet
 		log.Printf("Dropping %s\n", rrep.String())
 		return
@@ -152,7 +141,7 @@ func (a *Aodv) handleRREP(payload []byte, from net.HardwareAddr) {
 
 	log.Printf("Received: %s\n", rrep.String())
 	// update the routing table
-	go a.updateRoutingTable(rrep.DestinationIP, from, rrep.HopCount, rrep.LifeTime, rrep.DestinationSeqNum)
+	go a.routingTable.Update(rrep.DestinationIP, from, rrep.HopCount, rrep.LifeTime, rrep.DestinationSeqNum)
 
 	// check if the RREP is for me
 	if rrep.OriginatorIP.Equal(a.srcIP) {

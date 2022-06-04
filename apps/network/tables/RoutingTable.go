@@ -18,6 +18,7 @@ type VRoutingTableEntry struct {
 	NoOfHops uint8
 	SeqNum uint32
 	LifeTime time.Time
+	timer *time.Timer
 }
 
 func NewVRoutingTable() *VRoutingTable {
@@ -39,14 +40,33 @@ func (r* VRoutingTable) isNewEntry(newEntry *VRoutingTableEntry) bool {
 		if entry.SeqNum == newEntry.SeqNum && entry.NoOfHops > newEntry.NoOfHops {
 			return true
 		}
+		if entry.SeqNum == newEntry.SeqNum && entry.NoOfHops == newEntry.NoOfHops && entry.LifeTime.Before(newEntry.LifeTime) {
+			return true
+		}
 		return false
 	}
 
 	return true
 }
 
-func (r* VRoutingTable) Update(newEntry *VRoutingTableEntry) {
+func (r* VRoutingTable) Update(destIP net.IP, nextHop net.HardwareAddr, hopCount uint8, lifeTime, seqNum uint32) {
+	lifeTimeMS := time.Millisecond * time.Duration(lifeTime)
+		
+	newEntry := &VRoutingTableEntry{
+		Destination: destIP,
+		NextHop: nextHop,
+		NoOfHops: hopCount,
+		SeqNum: seqNum,
+		LifeTime: time.Now().Add(lifeTimeMS),
+	}
+
 	if r.isNewEntry(newEntry) {
+		callback := func() {
+			r.table.Del(destIP.String())
+		}
+		timer := time.AfterFunc(lifeTimeMS, callback)
+		newEntry.timer = timer
+		
 		r.set(newEntry)
 	}
 	r.Print()

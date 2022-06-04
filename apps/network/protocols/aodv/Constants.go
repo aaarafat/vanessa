@@ -25,8 +25,8 @@ const (
 
 // Default values
 const (
-	RREPDefaultLifeTimeMS uint32 = 60 * 1000 // 60 seconds
-	ActiveRouteTimeMS uint32 = 10 * 1000 // 10 seconds
+	RREPDefaultLifeTimeMS uint32 = 5 * 60 * 1000 // 5 mins
+	ActiveRouteTimeMS uint32 = 60 * 1000 // 1 min
 )
 
 // Limits 

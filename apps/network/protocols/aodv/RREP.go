@@ -67,6 +67,11 @@ func UnmarshalRREP(data []byte) (*RREPMessage, error) {
 	return rrep, nil
 }
 
+func (rrep *RREPMessage) Invalid() bool {
+	return rrep.Type != RREPType ||
+				rrep.HopCount > HopCountLimit
+}
+
 func (rrep *RREPMessage) String() string {
 	return fmt.Sprintf("RREP: Type=%d, Flags=%d, HopCount=%d, DestinationSeqNum=%d, DestinationIP=%s, OriginatorIP=%s, LifeTime=%d",
 		rrep.Type, rrep.Flags, rrep.HopCount, rrep.DestinationSeqNum, rrep.DestinationIP.String(), rrep.OriginatorIP.String(), rrep.LifeTime)

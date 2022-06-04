@@ -5,6 +5,8 @@ import (
 	"net"
 
 	"encoding/binary"
+
+	. "github.com/aaarafat/vanessa/apps/network/tables"
 )
 
 // https://datatracker.ietf.org/doc/html/rfc3561#section-5.1
@@ -98,6 +100,13 @@ func (rreq* RREQMessage) HasFlag(flag uint16) bool {
 	return rreq.Flags & flag != 0
 }
 
+
+func (rreq *RREQMessage) Invalid(seqTable *VFloodingSeqTable, srcIP net.IP) bool {
+	return rreq.Type != RREQType ||
+				rreq.HopCount > HopCountLimit || 
+				rreq.OriginatorIP.Equal(srcIP) || 
+				seqTable.Exists(rreq.OriginatorIP, rreq.RREQID) 
+}
 
 func (rreq* RREQMessage) String() string {
 	return fmt.Sprintf("RREQ: Type: %d, Flags: %d, HopCount: %d, RREQID: %d, DestinationIP: %s, DestinationSeqNum: %d, OriginatorIP: %s, OriginatorSequenceNumber: %d",
