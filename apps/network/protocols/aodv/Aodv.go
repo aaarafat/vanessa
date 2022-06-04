@@ -68,7 +68,12 @@ func (a *Aodv) forwardData(data *DataMessage) {
 		a.forwarder.ForwardTo(data.Marshal(), item.NextHop)
 	} else {
 		// send a RREQ or RRER
-		a.dataBuffer.Set(data.DestenationIP.String(), *data)
+		buf, ok := a.dataBuffer.Get(data.DestenationIP.String())
+		if ok {
+			a.dataBuffer.Set(data.DestenationIP.String(), append(buf.([]DataMessage), *data))
+		} else {
+			a.dataBuffer.Set(data.DestenationIP.String(), []DataMessage{*data})
+		}
 		a.SendRREQ(data.DestenationIP)
 	}
 }
@@ -176,8 +181,10 @@ func (a *Aodv) handleRREP(payload []byte, from net.HardwareAddr) {
 		data, ok := a.dataBuffer.Get(rrep.DestinationIP.String())
 		if ok {
 			// send the data
-			msg := data.(DataMessage)
-			a.SendData(msg.Marshal(), msg.DestenationIP)
+			msgs := data.([]DataMessage)
+			for _, msg := range msgs {
+				go a.SendData(msg.Marshal(), msg.DestenationIP)
+			}
 			// remove the data from the buffer
 			a.dataBuffer.Del(rrep.DestinationIP.String())
 		}
