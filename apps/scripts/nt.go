@@ -16,7 +16,6 @@ func neighborUpdate(d *DataLinkLayerChannel, nt *VNeighborTable) {
 	for {
 		
 		payload, addr, err := d.Read()
-		// fmt.Println(net.HardwareAddr(addr.String()))
 		entry := NewNeighborEntry(net.IP(payload), addr)
 		nt.Set(addr.String() ,entry)
 		if err != nil {
@@ -24,9 +23,7 @@ func neighborUpdate(d *DataLinkLayerChannel, nt *VNeighborTable) {
 		}
 		fmt.Println()
 		log.Printf("Received \"%s\" from: [ %s ]", string(payload), addr.String())
-		// ent, _ := nt.Get(addr.String())
-		// fmt.Println("table Entry ", string(ent.IP))
-		// fmt.Println("number of enries %d ", nt.Len())
+		
 		nt.Print()
 	}
 
@@ -67,11 +64,12 @@ func main() {
 
 	neibourTable := NewNeighborTable(net.IP(ip))
 
-	d, err := NewDataLinkLayerChannel(VNDEtherType)
+	nChannel, err := NewDataLinkLayerChannel(VNDEtherType)
+	iChannel, err := NewDataLinkLayerChannel(VIEtherType)
 	if err != nil {
 		log.Fatalf("failed to create channel: %v", err)
 	}
-	go neighborUpdate(d, neibourTable)
+	go neighborUpdate(nChannel, neibourTable)
 
 	var mtype int
 	for {
@@ -79,7 +77,8 @@ func main() {
 		fmt.Scanf("%d", &mtype)
 		switch mtype {
 		case 0:
-			d.Broadcast([]byte(ip))
+			nChannel.Broadcast([]byte(ip))
+			iChannel.Broadcast([]byte(ip))
 		case 1:
 			log.Print("flooding")
 		}

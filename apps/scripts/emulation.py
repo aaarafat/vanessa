@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 
+from ipaddress import IPv4Address
 import os
 import sys
 from turtle import position
@@ -98,12 +99,16 @@ stations["car3"] = net.addStation('car3', position="140, 100, 0",
 
 
 def topology(args):
+    kwargs = dict(wlans=1)
+
     net.setPropagationModel(model="logDistance", exp=4)
     ap1 = net.addAccessPoint('ap1', ssid='ssid_1', mode='g', channel='1',
-                            failMode="standalone", position='15,30,0', range=100)
-    ap2 = net.addAccessPoint('ap2', ssid='ssid_2', mode='g', channel='6',
-                            failMode="standalone", position='55,30,0', range=100)
-
+                            failMode="standalone", position='15,70,0', range=100,
+                            ip='10.0.1.1')
+    ap2 = net.addAccessPoint('ap2', ssid='ssid_2', mode='g', channel='1',
+                            failMode="standalone", position='45,70,0', range=100, 
+                            ip='10.0.1.2')
+   
     info("*** Configuring wifi nodes\n")
     net.configureWifiNodes()
 
@@ -127,7 +132,7 @@ def topology(args):
     net.addLink(stations["car3"], cls=adhoc, intf='car3-wlan0',
                 ssid='adhocNet', mode='g', channel=5,
                 ht_cap='HT40+', **kwargs)
-
+    # net.addLink(ap1, ap2)
     info("*** Plotting network\n")
     net.plotGraph(max_x=500, max_y=500)
     # net.setMobilityModel(time=0, model='RandomDirection', max_x=1000, max_y=1000,
@@ -146,10 +151,7 @@ def topology(args):
     # stations["car1"].cmd('sysctl net.ipv4.ip_forward=1')
     # stations["car2"].cmd('echo 1 > /proc/sys/net/ipv4/ip_forward')
     # stations["car3"].cmd('sysctl net.ipv4.ip_forward=1')
-    f = open("ips", "w")
-    for id in stations:
-        f.write(stations[id].wintfs[0].ip+"\n")
-    f.close()
+   
     metadata = {'mac': dict(),
                 'mac2ip': dict()}
     for id in stations:
@@ -157,7 +159,6 @@ def topology(args):
         metadata['mac2ip'][stations[id].wintfs[0].mac] = stations[id].wintfs[0].ip
     save("/tmp/mn.metadata.json", json.dumps(metadata))
     for id in stations:
-        # TODO : remove number of stations so that we can run it on new added cars
         stations[id].cmd(
             f'sudo {os.path.join(os.path.dirname(__file__), "../../dist/apps/router")} {stations[id].name} {len(stations)} &')
     info("*** Running CLI\n")
