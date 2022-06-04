@@ -46,10 +46,10 @@ func (a *Aodv) Send(payload []byte, dest net.IP) {
 	item, ok := a.routingTable.Get(dest);
 	if ok {
 		// forward the packet
-		a.forwarder.ForwardTo(payload, item.NextHop)
+		go a.forwarder.ForwardTo(payload, item.NextHop)
 	} else {
 		// send a RREQ or RRER
-		a.SendRREQ(dest)
+		go a.SendRREQ(dest)
 	}
 }
 
@@ -67,7 +67,7 @@ func (a *Aodv) SendRREQ(destination net.IP) {
 
 	// broadcast the RREQ
 	log.Printf("Sending: %s\n", rreq.String())
-	a.forwarder.ForwardToAll(rreq.Marshal())
+	go a.forwarder.ForwardToAll(rreq.Marshal())
 }
 
 func (a *Aodv) SendRREP(destination net.IP) {
@@ -76,7 +76,7 @@ func (a *Aodv) SendRREP(destination net.IP) {
 	
 	// broadcast the RREP
 	log.Printf("Sending: %s\n", rrep.String())
-	a.Send(rrep.Marshal(), destination)
+	go a.Send(rrep.Marshal(), destination)
 }
 
 func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr) {
@@ -103,12 +103,12 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr) {
 			a.updateSeqNum(rreq.DestinationSeqNum)
 		}
 		// send a RREP
-		a.SendRREP(rreq.OriginatorIP)
+		go a.SendRREP(rreq.OriginatorIP)
 	} else {
 		// increment hop count
 		rreq.HopCount = rreq.HopCount + 1
 		// forward the RREQ
-		a.forwarder.ForwardToAllExcept(rreq.Marshal(), from)
+		go a.forwarder.ForwardToAllExcept(rreq.Marshal(), from)
 	}
 }
 
@@ -138,7 +138,7 @@ func (a *Aodv) handleRREP(payload []byte, from net.HardwareAddr) {
 		// increment hop count
 		rrep.HopCount = rrep.HopCount + 1
 		// forward the RREP
-		a.Send(rrep.Marshal(), rrep.OriginatorIP)
+		go a.Send(rrep.Marshal(), rrep.OriginatorIP)
 	}
 }
 
@@ -147,9 +147,9 @@ func (a *Aodv) handleMessage(payload []byte, from net.HardwareAddr) {
 	// handle the message
 	switch msgType {
 	case RREQType:
-		a.handleRREQ(payload, from)
+		go a.handleRREQ(payload, from)
 	case RREPType:
-		a.handleRREP(payload, from)
+		go a.handleRREP(payload, from)
 	default:
 		log.Println("Unknown message type: ", msgType)
 	}
@@ -162,7 +162,7 @@ func (a *Aodv) Listen() {
 		if err != nil {
 			log.Fatalf("failed to read from channel: %v", err)
 		}
-		a.handleMessage(payload, addr)
+		go a.handleMessage(payload, addr)
 	}
 }
 
