@@ -42,8 +42,8 @@ func (rrep *RREPMessage) Marshal() []byte {
 	bytes[0] = byte(rrep.Type)
 	binary.LittleEndian.PutUint16(bytes[1:], rrep.Flags)
 	bytes[3] = byte(rrep.HopCount)
-	binary.LittleEndian.PutUint32(bytes[4:], rrep.DestinationSeqNum)
-	copy(bytes[8:12], rrep.DestinationIP.To4())
+	copy(bytes[4:8], rrep.DestinationIP.To4())
+	binary.LittleEndian.PutUint32(bytes[8:], rrep.DestinationSeqNum)
 	copy(bytes[12:16], rrep.OriginatorIP.To4())
 	binary.LittleEndian.PutUint32(bytes[16:], rrep.LifeTime)
 
@@ -59,8 +59,8 @@ func UnmarshalRREP(data []byte) (*RREPMessage, error) {
 	rrep.Type = uint8(data[0])
 	rrep.Flags = binary.LittleEndian.Uint16(data[1:3])
 	rrep.HopCount = data[3]
-	rrep.DestinationSeqNum = binary.LittleEndian.Uint32(data[4:8])
-	rrep.DestinationIP = net.IPv4(data[8], data[9], data[10], data[11])
+	rrep.DestinationIP = net.IPv4(data[4], data[5], data[6], data[7])
+	rrep.DestinationSeqNum = binary.LittleEndian.Uint32(data[8:12])
 	rrep.OriginatorIP = net.IPv4(data[12], data[13], data[14], data[15])
 	rrep.LifeTime = binary.LittleEndian.Uint32(data[16:20])
 
