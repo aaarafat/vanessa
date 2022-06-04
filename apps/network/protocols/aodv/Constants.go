@@ -6,6 +6,7 @@ const (
 	RREPType uint8 = 2
 	RERRType uint8 = 3
 	RREPACKType uint8 = 4
+	DataType uint8 = 5
 )
 
 // Flags
@@ -22,6 +23,7 @@ const (
 	RREQMessageLen = 192
 	RREPMessageLen = 160
 	RERRMessageLen = 96
+	DataMessageLen = 96
 )
 
 // Default values
