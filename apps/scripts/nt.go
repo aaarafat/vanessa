@@ -60,15 +60,8 @@ func main() {
 			rsuMAC, SSID := getRSU(net_ifi.Name)
 			println(rsuMAC)
 			if  strings.Compare(SSID, "") != 0{
-				f, err := os.OpenFile(SSID+".log",
-				os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-				if err != nil {
-					log.Println(err)
-				}
-				defer f.Close()
-				if _, err := f.WriteString("Hi I am "+ip+"\n"); err != nil {
-					log.Println(err)
-				}
+				fileName := "./"+SSID+".log"
+				sendToRSU(fileName, ip)
 			}
 			
 		case 1:
@@ -105,4 +98,16 @@ func getRSU(intfName string) (string, string){
   		}
 	}
 	return rsuMAC, SSID
+}
+
+func sendToRSU(fileName, msg string) {
+	f, err := os.OpenFile(fileName,
+	os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Println(err)
+	}
+	defer f.Close()
+	if _, err := f.WriteString("Hi I am "+msg+"\n"); err != nil {
+		log.Println(err)
+	}
 }

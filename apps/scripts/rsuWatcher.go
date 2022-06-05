@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"strings"
+	"github.com/juju/fslock"
+	// "time"
 )
 
 func main() {
@@ -53,4 +55,19 @@ func getLastLine(path string) {
     output, _ := c.Output()
 	out := strings.ReplaceAll(string(output), "\n", "")
     fmt.Println(string(out))
+}
+
+
+func writeToRSUs(fileName, msg string) {
+    lock := fslock.New(fileName)
+    lockErr := lock.TryLock()
+    if lockErr != nil {
+        fmt.Println("falied to acquire lock > " + lockErr.Error())
+        return
+    }
+
+    
+
+    // release the lock
+    lock.Unlock()
 }

@@ -5,6 +5,7 @@ go 1.18
 require (
 	github.com/cornelk/hashmap v1.0.1
 	github.com/fsnotify/fsnotify v1.5.4
+	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b
 	github.com/mdlayher/packet v1.0.0
 )
 
