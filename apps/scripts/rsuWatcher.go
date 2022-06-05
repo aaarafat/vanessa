@@ -44,6 +44,8 @@ func main() {
 		log.Fatal("Add failed:", err)
 	}
 	<-done
+	//todo
+	//delete files when closing
 }
 
 func getLastLine(path string) {

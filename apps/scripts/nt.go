@@ -39,29 +39,7 @@ func main() {
 	ip := strings.Split(addrs[0].String(), "/")[0]
 	println(ip)
 
-	out, err := exec.Command("iw", "dev", net_ifi.Name, "link").Output()
-	if err != nil {
-		log.Panic(err)
-	}
-	cmdOut := string(out)
-	// println(cmdOut)
-	rsuMAC := "" 
-	SSID := ""
-	if strings.Contains(cmdOut, "Not connected") {
-		println(net_ifi.Name, "is not associated")
-	} else {
-		println(net_ifi.Name, "is associated")
-		arr := strings.Fields(cmdOut) 
-		rsuMAC = arr[2] 
-		for ind, v := range arr {    
-			if strings.Contains(v, "ssid_"){
-				println(ind, v)
-				SSID = v
-				println("mac:", rsuMAC)
-				break
-			}
-  		}
-	}
+	
 
 
 	neibourTable := NewNeighborTable(net.IP(ip))
@@ -81,18 +59,50 @@ func main() {
 		case 0:
 			nChannel.Broadcast([]byte(ip))
 			iChannel.Broadcast([]byte(ip))
-			f, err := os.OpenFile(SSID+".log",
-			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-			if err != nil {
-				log.Println(err)
+			rsuMAC, SSID := getRSU(net_ifi.Name)
+			println(rsuMAC)
+			if  strings.Compare(SSID, "") != 0{
+				f, err := os.OpenFile(SSID+".log",
+				os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+				if err != nil {
+					log.Println(err)
+				}
+				defer f.Close()
+				if _, err := f.WriteString("Hi I am "+ip+"\n"); err != nil {
+					log.Println(err)
+				}
 			}
-			defer f.Close()
-			if _, err := f.WriteString("Hi I am "+ip+"\n"); err != nil {
-				log.Println(err)
-			}
+			
 		case 1:
 			log.Print("flooding")
 		}
 		time.Sleep(5 * time.Second)
 	}
+}
+func getRSU(intfName string) (string, string){
+
+	out, err := exec.Command("iw", "dev", intfName, "link").Output()
+	if err != nil {
+		log.Panic(err)
+	}
+	cmdOut := string(out)
+	// println(cmdOut)
+	rsuMAC := "" 
+	SSID := ""
+	if strings.Contains(cmdOut, "Not connected") {
+		println(intfName, "is not associated")
+	} else {
+		println(intfName, "is associated")
+		arr := strings.Fields(cmdOut) 
+		rsuMAC = arr[2] 
+		for ind, v := range arr {    
+			if strings.Contains(v, "ssid_"){
+				println(ind, v)
+				SSID = v
+				println("mac:", rsuMAC)
+				break
+			}
+  		}
+	}
+	return rsuMAC, SSID
 }
