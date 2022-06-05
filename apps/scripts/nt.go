@@ -45,7 +45,6 @@ func main() {
 	neibourTable := NewNeighborTable(net.IP(ip))
 
 	nChannel, err := NewDataLinkLayerChannel(VNDEtherType)
-	iChannel, err := NewDataLinkLayerChannel(VIEtherType)
 	if err != nil {
 		log.Fatalf("failed to create channel: %v", err)
 	}
@@ -58,7 +57,6 @@ func main() {
 		switch mtype {
 		case 0:
 			nChannel.Broadcast([]byte(ip))
-			iChannel.Broadcast([]byte(ip))
 			rsuMAC, SSID := getRSU(net_ifi.Name)
 			println(rsuMAC)
 			if  strings.Compare(SSID, "") != 0{
@@ -79,6 +77,8 @@ func main() {
 		time.Sleep(5 * time.Second)
 	}
 }
+
+//returns mac, ssid of assiciated rsu
 func getRSU(intfName string) (string, string){
 
 	out, err := exec.Command("iw", "dev", intfName, "link").Output()
