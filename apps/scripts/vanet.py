@@ -26,7 +26,7 @@ def topology():
     for id in range(0, 10):
         cars.append(net.addCar('car%s' % (id+1), wlans=2, bgscan_threshold=-45, 
                                s_inverval=5, l_interval=10, bgscan_module="simple"))
-    
+
     rsu1 = net.addAccessPoint('rsu1', ssid='vanet-ssid', mac='00:00:00:11:00:01',
                             mode='g', channel='1', passwd='123456789a',
                             encrypt='wpa2', position='155,100,0')

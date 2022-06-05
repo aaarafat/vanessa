@@ -108,7 +108,6 @@ def topology(args):
     ap2 = net.addAccessPoint('ap2', ssid='ssid_2', mode='g', channel='1',
                             failMode="standalone", position='45,70,0', range=100, 
                             ip='10.0.1.2')
-   
     info("*** Configuring wifi nodes\n")
     net.configureWifiNodes()
 
@@ -161,6 +160,9 @@ def topology(args):
     for id in stations:
         stations[id].cmd(
             f'sudo {os.path.join(os.path.dirname(__file__), "../../dist/apps/router")} {stations[id].name} {len(stations)} &')
+    # ap2.cmd(f"./rsuWatcher {ap2.wintfs[0].ssid}")
+    # ap1.cmd(f"./rsuWatcher {ap1.wintfs[0].ssid}")
+    
     info("*** Running CLI\n")
     CLI(net)
     info("*** Stopping network\n")

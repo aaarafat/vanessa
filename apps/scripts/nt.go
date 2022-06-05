@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
-	// "os"
+	"os"
 	"os/exec"
 	"time"
 	"strings"
@@ -46,6 +46,7 @@ func main() {
 	cmdOut := string(out)
 	// println(cmdOut)
 	rsuMAC := "" 
+	SSID := ""
 	if strings.Contains(cmdOut, "Not connected") {
 		println(net_ifi.Name, "is not associated")
 	} else {
@@ -55,6 +56,7 @@ func main() {
 		for ind, v := range arr {    
 			if strings.Contains(v, "ssid_"){
 				println(ind, v)
+				SSID = v
 				println("mac:", rsuMAC)
 				break
 			}
@@ -79,6 +81,15 @@ func main() {
 		case 0:
 			nChannel.Broadcast([]byte(ip))
 			iChannel.Broadcast([]byte(ip))
+			f, err := os.OpenFile(SSID+".log",
+			os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				log.Println(err)
+			}
+			defer f.Close()
+			if _, err := f.WriteString("Hi I am "+ip+"\n"); err != nil {
+				log.Println(err)
+			}
 		case 1:
 			log.Print("flooding")
 		}

@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/cornelk/hashmap v1.0.1
+	github.com/fsnotify/fsnotify v1.5.4
 	github.com/mdlayher/packet v1.0.0
 )
 
