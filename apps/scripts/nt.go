@@ -39,9 +39,6 @@ func main() {
 	ip := strings.Split(addrs[0].String(), "/")[0]
 	println(ip)
 
-	
-
-
 	neibourTable := NewNeighborTable(net.IP(ip))
 
 	nChannel, err := NewDataLinkLayerChannel(VNDEtherType)
@@ -61,7 +58,7 @@ func main() {
 			println(rsuMAC)
 			if  strings.Compare(SSID, "") != 0{
 				fileName := "./"+SSID+".log"
-				sendToRSU(fileName, ip)
+				appendToFile(fileName, ip)
 			}
 			
 		case 1:
@@ -100,7 +97,7 @@ func getRSU(intfName string) (string, string){
 	return rsuMAC, SSID
 }
 
-func sendToRSU(fileName, msg string) {
+func appendToFile(fileName, msg string) {
 	f, err := os.OpenFile(fileName,
 	os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
