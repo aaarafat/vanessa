@@ -5,7 +5,6 @@ import (
 	"net"
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
-	. "github.com/aaarafat/vanessa/apps/network/tables"
 	"github.com/cornelk/hashmap"
 )
 
