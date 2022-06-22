@@ -1,6 +1,9 @@
 #!/usr/bin/python
 
 
+import math
+from mn_wifi.node import UserAP
+from mininet.node import Controller
 import os
 import sys
 from turtle import position
@@ -18,12 +21,13 @@ import json
 
 import socket
 
+from numpy import stack
+
 
 HOST = "127.0.0.1"
-PORT = 65432
+IO_PORT = 65432
+PORT = 65433
 APP = Flask("mininet")
-
-running = True
 
 LINK_CONFIG = {
     "ssid": 'adhocNet',
@@ -31,6 +35,13 @@ LINK_CONFIG = {
     "channel": 5,
     "ht_cap": 'HT40+'
 }
+
+running = True
+
+stations_pool = []
+stations_car = {}
+
+STATIONS_COUNT = 1
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((HOST, PORT))
@@ -40,8 +51,6 @@ sio = SocketIO(APP, cors_allowed_origins="*")
 "Create a network."
 net = Mininet_wifi(link=wmediumd, wmediumd_mode=interference,
                    autoAssociation=True, ac_method='llf')  # ssf or llf
-stations = {}
-kwargs = dict(wlans=2)
 
 
 @sio.on('connect')
@@ -61,30 +70,37 @@ def obstacle_detected(message):
 
 @sio.on('add-car')
 def add_car(message):
-    id = f"car{message['id']}"
-    position = message["coordinates"]
-    # TODO: convert coordinates to mn position
-    position = "0,0,0"
-    stations[id] = net.addStation(id, position=position,
-                                  **kwargs)
-    net.addLink(stations[id], cls=adhoc,
-                intf=f'{id}-wlan0', **LINK_CONFIG)
+    st = stations_pool.pop()
+    id = message['id']
+    stations_car[id] = st
 
-    lng = lat = 0  # TODO
+    position = message["coordinates"]
+
+    lng = position["lng"]
+    lat = position["lat"]
+
+    position = to_mn_position(lng, lat)
+    stations_car[id].setPosition(position)
+    print(position)
+    # st.cmd(f"/usr/local/go/bin/go run apps/scripts/car-unix.go -id {id}")
     send_location_to_car(f"/tmp/car{id}.socket", lng, lat)
 
 
-@sio.on('update-locations')
+@sio.on('update-location')
 def update_locations(message):
-    data = message['data']
-    for car_info in data:
-        id = car_info['id']
-        position = car_info['coordinates']
-        # TODO: convert coordinates to mn position
-        position = "0,0,0"
-        stations[f'car{id}'].setPosition(position)
-        lng = lat = 0  # TODO
-        send_location_to_car(f"/tmp/car{id}.socket", lng, lat)
+    id = message['id']
+
+    position = message["coordinates"]
+
+    lng = position["lng"]
+    lat = position["lat"]
+
+    position = to_mn_position(lng, lat)
+    stations_car[id].setPosition(position)
+    print(f"car {id} moved to {position}, lng: {lng} lat: {lat}")
+    print(f"/tmp/car{id}.socket")
+
+    send_location_to_car(f"/tmp/car{id}.socket", lng, lat)
 
 
 def send_location_to_car(car_socket, lng, lat):
@@ -100,12 +116,21 @@ info("*** Creating nodes\n")
 
 
 def topology(args):
-    kwargs = dict(wlans=1)
-
+    info("*** Configuring Propagation Model\n")
     net.setPropagationModel(model="logDistance", exp=4)
 
-    info("*** Configuring wifi nodes\n")
+    for i in range(STATIONS_COUNT):
+        stations_pool.append(net.addStation(
+            f'car{i}', position="0,0,0", wlans=1))
+
     net.configureWifiNodes()
+
+    for i, st in enumerate(stations_pool):
+        net.addLink(st, cls=adhoc,
+                    intf=f'car{i}-wlan0', **LINK_CONFIG)
+
+    # info("*** Configuring wifi nodes\n")
+    # net.configureWifiNodes()
 
     # info("*** Plotting network\n")
     # net.plotGraph(max_x=500, max_y=500)
@@ -119,10 +144,6 @@ def topology(args):
     info("*** Starting network\n")
     net.build()
 
-    # stations["car1"].cmd('sysctl net.ipv4.ip_forward=1')
-    # stations["car2"].cmd('echo 1 > /proc/sys/net/ipv4/ip_forward')
-    # stations["car3"].cmd('sysctl net.ipv4.ip_forward=1')
-
     info("*** Running CLI\n")
     CLI(net)
     info("*** Stopping network\n")
@@ -130,7 +151,21 @@ def topology(args):
 
 
 def run_socket():
-    sio.run(APP, host=HOST, port=PORT)
+    sio.run(APP, host=HOST, port=IO_PORT)
+
+
+EARTH_RAD = 6371 * 1000
+
+
+def to_mn_position(lng, lat):
+    # d in degress, output in meters\
+    lng += 360 if lng < 0 else 0
+    lat += 360 if lat < 0 else 0
+
+    x = EARTH_RAD * lng * math.pi/180
+    y = EARTH_RAD * lat * math.pi/180
+
+    return f"{x}, {y}, 0"
 
 
 if __name__ == '__main__':

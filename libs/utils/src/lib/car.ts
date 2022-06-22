@@ -64,6 +64,11 @@ export class Car {
     this.animationFrame = 0;
     this.obstacleDetected = false;
 
+    this.socket.emit('add-car', {
+      id: this.id,
+      coordinates: this.coordinates,
+    });
+
     this.draw();
     this.attachHandlers();
 
@@ -195,6 +200,7 @@ export class Car {
         this.lat = this.route[this.routeIndex].lat;
         this.lng = this.route[this.routeIndex].lng;
         this.routeIndex++;
+        this.emit('move');
       } else {
         const vector: Coordinates = {
           lng: (this.route[this.routeIndex].lng - this.coordinates.lng) / dist,
@@ -203,6 +209,7 @@ export class Car {
         this.lat += movementAmount * vector.lat;
         this.lng += movementAmount * vector.lng;
         movementAmount = 0;
+        this.emit('move');
       }
     }
     if (this.arrived) {
@@ -252,6 +259,12 @@ export class Car {
 
   private attachHandlers = () => {
     this.map.on('click', this.sourceId, this.onClick);
+    this.on('move', () => {
+      this.socket.emit('update-location', {
+        id: this.id,
+        coordinates: this.coordinates,
+      });
+    });
   };
 
   private onClick = () => {
