@@ -73,7 +73,7 @@ func InitLogger(id int) (Logger, *os.File) {
 	if !logger.debug {
 		return Logger{false, log.New(os.Stdout, "", 0)}, nil
 	}
-	err := os.MkdirAll("/logs", 0644)
+	err := os.MkdirAll("/logs", 0777)
 	if err != nil && !os.IsExist(err) {
 		fmt.Printf("Error creating logs directory: %s\n", err)
 		os.Exit(1)
