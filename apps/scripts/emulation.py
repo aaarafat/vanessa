@@ -2,6 +2,7 @@
 
 
 import math
+import shutil
 from mn_wifi.node import UserAP
 from mininet.node import Controller
 import os
@@ -41,7 +42,7 @@ running = True
 stations_pool = []
 stations_car = {}
 
-STATIONS_COUNT = 1
+STATIONS_COUNT = 5
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((HOST, PORT))
@@ -70,6 +71,9 @@ def obstacle_detected(message):
 
 @sio.on('add-car')
 def add_car(message):
+    if len(stations_pool) == 0:
+        raise Exception("Pool ran out of stations")
+
     st = stations_pool.pop()
     id = message['id']
     stations_car[id] = st
@@ -79,10 +83,10 @@ def add_car(message):
     lng = position["lng"]
     lat = position["lat"]
 
-    position = to_mn_position(lng, lat)
+    position = to_grid(lng, lat)
     stations_car[id].setPosition(position)
     print(position)
-    # st.cmd(f"/usr/local/go/bin/go run apps/scripts/car-unix.go -id {id}")
+    st.cmd(f"sudo apps/scripts/car-unix -id {id} -debug")
     send_location_to_car(f"/tmp/car{id}.socket", lng, lat)
 
 
@@ -95,7 +99,7 @@ def update_locations(message):
     lng = position["lng"]
     lat = position["lat"]
 
-    position = to_mn_position(lng, lat)
+    position = to_grid(lng, lat)
     stations_car[id].setPosition(position)
     print(f"car {id} moved to {position}, lng: {lng} lat: {lat}")
     print(f"/tmp/car{id}.socket")
@@ -121,7 +125,7 @@ def topology(args):
 
     for i in range(STATIONS_COUNT):
         stations_pool.append(net.addStation(
-            f'car{i}', position="0,0,0", wlans=1))
+            f'car{i}', position="0,0,0", wlans=2))
 
     net.configureWifiNodes()
 
@@ -157,8 +161,7 @@ def run_socket():
 EARTH_RAD = 6371 * 1000
 
 
-def to_mn_position(lng, lat):
-    # d in degress, output in meters\
+def to_grid(lng, lat):
     lng += 360 if lng < 0 else 0
     lat += 360 if lat < 0 else 0
 
@@ -170,5 +173,6 @@ def to_mn_position(lng, lat):
 
 if __name__ == '__main__':
     setLogLevel('info')
+    shutil.rmtree('/logs', ignore_errors=True)
     threading.Thread(target=run_socket, daemon=True).start()
     topology(sys.argv)
