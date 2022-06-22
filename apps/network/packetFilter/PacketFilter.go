@@ -72,6 +72,8 @@ func (pf *PacketFilter) StealPacket() {
 			} else {
 				p.SetVerdict(netfilter.NF_DROP)
 
+				UpdateChecksum(packet)
+
 				go pf.router.SendData(packet, header.destIP)
 			}
 

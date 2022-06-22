@@ -17,7 +17,7 @@ type IPHeader struct {
 	TypeOfService uint8
 	TotalLength uint16
 	IdentifierFlagsOffset uint32
-	TTL int8
+	TTL uint8
 	Protocol uint8
 	HeaderChecksum uint16
 	srcIP net.IP
@@ -40,13 +40,13 @@ func UnmarshalIPHeader(data []byte) (*IPHeader, error) {
 	header.TypeOfService = uint8(data[1])
 	header.TotalLength = binary.LittleEndian.Uint16(data[2:4])
 	header.IdentifierFlagsOffset = binary.LittleEndian.Uint32(data[4:8])
-	header.TTL = int8(data[8])
+	header.TTL = uint8(data[8])
 	header.Protocol = uint8(data[9])
 	header.HeaderChecksum = binary.LittleEndian.Uint16(data[10:12])
 	header.srcIP = net.IPv4(data[12], data[13], data[14], data[15])
 	header.destIP = net.IPv4(data[16], data[17], data[18], data[19])
 
-	if HeaderChecksum(data) != 0 || header.TTL <= 0 {
+	if HeaderChecksum(data) != 0 || header.TTL == 0 {
 		return nil, fmt.Errorf("IP Packet is invalid or outdated")
 	}
 
@@ -59,4 +59,13 @@ func HeaderChecksum(data []byte) uint16 {
 		sum += uint32(data[i])<<8 | uint32(data[i+1])
 	}
 	return ^uint16((sum >> 16) + sum)
+}
+
+func UpdateChecksum(data []byte) {
+	// update checksum
+	data[10] = 0 // MSB
+	data[11] = 0 // LSB
+	csum := HeaderChecksum(data)
+	data[10] = byte(csum >> 8) // MSB
+	data[11] = byte(csum)      // LSB
 }
