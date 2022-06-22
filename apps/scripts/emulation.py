@@ -93,6 +93,8 @@ def add_car(message):
 @sio.on('update-location')
 def update_locations(message):
     id = message['id']
+    if id not in stations_car:
+        raise Exception("Car not found")
 
     position = message["coordinates"]
 
