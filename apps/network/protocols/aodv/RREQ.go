@@ -5,8 +5,6 @@ import (
 	"net"
 
 	"encoding/binary"
-
-	. "github.com/aaarafat/vanessa/apps/network/tables"
 )
 
 // https://datatracker.ietf.org/doc/html/rfc3561#section-5.1

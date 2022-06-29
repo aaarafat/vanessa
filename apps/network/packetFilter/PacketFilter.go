@@ -6,11 +6,15 @@ import (
 	"net"
 
 	"github.com/AkihiroSuda/go-netfilter-queue"
+	"github.com/aaarafat/vanessa/apps/network/protocols/aodv"
 )
 
 type PacketFilter struct {
 	nfq *netfilter.NFQueue
 	srcIP net.IP
+
+	// TODO: replace this with router object
+	router *aodv.Aodv
 }
 
 func NewPacketFilter() (*PacketFilter, error) {
@@ -46,6 +50,7 @@ func NewPacketFilter() (*PacketFilter, error) {
 	return &PacketFilter{
 		nfq: nfq,
 		srcIP: ip,
+		router: aodv.NewAodv(ip),
 	}, nil
 }
 
@@ -54,9 +59,24 @@ func (pf *PacketFilter) StealPacket() {
 	for {
 		select {
 		case p := <-packets:
-			fmt.Println(p.Packet)
-			// drop tha packet
-			p.SetVerdict(netfilter.NF_DROP)
+			packet := p.Packet.Data()
+			header, err := UnmarshalIPHeader(packet)
+
+			if err != nil {
+				p.SetVerdict(netfilter.NF_DROP)
+			}
+
+			if pf.srcIP.Equal(header.destIP) {
+				fmt.Println(p.Packet)
+				p.SetVerdict(netfilter.NF_ACCEPT)
+			} else {
+				p.SetVerdict(netfilter.NF_DROP)
+
+				UpdateChecksum(packet)
+
+				go pf.router.SendData(packet, header.destIP)
+			}
+
 		}
 	}
 }
