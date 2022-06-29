@@ -13,7 +13,8 @@
     "affected:compile": "nx affected --target=compile",
     "affected:build": "nx affected:build",
     "dep-graph": "nx dep-graph",
-    "format": "nx format:write"
+    "format": "nx format:write",
+    "emulation": "sudo python apps/scripts/emulation.py"
   },
   "private": true,
   "devDependencies": {

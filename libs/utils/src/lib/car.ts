@@ -215,6 +215,10 @@ export class Car {
     if (this.arrived) {
       this.speed = 0;
       this.emit('props-updated');
+      this.socket.emit('destination-reached', {
+        id: this.id,
+        coordinates: this.coordinates,
+      });
     }
   };
 
@@ -238,8 +242,8 @@ export class Car {
       this.emit('props-updated');
       this.socket.emit('obstacle-detected', {
         id: this.id,
-        lat: this.lat,
-        lng: this.lng,
+        coordinates: this.coordinates,
+        obstacle_coordinates: this.coordinates,
       });
       return true;
     }

@@ -21,14 +21,76 @@ type Position struct {
 	Lng float64
 }
 
+type DestinationReachedData struct {
+	Coordinates Position
+}
+
+type ObstacleDetectedData struct {
+	Coordinates         Position
+	ObstacleCoordinates Position `json:"obstacle_coordinates"`
+}
+
+type AddCarData struct {
+	Coordinates Position
+}
+type UpdateLocationData struct {
+	Coordinates Position
+}
+
 func reader(d *json.Decoder) {
-	var position = Position{Lat: 5, Lng: 5}
+	var m map[string]json.RawMessage
 	for {
-		err := d.Decode(&position)
+		err := d.Decode(&m)
 		if err != nil {
+			logger.Log("Error: %v\n", err)
 			return
 		}
-		logger.Log("received: %f %f\n", position.Lat, position.Lng)
+
+		var eventType string
+		err = json.Unmarshal(m["type"], &eventType)
+		if err != nil {
+			logger.Log("Error: %v\n", err)
+			return
+		}
+		logger.Log("Event type: %s\n", eventType)
+
+		switch eventType {
+		case "destination-reached":
+			var p DestinationReachedData
+			err := json.Unmarshal(m["data"], &p)
+			if err != nil {
+				logger.Log("Error decoding destination-reached data: %v", err)
+				return
+			}
+			logger.Log("Destination reached: %v\n", p)
+
+		case "obstacle-detected":
+			var p ObstacleDetectedData
+			err := json.Unmarshal(m["data"], &p)
+			if err != nil {
+				logger.Log("Error decoding obstacle-detected data: %v", err)
+				return
+			}
+			logger.Log("Obstacle detected: %v\n", p)
+
+		case "add-car":
+			var p AddCarData
+			err := json.Unmarshal(m["data"], &p)
+			if err != nil {
+				logger.Log("Error decoding add-car data: %v", err)
+				return
+			}
+			logger.Log("Car added: %v\n", p)
+
+		case "update-location":
+			var p UpdateLocationData
+			err := json.Unmarshal(m["data"], &p)
+			if err != nil {
+				logger.Log("Error: %v", err)
+				return
+			}
+			logger.Log("Updated Location: %v\n", p)
+		}
 	}
 }
 

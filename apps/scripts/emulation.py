@@ -64,9 +64,42 @@ def disconnected():
     print('Disconnected')
 
 
+@sio.on('destination-reached')
+def destination_reached(message):
+    id = message['id']
+    st = stations_car[id]
+
+    coordinates = message['coordinates']
+    position = to_grid(coordinates)
+    st.setPosition(position)
+
+    payload = {
+        'type': 'destination-reached',
+        'data': {
+            'coordinates': coordinates,
+        }
+    }
+    send_to_car(f"/tmp/car{id}.socket", payload)
+
+
 @sio.on('obstacle-detected')
 def obstacle_detected(message):
-    print(message)
+    id = message['id']
+    st = stations_car[id]
+
+    coordinates = message['coordinates']
+    position = to_grid(coordinates)
+    st.setPosition(position)
+
+    obstacle_coordinates = message['obstacle_coordinates']
+    payload = {
+        'type': 'obstacle-detected',
+        'data': {
+            'coordinates': coordinates,
+            'obstacle_coordinates': obstacle_coordinates
+        }
+    }
+    send_to_car(f"/tmp/car{id}.socket", payload)
 
 
 @sio.on('add-car')
@@ -78,16 +111,20 @@ def add_car(message):
     id = message['id']
     stations_car[id] = st
 
-    position = message["coordinates"]
-
-    lng = position["lng"]
-    lat = position["lat"]
-
-    position = to_grid(lng, lat)
-    stations_car[id].setPosition(position)
+    coordinates = message["coordinates"]
+    position = to_grid(coordinates)
+    st.setPosition(position)
     print(position)
+
     st.cmd(f"sudo apps/scripts/car-unix -id {id} -debug")
-    send_location_to_car(f"/tmp/car{id}.socket", lng, lat)
+
+    payload = {
+        'type': 'add-car',
+        'data': {
+            'coordinates': coordinates,
+        }
+    }
+    send_to_car(f"/tmp/car{id}.socket", payload)
 
 
 @sio.on('update-location')
@@ -96,24 +133,27 @@ def update_locations(message):
     if id not in stations_car:
         raise Exception("Car not found")
 
-    position = message["coordinates"]
-
-    lng = position["lng"]
-    lat = position["lat"]
-
-    position = to_grid(lng, lat)
+    coordinates = message["coordinates"]
+    position = to_grid(coordinates)
     stations_car[id].setPosition(position)
+
+    lng, lat = coordinates["lng"], coordinates["lat"]
     print(f"car {id} moved to {position}, lng: {lng} lat: {lat}")
-    print(f"/tmp/car{id}.socket")
 
-    send_location_to_car(f"/tmp/car{id}.socket", lng, lat)
+    payload = {
+        'type': 'update-location',
+        'data': {
+            'coordinates': coordinates,
+        }
+    }
+    send_to_car(f"/tmp/car{id}.socket", payload)
 
 
-def send_location_to_car(car_socket, lng, lat):
+def send_to_car(car_socket, payload):
     try:
         client = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
         client.connect(car_socket)
-        client.send(json.dumps({'lng': lng, 'lat': lat}).encode('ASCII'))
+        client.send(json.dumps(payload).encode('ASCII'))
     except:
         pass
 
@@ -163,7 +203,8 @@ def run_socket():
 EARTH_RAD = 6371 * 1000
 
 
-def to_grid(lng, lat):
+def to_grid(coordinates):
+    lng, lat = coordinates["lng"], coordinates["lat"]
     lng += 360 if lng < 0 else 0
     lat += 360 if lat < 0 else 0
 
