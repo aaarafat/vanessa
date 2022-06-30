@@ -23,6 +23,27 @@ type Aodv struct {
 	callback func(data[]byte)
 }
 
+func NewAodvWithInterface(srcIP net.IP, callback func(data[]byte),ifiname string) *Aodv {
+	d, err := NewDataLinkLayerChannelWithInterface(VAODVEtherType, ifiname)
+	if err != nil {
+		log.Fatalf("failed to create channel: %v", err)
+	}
+
+	return &Aodv{
+		channel: d,
+		forwarder: NewForwarder(srcIP, d),
+		routingTable: NewVRoutingTable(),
+		seqTable: NewVFloodingSeqTable(),
+		dataSeqTable: NewVFloodingSeqTable(),
+		dataBuffer: &hashmap.HashMap{},
+		srcIP: srcIP,
+		seqNum: 0,
+		dataSeqNum: 0,
+		rreqID: 0,
+		callback: callback,
+	}
+}
+
 func NewAodv(srcIP net.IP, callback func(data[]byte)) *Aodv {
 	d, err := NewDataLinkLayerChannel(VAODVEtherType)
 	if err != nil {
