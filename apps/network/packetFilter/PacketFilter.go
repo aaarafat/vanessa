@@ -20,10 +20,15 @@ type PacketFilter struct {
 func NewPacketFilter() (*PacketFilter, error) {
 	var err error
 	
-	AddIPTablesRule()
-	if err := AddDefaultGateway(); err != nil {
+	if err := ChainNFQUEUE(); err != nil {
 		DeleteIPTablesRule()
-		log.Panic("done deleting")
+		log.Panic("Reversed chaining NFQUEUE")
+		return nil, err
+	}
+
+	if err := AddDefaultGateway(); err != nil {
+		DeleteDefaultGateway()
+		log.Panic("Removed Default Gatway")
 		return nil, err
 	}
 	interfaces, err := net.Interfaces()
