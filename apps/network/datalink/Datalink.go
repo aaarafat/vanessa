@@ -51,6 +51,30 @@ func NewDataLinkLayerChannel(ether Ethertype) (*DataLinkLayerChannel, error) {
 
 }
 
+func NewDataLinkLayerChannelWithIntf(ether Ethertype, name string) (*DataLinkLayerChannel, error) {
+	// interfaces, err := net.Interfaces()
+	ifi, err := net.InterfaceByName(name)
+	println("connecting to:",name)
+	if err != nil {
+		log.Fatalf("failed to open interface: %v", err)
+		return nil, err
+	}
+
+	// Open a raw socket using same EtherType as our frame.
+	c, err := packet.Listen(ifi, packet.Raw, int(ether), nil)
+	if err != nil {
+		log.Fatalf("failed to listen on channel: %v", err)
+		return nil, err
+	}
+
+	return &DataLinkLayerChannel{
+		etherType: ether, // Set the channel type
+		channel:   c,
+		source:    ifi.HardwareAddr, // Identify the car as the sender.
+	}, nil
+
+}
+
 func (d *DataLinkLayerChannel) SendTo(payload []byte, destination net.HardwareAddr) {
 	frame := &ethernet.Frame{
 		// Set the destination MAC address

@@ -37,9 +37,14 @@ APP = Flask("mininet")
 sio = SocketIO(APP, cors_allowed_origins="*")
 "Create a network."
 net = Mininet_wifi(link=wmediumd, wmediumd_mode=interference,
-                   autoAssociation=True, ac_method='llf') #ssf or llf
+                   autoAssociation=True, ac_method='ssf') #ssf or llf
 stations = {}
-kwargs = dict(wlans=2)
+kwargs = dict(
+    wlans=2,
+    bgscan_threshold=-60,
+    s_inverval=5,
+    l_interval=10
+    )
 
 
 @sio.on('connect')
@@ -108,6 +113,9 @@ def topology(args):
     ap2 = net.addAccessPoint('ap2', ssid='ssid_2', mode='g', channel='1',
                             failMode="standalone", position='45,70,0', range=100, 
                             ip='10.0.1.2')
+    ap3 = net.addAccessPoint('ap3', ssid='ssid_3', mode='g', channel='1',
+                            failMode="standalone", position='75,70,0', range=100, 
+                            ip='10.0.1.3')
     info("*** Configuring wifi nodes\n")
     net.configureWifiNodes()
 
@@ -144,8 +152,8 @@ def topology(args):
     info("*** Starting network\n")
     net.build()
 
-    ap1.start([])
-    ap2.start([])
+    # ap1.start([])
+    # ap2.start([])
    
     # stations["car1"].cmd('sysctl net.ipv4.ip_forward=1')
     # stations["car2"].cmd('echo 1 > /proc/sys/net/ipv4/ip_forward')

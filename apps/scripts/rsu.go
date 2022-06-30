@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
+
 	// "os"
 	// "os/exec"
 	"time"
@@ -27,29 +29,28 @@ func listen(d *DataLinkLayerChannel) {
 }
 
 func main() {
-	
+	intf_name := os.Args[1]+"-wlan1"
+	// wintf_name := os.Args[1]+"-eth2"
 	interfaces, err := net.Interfaces()
 	ifi, err := net.InterfaceByName(interfaces[6].Name)
 	addrs, _ := ifi.Addrs()
 
-	for _, intf := range interfaces {
-		println(intf.Name)
-		addrs, _ := ifi.Addrs()
-		for _, addr := range addrs {
-			println(addr.String())
-	
-		}
+	for index, iface := range interfaces {
+		log.Println(index, iface)
 	}
-	println("number of addresses", len(addrs), ifi.Name)
+
+	println("number of addresses", len(addrs), intf_name)
 	// ip := addrs[0].String()
 	
 
 
-	iChannel, err := NewDataLinkLayerChannel(VIEtherType)
+	iChannel, err := NewDataLinkLayerChannelWithIntf(VIEtherType, intf_name)
+	// wChannel, err := NewDataLinkLayerChannelWithIntf(VIEtherType, wintf_name)
 	if err != nil {
 		log.Fatalf("failed to create channel: %v", err)
 	}
 	go listen(iChannel)
+	// go listen(wChannel)
 
 	var mtype int
 	for {
@@ -59,7 +60,7 @@ func main() {
 		case 0:
 			iChannel.Broadcast([]byte("HI"))
 		case 1:
-			log.Print("flooding")
+			// wChannel.Broadcast([]byte("HI"))
 		}
 		time.Sleep(5 * time.Second)
 	}

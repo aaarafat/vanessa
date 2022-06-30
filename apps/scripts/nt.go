@@ -28,6 +28,19 @@ func neighborUpdate(d *DataLinkLayerChannel, nt *VNeighborTable) {
 	}
 
 }
+func listen(d *DataLinkLayerChannel) {
+	for {
+		
+		payload, addr, err := d.Read()
+		if err != nil {
+			log.Fatalf("failed to read from channel: %v", err)
+		}
+		fmt.Println()
+		log.Printf("Received \"%s\" from: [ %s ]", string(payload), addr.String())
+		
+	}
+
+}
 
 func main() {
 	
@@ -42,27 +55,35 @@ func main() {
 	neibourTable := NewNeighborTable(net.IP(ip))
 
 	nChannel, err := NewDataLinkLayerChannel(VNDEtherType)
+	iChannel, err := NewDataLinkLayerChannelWithIntf(VIEtherType, interfaces[2].Name)
+	go listen(iChannel) //rsu
+	// go listen(nChannel) //other cars
 	if err != nil {
 		log.Fatalf("failed to create channel: %v", err)
 	}
 	go neighborUpdate(nChannel, neibourTable)
 
 	var mtype int
+	rsuMAC, SSID := getRSU(net_ifi.Name)
+	mac, _ := net.ParseMAC(rsuMAC)
+	println(rsuMAC, mac.String())
+	if  strings.Compare(SSID, "") != 0{
+		fileName := "./"+SSID+".log"
+		appendToFile(fileName, ip)
+	}
 	for {
 
 		fmt.Scanf("%d", &mtype)
 		switch mtype {
 		case 0:
 			nChannel.Broadcast([]byte(ip))
-			rsuMAC, SSID := getRSU(net_ifi.Name)
-			println(rsuMAC)
-			if  strings.Compare(SSID, "") != 0{
-				fileName := "./"+SSID+".log"
-				appendToFile(fileName, ip)
-			}
+			
 			
 		case 1:
-			log.Print("flooding")
+			// iChannel.Broadcast([]byte(ip))
+			println("hello1")
+			iChannel.SendTo([]byte("hello"), mac)
+
 		}
 		time.Sleep(5 * time.Second)
 	}
