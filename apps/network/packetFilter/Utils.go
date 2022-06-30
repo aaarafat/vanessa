@@ -19,7 +19,7 @@ func AddDefaultGateway() error {
 	log.Println("Added default gateway")
 	return nil
 }
-func UnregisterGateway() {
+func DeleteDefaultGateway() {
 	cmd := exec.Command("route", "del", "default", "gw", "localhost")
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
@@ -27,13 +27,14 @@ func UnregisterGateway() {
 	}
 	log.Println("remove default gateway")
 }
-func AddIPTablesRule() {
+func ChainNFQUEUE() error{
 	cmd := exec.Command("iptables", "-t", "filter", "-A", "OUTPUT", "-j", "NFQUEUE", "-w", "--queue-num", "0")
-	stdoutStderr, err := cmd.CombinedOutput()
+	std, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Panic("couldn't add iptables rule, err: ", err, ",stderr: ", string(stdoutStderr))
+		return fmt.Errorf("Couldn't chain NFQUEUE, err: %#v, stderr: %#v", err, string(std))
 	}
 	log.Println("added NFQUEUE rule to OUTPUT chain in iptables")
+	return nil
 }
 
 func DeleteIPTablesRule() {
