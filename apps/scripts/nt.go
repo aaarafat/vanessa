@@ -55,7 +55,7 @@ func main() {
 	neibourTable := NewNeighborTable(net.ParseIP(ip))
 
 	nChannel, err := NewDataLinkLayerChannel(VNDEtherType)
-	iChannel, err := NewDataLinkLayerChannelWithIntf(VIEtherType, interfaces[2].Name)
+	iChannel, err := NewDataLinkLayerChannelWithInterface(VIEtherType, interfaces[2].Name)
 	go listen(iChannel) //rsu
 	// go listen(nChannel) //other cars
 	if err != nil {
