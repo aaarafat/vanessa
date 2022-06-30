@@ -35,7 +35,7 @@ func NewPacketFilter() (*PacketFilter, error) {
 		return nil, err
 	}
 	
-	SetMaxMSS(iface.Name, ip, 1400)
+	SetMSS(iface.Name, ip, 1400)
 
 	nfq, err := netfilter.NewNFQueue(0, 100, netfilter.NF_DEFAULT_PACKET_SIZE)
 	if err != nil {

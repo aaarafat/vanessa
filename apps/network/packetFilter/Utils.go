@@ -10,17 +10,7 @@ import (
 )
 
 
-
-func isIPv4(address string) bool {
-	return strings.Count(address, ":") < 2
-}
-
-func isIPv6(address string) bool {
-	return strings.Count(address, ":") >= 2
-}
-
 func RegisterGateway() error {
-	exec.Command("route", "del", "default", "gw", "localhost").Run()
 	cmd := exec.Command("route", "add", "default", "gw", "localhost")
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
@@ -38,7 +28,6 @@ func UnregisterGateway() {
 	log.Println("remove default gateway")
 }
 func AddIPTablesRule() {
-	exec.Command("iptables", "-t", "filter", "-D", "OUTPUT", "-j", "NFQUEUE", "-w").Run()
 	cmd := exec.Command("iptables", "-t", "filter", "-A", "OUTPUT", "-j", "NFQUEUE", "-w", "--queue-num", "0")
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
@@ -74,14 +63,10 @@ func MyIP(ifi *net.Interface) (net.IP, bool, error) {
 	}
 }
 
-func SetMaxMSS(ifaceName string, ip net.IP, mss int) {
-	cmd := exec.Command(
-		"ip", "route", "change", "10.0.0.0/8", "dev", ifaceName,
-		"proto", "kernel", "scope", "link", "src", ip.String(), "advmss", strconv.Itoa(mss),
-	)
-	stdoutStderr, err := cmd.CombinedOutput()
+func SetMSS(ifaceName string, ip net.IP, mss int) {
+	cmd := exec.Command("ip", "route", "change", "10.0.0.0/8", "dev", ifaceName, "proto", "kernel", "scope", "link", "src", ip.String(), "advmss", strconv.Itoa(mss))
+	std, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Panic("Couldn't change MSS, err: ", err, ",stderr: ", string(stdoutStderr))
+		log.Panic("Couldn't change MSS, err: ", err, ",stderr: ", string(std))
 	}
-	log.Println("Changed MSS to: ", mss)
 }
