@@ -10,13 +10,13 @@ import (
 )
 
 
-func RegisterGateway() error {
+func AddDefaultGateway() error {
 	cmd := exec.Command("route", "add", "default", "gw", "localhost")
-	stdoutStderr, err := cmd.CombinedOutput()
+	std, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("couldn't add default gateway, err: %#v, stderr: %#v", err, string(stdoutStderr))
+		return fmt.Errorf("Couldn't add default gateway, err: %#v, stderr: %#v", err, string(std))
 	}
-	log.Println("added default gateway")
+	log.Println("Added default gateway")
 	return nil
 }
 func UnregisterGateway() {

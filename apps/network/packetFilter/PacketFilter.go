@@ -21,7 +21,7 @@ func NewPacketFilter() (*PacketFilter, error) {
 	var err error
 	
 	AddIPTablesRule()
-	if err := RegisterGateway(); err != nil {
+	if err := AddDefaultGateway(); err != nil {
 		DeleteIPTablesRule()
 		log.Panic("done deleting")
 		return nil, err
