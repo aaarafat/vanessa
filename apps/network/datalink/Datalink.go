@@ -27,17 +27,10 @@ const (
 
 )
 
-func NewDataLinkLayerChannel(ether Ethertype) (*DataLinkLayerChannel, error) {
-	interfaces, err := net.Interfaces()
-	ifi, err := net.InterfaceByName(interfaces[1].Name)
-
-	if err != nil {
-		log.Fatalf("failed to open interface: %v", err)
-		return nil, err
-	}
+func newDataLinkLayerChannel(ether Ethertype , ifi net.Interface) (*DataLinkLayerChannel, error) {
 
 	// Open a raw socket using same EtherType as our frame.
-	c, err := packet.Listen(ifi, packet.Raw, int(ether), nil)
+	c, err := packet.Listen(&ifi, packet.Raw, int(ether), nil)
 	if err != nil {
 		log.Fatalf("failed to listen on channel: %v", err)
 		return nil, err
@@ -50,8 +43,17 @@ func NewDataLinkLayerChannel(ether Ethertype) (*DataLinkLayerChannel, error) {
 	}, nil
 
 }
+func NewDataLinkLayerChannel(ether Ethertype) (*DataLinkLayerChannel, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		log.Fatalf("failed to open interface: %v", err)
+		return nil, err
+	}
+	ifi := interfaces[1]
+	return newDataLinkLayerChannel(ether,ifi)
+}
 
-func NewDataLinkLayerChannelWithIntf(ether Ethertype, name string) (*DataLinkLayerChannel, error) {
+func NewDataLinkLayerChannelWithInterface(ether Ethertype, name string) (*DataLinkLayerChannel, error) {
 	// interfaces, err := net.Interfaces()
 	ifi, err := net.InterfaceByName(name)
 	println("connecting to:",name)
@@ -59,20 +61,7 @@ func NewDataLinkLayerChannelWithIntf(ether Ethertype, name string) (*DataLinkLay
 		log.Fatalf("failed to open interface: %v", err)
 		return nil, err
 	}
-
-	// Open a raw socket using same EtherType as our frame.
-	c, err := packet.Listen(ifi, packet.Raw, int(ether), nil)
-	if err != nil {
-		log.Fatalf("failed to listen on channel: %v", err)
-		return nil, err
-	}
-
-	return &DataLinkLayerChannel{
-		etherType: ether, // Set the channel type
-		channel:   c,
-		source:    ifi.HardwareAddr, // Identify the car as the sender.
-	}, nil
-
+	return newDataLinkLayerChannel(ether,*ifi)
 }
 
 func (d *DataLinkLayerChannel) SendTo(payload []byte, destination net.HardwareAddr) {
