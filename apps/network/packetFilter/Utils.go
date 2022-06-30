@@ -56,33 +56,22 @@ func DeleteIPTablesRule() {
 	log.Println("remove NFQUEUE rule to OUTPUT chain in iptables")
 }
 
-func GetMyIPs(iface *net.Interface) (net.IP, net.IP, error) {
-	addrs, err := iface.Addrs()
+func GetMyIPs(ifi *net.Interface) (net.IP, bool, error) {
+
+	addresses, err := ifi.Addrs()
 	if err != nil {
-		return nil, nil, err
+		return nil, false, err
 	}
-
-	var ip4, ip6 net.IP
-	for _, addr := range addrs {
-		var ip net.IP
-
-		switch v := addr.(type) {
-		case *net.IPNet:
-			ip = v.IP
-		case *net.IPAddr:
-			ip = v.IP
-		}
-
-		if isIPv4(ip.String()) {
-			ip4 = ip
-		} else if isIPv6(ip.String()) {
-			ip6 = ip
-		} else {
-			return nil, nil, fmt.Errorf("ip is not ip4 or ip6")
-		}
+	address := addresses[0]
+	s :=strings.Split(address.String(), "/")[0]
+	ip := net.ParseIP(s)
+	if ip.To4()!= nil {
+		return ip,false,nil
+	} else if ip.To16()!=nil {
+		return ip,true,nil
+	}else {
+		return nil, false, fmt.Errorf("IP can't be resolved")
 	}
-
-	return ip4, ip6, nil
 }
 
 func SetMaxMSS(ifaceName string, ip net.IP, mss int) {
