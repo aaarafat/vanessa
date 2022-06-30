@@ -20,10 +20,10 @@ const (
 
 // Lengths
 const (
-	RREQMessageLen = 192
-	RREPMessageLen = 160
-	RERRMessageLen = 96
-	DataMessageLen = 128
+	RREQMessageLen = 24
+	RREPMessageLen = 20
+	RERRMessageLen = 12
+	DataMessageLen = 16
 )
 
 // Default values

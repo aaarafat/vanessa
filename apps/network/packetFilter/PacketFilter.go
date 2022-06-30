@@ -45,13 +45,33 @@ func NewPacketFilter() (*PacketFilter, error) {
 	if err != nil {
 		log.Println(err)
 		return nil, err
-}
+	}
 
-	return &PacketFilter{
+	pf := &PacketFilter{
 		nfq: nfq,
 		srcIP: ip,
-		router: aodv.NewAodv(ip),
-	}, nil
+		router: nil,
+	}
+
+	pf.router = aodv.NewAodv(ip, pf.DataCallback)
+
+	return pf, nil
+}
+
+func (pf *PacketFilter) DataCallback(data []byte) {
+	header, err := UnmarshalIPHeader(data)
+
+	if err != nil {
+		log.Println(err)
+		return	
+	}
+
+	if header.destIP.Equal(pf.srcIP) {
+		log.Println("packet is for me")
+	}
+
+	payload := data[header.Length:]
+	log.Printf("PacketFilter received data: %v\n", payload)
 }
 
 func (pf *PacketFilter) StealPacket() {
@@ -60,6 +80,8 @@ func (pf *PacketFilter) StealPacket() {
 		select {
 		case p := <-packets:
 			packet := p.Packet.Data()
+			log.Printf("PacketFilter received packet: %v\n", packet)
+
 			header, err := UnmarshalIPHeader(packet)
 
 			if err != nil {
@@ -74,6 +96,8 @@ func (pf *PacketFilter) StealPacket() {
 
 				UpdateChecksum(packet)
 
+
+				log.Println(header.Version)
 				go pf.router.SendData(packet, header.destIP)
 			}
 
@@ -84,6 +108,7 @@ func (pf *PacketFilter) StealPacket() {
 func (pf *PacketFilter) Start() {
 	log.Printf("Starting PacketFilter for IP: %s.....\n", pf.srcIP)
 	go pf.StealPacket()
+	go pf.router.Start()
 }
 
 func (pf *PacketFilter) Close() {

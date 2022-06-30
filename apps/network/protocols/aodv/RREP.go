@@ -51,7 +51,7 @@ func (rrep *RREPMessage) Marshal() []byte {
 }
 
 func UnmarshalRREP(data []byte) (*RREPMessage, error) {
-	if len(data) != RREPMessageLen {
+	if len(data) < RREPMessageLen {
 		return nil, fmt.Errorf("RREP message length is %d, expected %d", len(data), RREPMessageLen)
 	}
 

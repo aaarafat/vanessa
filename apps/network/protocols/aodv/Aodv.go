@@ -19,9 +19,11 @@ type Aodv struct {
 	seqNum uint32
 	dataSeqNum uint32
 	rreqID uint32
+
+	callback func(data[]byte)
 }
 
-func NewAodv(srcIP net.IP) *Aodv {
+func NewAodv(srcIP net.IP, callback func(data[]byte)) *Aodv {
 	d, err := NewDataLinkLayerChannel(VAODVEtherType)
 	if err != nil {
 		log.Fatalf("failed to create channel: %v", err)
@@ -38,6 +40,7 @@ func NewAodv(srcIP net.IP) *Aodv {
 		seqNum: 0,
 		dataSeqNum: 0,
 		rreqID: 0,
+		callback: callback,
 	}
 }
 
@@ -210,6 +213,7 @@ func (a *Aodv) handleData(payload []byte, from net.HardwareAddr) {
 
 	if data.DestenationIP.Equal(a.srcIP) || data.DestenationIP.Equal(net.ParseIP(BroadcastIP)) {
 		log.Printf("Received: %s\n", data.String())
+		go a.callback(data.Data)
 	}
 	// update seq table
 	go a.dataSeqTable.Set(data.OriginatorIP, data.SeqNumber)

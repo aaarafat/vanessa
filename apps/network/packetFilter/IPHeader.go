@@ -25,15 +25,17 @@ type IPHeader struct {
 }
 
 func UnmarshalIPHeader(data []byte) (*IPHeader, error) {
+	fmt.Printf("UnmarshalIPHeader: %v\n", data)
 	if len(data) < IPv4HeaderLen {
 		return nil, fmt.Errorf("IPHeader length is %d, expected %d", len(data), IPv4HeaderLen)
 	}
 
 	header := &IPHeader{}
+	fmt.Println(data[0])
 	header.Version = byte(data[0]) >> 4
 
 	if header.Version != 4 {
-		return nil, fmt.Errorf("IP Packet is not version 4")
+		return nil, fmt.Errorf("IP Packet is not version 4, it's %d", header.Version)
 	}
 
 	header.Length = (byte(data[0]) << 4) >> 4

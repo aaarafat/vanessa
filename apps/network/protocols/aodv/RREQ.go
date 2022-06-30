@@ -62,7 +62,7 @@ func (rreq* RREQMessage) Marshal() []byte {
 }
 
 func UnmarshalRREQ(data []byte) (*RREQMessage, error) {
-	if len(data) != RREQMessageLen {
+	if len(data) < RREQMessageLen {
 		return nil, fmt.Errorf("RREQ message length is %d, expected %d", len(data), RREQMessageLen)
 	}
 	

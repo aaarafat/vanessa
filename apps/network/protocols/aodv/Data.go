@@ -29,7 +29,7 @@ func NewDataMessage(SrcIP net.IP, SeqNum uint32, data []byte) *DataMessage {
 }
 
 func (data *DataMessage) Marshal() []byte {
-	bytes := make([]byte, DataMessageLen)
+	bytes := make([]byte, DataMessageLen + len(data.Data))
 
 	bytes[0] = byte(data.Type)
 	binary.LittleEndian.PutUint16(bytes[1:], data.Flags)
@@ -38,7 +38,8 @@ func (data *DataMessage) Marshal() []byte {
 	copy(bytes[8:12], data.OriginatorIP.To4())
 	copy(bytes[12:16], data.DestenationIP.To4())
 
-	bytes = append(bytes, data.Data...)
+	// copy data to bytes
+	copy(bytes[16:], data.Data)
 
 	return bytes
 }
@@ -62,6 +63,6 @@ func UnmarshalData(data []byte) (*DataMessage, error) {
 }
 
 func (data *DataMessage) String() string {
-	return fmt.Sprintf("DataMessage{Type: %d, Flags: %d, HopCount: %d, SeqNumber: %d, OriginatorIP: %s, DestintionIO: %s, Data: %s}",
-		data.Type, data.Flags, data.HopCount, data.SeqNumber, data.OriginatorIP, data.DestenationIP, string(data.Data))
+	return fmt.Sprintf("DataMessage{Type: %d, Flags: %d, HopCount: %d, SeqNumber: %d, OriginatorIP: %s, DestintionIO: %s, Data: %v}",
+		data.Type, data.Flags, data.HopCount, data.SeqNumber, data.OriginatorIP, data.DestenationIP, data.Data)
 }

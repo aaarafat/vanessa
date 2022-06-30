@@ -43,7 +43,7 @@ func (RERR *RERRMessage) Marshal() []byte {
 }
 
 func UnmarshalRERR(data []byte) (*RERRMessage, error) {
-	if len(data) != RERRMessageLen {
+	if len(data) < RERRMessageLen {
 		return nil, fmt.Errorf("RERR message length is %d, expected %d", len(data), RERRMessageLen)
 	}
 
