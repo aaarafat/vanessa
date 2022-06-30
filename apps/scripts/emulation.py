@@ -148,6 +148,9 @@ def update_locations(message):
     }
     send_to_car(f"/tmp/car{id}.socket", payload)
 
+    # TODO: REMOVE THIS!!!!!!!!!!!!!!!!!!!!!!!
+    sio.emit("change", payload)
+
 
 def send_to_car(car_socket, payload):
     try:

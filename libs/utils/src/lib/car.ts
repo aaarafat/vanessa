@@ -69,6 +69,11 @@ export class Car {
       coordinates: this.coordinates,
     });
 
+    // TODO: REMOVE THIS!!!!!!!!!!!!!!!!!!!!
+    this.socket.on('change', (data: any) => {
+      console.log(data);
+    });
+
     this.draw();
     this.attachHandlers();
 
