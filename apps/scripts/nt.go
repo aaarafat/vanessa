@@ -6,8 +6,8 @@ import (
 	"net"
 	"os"
 	"os/exec"
-	"time"
 	"strings"
+	"time"
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
 )
@@ -52,7 +52,7 @@ func main() {
 	ip := strings.Split(addrs[0].String(), "/")[0]
 	println(ip)
 
-	neibourTable := NewNeighborTable(net.IP(ip))
+	neibourTable := NewNeighborTable(net.ParseIP(ip))
 
 	nChannel, err := NewDataLinkLayerChannel(VNDEtherType)
 	iChannel, err := NewDataLinkLayerChannelWithIntf(VIEtherType, interfaces[2].Name)
