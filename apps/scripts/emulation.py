@@ -1,8 +1,10 @@
 #!/usr/bin/python
 
 
+import glob
 import math
 import shutil
+import time
 from mn_wifi.node import UserAP
 from mininet.node import Controller
 import os
@@ -107,7 +109,7 @@ def add_car(message):
     if len(stations_pool) == 0:
         raise Exception("Pool ran out of stations")
 
-    st = stations_pool.pop()
+    st = stations_pool.pop(0)
     id = message['id']
     stations_car[id] = st
 
@@ -116,7 +118,7 @@ def add_car(message):
     st.setPosition(position)
     print(position)
 
-    st.cmd(f"sudo apps/scripts/car-unix -id {id} -debug")
+    st.cmd(f"sudo apps/scripts/car-unix -id {id} -debug &")
 
     payload = {
         'type': 'add-car',
@@ -124,6 +126,7 @@ def add_car(message):
             'coordinates': coordinates,
         }
     }
+    time.sleep(0.01)
     send_to_car(f"/tmp/car{id}.socket", payload)
 
 
@@ -138,7 +141,7 @@ def update_locations(message):
     stations_car[id].setPosition(position)
 
     lng, lat = coordinates["lng"], coordinates["lat"]
-    print(f"car {id} moved to {position}, lng: {lng} lat: {lat}")
+    # print(f"car {id} moved to {position}, lng: {lng} lat: {lat}")
 
     payload = {
         'type': 'update-location',
@@ -170,13 +173,13 @@ def topology(args):
 
     for i in range(STATIONS_COUNT):
         stations_pool.append(net.addStation(
-            f'car{i}', position="0,0,0", wlans=2))
+            f'car{i + 1}', position="0,0,0", wlans=2))
 
     net.configureWifiNodes()
 
     for i, st in enumerate(stations_pool):
         net.addLink(st, cls=adhoc,
-                    intf=f'car{i}-wlan0', **LINK_CONFIG)
+                    intf=f'car{i + 1}-wlan0', **LINK_CONFIG)
 
     # info("*** Configuring wifi nodes\n")
     # net.configureWifiNodes()
@@ -214,11 +217,16 @@ def to_grid(coordinates):
     x = EARTH_RAD * lng * math.pi/180
     y = EARTH_RAD * lat * math.pi/180
 
-    return f"{x}, {y}, 0"
+    return f"{x},{y},0"
 
 
 if __name__ == '__main__':
     setLogLevel('info')
     shutil.rmtree('/logs', ignore_errors=True)
+    for f in glob.glob('/tmp/car*.socket'):
+        try:
+            os.remove(f)
+        except:
+            pass
     threading.Thread(target=run_socket, daemon=True).start()
     topology(sys.argv)
