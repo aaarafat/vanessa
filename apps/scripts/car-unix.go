@@ -113,7 +113,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	addr, err := net.ResolveUnixAddr("unix", socketAddress)
+	addr, err := net.ResolveUnixAddr("unixgram", socketAddress)
 	if err != nil {
 		logger.Log("Failed to resolve: %v\n", err)
 		os.Exit(1)

@@ -31,6 +31,8 @@ export class Car {
   private layer: mapboxgl.CircleLayer | undefined;
   private directionsSource: mapboxgl.GeoJSONSource | undefined;
   private directionsLayer: mapboxgl.LineLayer | undefined;
+  private communicationRangeSource: mapboxgl.GeoJSONSource | undefined;
+  private communicationRangeLayer: mapboxgl.FillLayer | undefined;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private prevTime: number;
   private map: mapboxgl.Map;
@@ -50,7 +52,7 @@ export class Car {
     this.lat = car.lat || 0;
     this.lng = car.lng || 0;
     this.prevCoordinates = this.coordinates;
-    this.speed = car.speed || 10;
+    this.speed = car.speed ?? 10;
     this.route = car.route || [];
     this.map = car.map;
     this.socket = car.socket;
@@ -144,6 +146,49 @@ export class Car {
         'first-layer'
       )
       .getLayer(`car-${this.id}-route`) as mapboxgl.LineLayer;
+
+    this.communicationRangeSource = this.map
+      .addSource(`car-${this.id}-com-range`, {
+        type: 'geojson',
+        data: this.communicationRangeFeature,
+      })
+      .getSource(`car-${this.id}-com-range`) as mapboxgl.GeoJSONSource;
+
+    this.communicationRangeLayer = this.map
+      .addLayer({
+        id: `car-${this.id}-com-range`,
+        type: 'fill',
+        source: `car-${this.id}-com-range`,
+        layout: {
+          visibility: 'none',
+        },
+        paint: {
+          'fill-color': '#f03b20',
+          'fill-opacity': 0.2,
+          'fill-outline-color': '#f03b20',
+        },
+      })
+      .getLayer(`car-${this.id}-com-range`) as mapboxgl.FillLayer;
+  }
+
+  private get communicationRangeFeature() {
+    return turf.buffer(
+      {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [this.coordinates.lng, this.coordinates.lat],
+            },
+            properties: {},
+          },
+        ],
+      },
+      78,
+      { units: 'meters' }
+    );
   }
 
   private get props(): CarProps {
@@ -280,6 +325,11 @@ export class Car {
     this.popup.once('close', () => {
       this.popup = null;
       this.map?.setLayoutProperty(`car-${this.id}-route`, 'visibility', 'none');
+      this.map?.setLayoutProperty(
+        `car-${this.id}-com-range`,
+        'visibility',
+        'none'
+      );
       this.emit('popup-closed', this);
     });
 
@@ -289,6 +339,11 @@ export class Car {
 
     this.map?.setLayoutProperty(
       `car-${this.id}-route`,
+      'visibility',
+      'visible'
+    );
+    this.map?.setLayoutProperty(
+      `car-${this.id}-com-range`,
       'visibility',
       'visible'
     );
@@ -312,6 +367,7 @@ export class Car {
     }
 
     this.popup.setLngLat(this.coordinates as mapboxgl.LngLatLike);
+    this.communicationRangeSource?.setData(this.communicationRangeFeature);
   }
 
   private smoothlyFlyToCar(now = false) {
