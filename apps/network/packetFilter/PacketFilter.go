@@ -17,7 +17,7 @@ type PacketFilter struct {
 	router *aodv.Aodv
 }
 
-func NewPacketFilter() (*PacketFilter, error) {
+func newPacketFilter(ifi net.Interface) (*PacketFilter, error) {
 	var err error
 	
 	if err := ChainNFQUEUE(); err != nil {
@@ -31,16 +31,14 @@ func NewPacketFilter() (*PacketFilter, error) {
 		log.Panic("Removed Default Gatway")
 		return nil, err
 	}
-	interfaces, err := net.Interfaces()
-	iface := interfaces[1]
-	ip, _, err := MyIP(&iface)
+	ip, _, err := MyIP(&ifi)
 	ip = ip.To4()
 	if err != nil {
 		log.Panicf("failed to get iface ips, err: %s", err)
 		return nil, err
 	}
 	
-	SetMSS(iface.Name, ip, 1400)
+	SetMSS(ifi.Name, ip, 1400)
 
 	nfq, err := netfilter.NewNFQueue(0, 100, netfilter.NF_DEFAULT_PACKET_SIZE)
 	if err != nil {
@@ -58,6 +56,22 @@ func NewPacketFilter() (*PacketFilter, error) {
 
 	return pf, nil
 }
+
+func NewPacketFilter() (*PacketFilter, error) {
+
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	iface := interfaces[1]
+	return newPacketFilter(iface)
+}
+
+func NewPacketFilterWithInterface(ifi net.Interface) (*PacketFilter, error) {
+	return newPacketFilter(ifi)
+}
+
 
 func (pf *PacketFilter) DataCallback(data []byte) {
 	header, err := UnmarshalIPHeader(data)
