@@ -56,7 +56,7 @@ func DeleteIPTablesRule() {
 	log.Println("remove NFQUEUE rule to OUTPUT chain in iptables")
 }
 
-func GetMyIPs(ifi *net.Interface) (net.IP, bool, error) {
+func MyIP(ifi *net.Interface) (net.IP, bool, error) {
 
 	addresses, err := ifi.Addrs()
 	if err != nil {
