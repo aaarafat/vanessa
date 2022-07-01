@@ -2,6 +2,7 @@
 
 
 import glob
+from http import client
 import math
 import shutil
 import time
@@ -129,6 +130,11 @@ def add_car(message):
     time.sleep(0.01)
     send_to_car(f"/tmp/car{id}.socket", payload)
 
+    # run in a new thread
+    time.sleep(0.01)
+    threading.Thread(target=recieve_from_car, args=(
+        f"/tmp/car{id}write.socket",)).start()
+
 
 @sio.on('update-location')
 def update_locations(message):
@@ -151,8 +157,22 @@ def update_locations(message):
     }
     send_to_car(f"/tmp/car{id}.socket", payload)
 
-    # TODO: REMOVE THIS!!!!!!!!!!!!!!!!!!!!!!!
-    sio.emit("change", payload)
+
+def recieve_from_car(car_socket):
+    try:
+        open(car_socket, 'w').close()
+        server = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        server.bind(car_socket)
+        while True:
+            sock, _ = server.accept()
+            data = sock.recv(1024)
+            print(data)
+            if data:
+                data = data.decode('ASCII')
+                sio.emit('change', data)
+    except Exception as e:
+        print(f'recieve_from_car error: {e}')
+        pass
 
 
 def send_to_car(car_socket, payload):
@@ -160,7 +180,8 @@ def send_to_car(car_socket, payload):
         client = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
         client.connect(car_socket)
         client.send(json.dumps(payload).encode('ASCII'))
-    except:
+    except Exception as e:
+        print(f'send_to_car error: {e}')
         pass
 
 

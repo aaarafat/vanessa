@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"time"
 )
 
 type Logger struct {
@@ -94,6 +95,40 @@ func reader(d *json.Decoder) {
 	}
 }
 
+
+func testWrite(id int) {
+	time.Sleep(time.Millisecond * 100)
+	
+	for {
+		// sleep for 5 sec
+		time.Sleep(time.Second * 5)		
+
+		conn, err := initUnixWriteSocket(id)
+		if err != nil {
+			logger.Log("Error: %v\n", err)
+			continue
+		}
+		_, err = conn.Write([]byte("LOL!!!!!"))
+		if err != nil {
+			logger.Log("Error: %v\n", err)
+		}
+		logger.Log("Sent message\n")
+		conn.Close()
+	}
+}
+
+func initUnixWriteSocket(id int) (*net.UnixConn, error) {
+	addr := fmt.Sprintf("/tmp/car%dwrite.socket", id)	
+	logger.Log("Connecting to %s\n", addr)
+	conn, err := net.DialUnix("unixgram", nil, &net.UnixAddr{Name: addr, Net: "unixgram"})
+	if err != nil {
+		logger.Log("Error: %v\n", err)
+		return nil, err
+	}
+	logger.Log("Connected\n")
+	return conn, nil
+}
+
 func main() {
 	var id int
 	flag.IntVar(&id, "id", 0, "ID of the car")
@@ -126,9 +161,15 @@ func main() {
 	}
 	defer conn.Close()
 
+
 	d := json.NewDecoder(conn)
 	logger.Log("Listening to %s ..\n", socketAddress)
-	reader(d)
+
+	go testWrite(id)
+
+	go reader(d)
+
+	select {}
 }
 
 func InitLogger(id int) (Logger, *os.File) {
