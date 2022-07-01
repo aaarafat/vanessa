@@ -13,8 +13,9 @@ from mininet.log import setLogLevel, info
 from mn_wifi.link import wmediumd, adhoc
 from mn_wifi.cli import CLI
 from mn_wifi.net import Mininet_wifi
-from mn_wifi.vanet import vanet
 from mn_wifi.wmediumdConnector import interference
+
+from mininet.node import Controller, UserAP
 import json
 # ap_scan
 # configureAdhoc
@@ -37,7 +38,7 @@ APP = Flask("mininet")
 sio = SocketIO(APP, cors_allowed_origins="*")
 "Create a network."
 net = Mininet_wifi(link=wmediumd, wmediumd_mode=interference,
-                   autoAssociation=True, ac_method='ssf') #ssf or llf
+                   controller=Controller, accessPoint=UserAP, autoAssociation=True, ac_method='ssf') #ssf or llf
 stations = {}
 kwargs = dict(
     wlans=2,
