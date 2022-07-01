@@ -163,8 +163,9 @@ def recieve_from_car(car_socket):
         open(car_socket, 'w').close()
         server = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
         server.bind(car_socket)
+        server.listen(1)
         while True:
-            sock, _ = server.accept()
+            (sock, _) = server.accept()
             data = sock.recv(1024)
             print(data)
             if data:
