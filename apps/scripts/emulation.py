@@ -40,13 +40,13 @@ sio = SocketIO(APP, cors_allowed_origins="*")
 net = Mininet_wifi(link=wmediumd, wmediumd_mode=interference,
                    controller=Controller, accessPoint=UserAP, autoAssociation=True, ac_method='ssf') #ssf or llf
 stations = {}
-kwargs = dict(
+accessPoints = {}
+car_kwargs = dict(
     wlans=2,
     bgscan_threshold=-60,
     s_inverval=5,
     l_interval=10
     )
-
 
 @sio.on('connect')
 def connected():
@@ -76,10 +76,10 @@ def add_car(data):
     print(f"card id : {data.id}")
     print(f"card position : {data.pos}")
     stations[data.id] = net.addStation(data.id, position=data.pos,
-                                       **kwargs)
+                                       **car_kwargs)
     net.addLink(stations[data.id], cls=adhoc, intf=f"{data.id}-wlan0",
                 ssid='adhocNet', mode='g', channel=5,
-                ht_cap='HT40+',  **kwargs)
+                ht_cap='HT40+')
     # TODO save to json file
     # TODO the aodv protocol
 
@@ -95,28 +95,30 @@ def save(path, content):
 
 info("*** Creating nodes\n")
 
-#kwargs['range'] = 100
-stations["car1"] = net.addStation('car1', position="50, 100, 0",
-                                  **kwargs)
-stations["car2"] = net.addStation('car2', position="100, 100, 0",
-                                  **kwargs)
-stations["car3"] = net.addStation('car3', position="140, 100, 0",
-                                  **kwargs)
 
+
+stations["car1"] = net.addStation('car1', position="50, 100, 0",
+                                  **car_kwargs)
+stations["car2"] = net.addStation('car2', position="100, 100, 0",
+                                  **car_kwargs)
+stations["car3"] = net.addStation('car3', position="140, 100, 0",
+                                  **car_kwargs)
+
+
+rsu1 = net.addAccessPoint('rsu1', ssid='VANESSA', mode='g', channel='1',
+                        failMode="standalone", position='15,70,0', range=100,
+                        ip='10.0.1.1')
+rsu2 = net.addAccessPoint('rsu2', ssid='VANESSA', mode='g', channel='1',
+                        failMode="standalone", position='45,70,0', range=100, 
+                        ip='10.0.1.2')
+rsu3 = net.addAccessPoint('rsu3', ssid='VANESSA', mode='g', channel='1',
+                        failMode="standalone", position='75,70,0', range=100, 
+                        ip='10.0.1.3')
 
 def topology(args):
-    kwargs = dict(wlans=1)
 
     net.setPropagationModel(model="logDistance", exp=4)
-    ap1 = net.addAccessPoint('ap1', ssid='ssid_1', mode='g', channel='1',
-                            failMode="standalone", position='15,70,0', range=100,
-                            ip='10.0.1.1')
-    ap2 = net.addAccessPoint('ap2', ssid='ssid_2', mode='g', channel='1',
-                            failMode="standalone", position='45,70,0', range=100, 
-                            ip='10.0.1.2')
-    ap3 = net.addAccessPoint('ap3', ssid='ssid_3', mode='g', channel='1',
-                            failMode="standalone", position='75,70,0', range=100, 
-                            ip='10.0.1.3')
+
     info("*** Configuring wifi nodes\n")
     net.configureWifiNodes()
 
@@ -127,9 +129,6 @@ def topology(args):
     # to work with babel
     protocols = ['babel', 'batman_adv', 'batmand', 'olsrd', 'olsrd2']
     kwargs = dict()
-    for proto in args:
-        if proto in protocols:
-            kwargs['proto'] = proto
 
     net.addLink(stations["car1"], cls=adhoc, intf='car1-wlan0',
                 ssid='adhocNet', mode='g', channel=5,
