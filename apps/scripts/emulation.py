@@ -158,19 +158,18 @@ def update_locations(message):
     send_to_car(f"/tmp/car{id}.socket", payload)
 
 
+sockets = {}
+
+
 def recieve_from_car(car_socket):
     try:
-        open(car_socket, 'w').close()
         server = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
         server.bind(car_socket)
-        server.listen(1)
+        print(f"Listening on {car_socket}")
         while True:
-            (sock, _) = server.accept()
-            data = sock.recv(1024)
-            print(data)
-            if data:
-                data = data.decode('ASCII')
-                sio.emit('change', data)
+            data = server.recv(1024)
+            sio.emit('change', data)
+
     except Exception as e:
         print(f'recieve_from_car error: {e}')
         pass

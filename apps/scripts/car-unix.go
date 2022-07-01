@@ -117,10 +117,10 @@ func testWrite(id int) {
 	}
 }
 
-func initUnixWriteSocket(id int) (*net.UnixConn, error) {
+func initUnixWriteSocket(id int) (net.Conn, error) {
 	addr := fmt.Sprintf("/tmp/car%dwrite.socket", id)	
 	logger.Log("Connecting to %s\n", addr)
-	conn, err := net.DialUnix("unixgram", nil, &net.UnixAddr{Name: addr, Net: "unixgram"})
+	conn, err := net.Dial("unixgram", addr)
 	if err != nil {
 		logger.Log("Error: %v\n", err)
 		return nil, err
@@ -167,9 +167,7 @@ func main() {
 
 	go testWrite(id)
 
-	go reader(d)
-
-	select {}
+	reader(d)
 }
 
 func InitLogger(id int) (Logger, *os.File) {
