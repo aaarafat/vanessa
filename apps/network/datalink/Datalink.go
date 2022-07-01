@@ -53,15 +53,19 @@ func NewDataLinkLayerChannel(ether Ethertype) (*DataLinkLayerChannel, error) {
 	return newDataLinkLayerChannel(ether,ifi)
 }
 
-func NewDataLinkLayerChannelWithInterface(ether Ethertype, name string) (*DataLinkLayerChannel, error) {
-	// interfaces, err := net.Interfaces()
-	ifi, err := net.InterfaceByName(name)
-	println("connecting to:",name)
+func NewDataLinkLayerChannelWithInterface(ether Ethertype, index int) (*DataLinkLayerChannel, error) {
+	interfaces, err := net.Interfaces()
 	if err != nil {
 		log.Fatalf("failed to open interface: %v", err)
 		return nil, err
 	}
-	return newDataLinkLayerChannel(ether,*ifi)
+	ifi := interfaces[index]
+	println("connecting to:",ifi.Name)
+	if err != nil {
+		log.Fatalf("failed to open interface: %v", err)
+		return nil, err
+	}
+	return newDataLinkLayerChannel(ether,ifi)
 }
 
 func (d *DataLinkLayerChannel) SendTo(payload []byte, destination net.HardwareAddr) {
