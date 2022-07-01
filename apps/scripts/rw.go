@@ -23,10 +23,12 @@ func read(d *DataLinkLayerChannel) {
 func main() {
 
 	d, err := NewDataLinkLayerChannel(VEtherType)
+	drsu, err := NewDataLinkLayerChannelWithInterface(VEtherType,2)
 	if err != nil {
 		log.Fatalf("failed to create channel: %v", err)
 	}
 	go read(d)
+	go read(drsu)
 
 	var message string
 	var mtype int
@@ -37,7 +39,7 @@ func main() {
 		case 0:
 			d.Broadcast([]byte(message))
 		case 1:
-			log.Print("flooding")
+			drsu.Broadcast([]byte(message))
 		}
 	}
 }

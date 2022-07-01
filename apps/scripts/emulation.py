@@ -15,7 +15,8 @@ from mn_wifi.cli import CLI
 from mn_wifi.net import Mininet_wifi
 from mn_wifi.wmediumdConnector import interference
 
-from mininet.node import Controller, UserAP
+from mininet.node import Controller
+from mn_wifi.node import UserAP
 import json
 # ap_scan
 # configureAdhoc
@@ -107,13 +108,14 @@ stations["car3"] = net.addStation('car3', position="140, 100, 0",
 
 rsu1 = net.addAccessPoint('rsu1', ssid='VANESSA', mode='g', channel='1',
                         failMode="standalone", position='15,70,0', range=100,
-                        ip='10.0.1.1')
+                        ip='10.0.1.1', cls=UserAP, inNamespace=True)
 rsu2 = net.addAccessPoint('rsu2', ssid='VANESSA', mode='g', channel='1',
                         failMode="standalone", position='45,70,0', range=100, 
-                        ip='10.0.1.2')
+                        ip='10.0.1.2', cls=UserAP, inNamespace=True)
 rsu3 = net.addAccessPoint('rsu3', ssid='VANESSA', mode='g', channel='1',
                         failMode="standalone", position='75,70,0', range=100, 
-                        ip='10.0.1.3')
+                        ip='10.0.1.3', cls=UserAP, inNamespace=True)
+c1 = net.addController('c1')
 
 def topology(args):
 
@@ -151,9 +153,10 @@ def topology(args):
     # overlap.
     info("*** Starting network\n")
     net.build()
-
-    # ap1.start([])
-    # ap2.start([])
+    c1.start()
+    rsu1.start([c1])
+    rsu2.start([c1])
+    rsu3.start([c1])
    
     # stations["car1"].cmd('sysctl net.ipv4.ip_forward=1')
     # stations["car2"].cmd('echo 1 > /proc/sys/net/ipv4/ip_forward')
