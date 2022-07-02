@@ -19,8 +19,10 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr, IfiIndex int) {
 		return
 	}
 
-	log.Printf("Received: %s\n", rreq.String())
+	log.Printf("Interface %d: Received: %s\n", IfiIndex, rreq.String())
 	// update the routing table
+	go a.routingTable.Update(rreq.OriginatorIP, from, rreq.HopCount, ActiveRouteTimeMS, rreq.OriginatorSequenceNumber, IfiIndex)
+
 	// update seq table
 	go a.seqTable.Set(rreq.OriginatorIP, rreq.RREQID)
 
@@ -54,7 +56,7 @@ func (a *Aodv) handleRREP(payload []byte, from net.HardwareAddr, IfiIndex int) {
 		return
 	}
 
-	log.Printf("Received: %s\n", rrep.String())
+	log.Printf("Inteface %d: Received: %s\n", IfiIndex, rrep.String())
 	// update the routing table
 	go a.routingTable.Update(rrep.DestinationIP, from, rrep.HopCount, rrep.LifeTime, rrep.DestinationSeqNum, IfiIndex)
 
