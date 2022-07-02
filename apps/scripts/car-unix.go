@@ -95,20 +95,23 @@ func reader(d *json.Decoder) {
 	}
 }
 
-
 func testWrite(id int) {
 	time.Sleep(time.Millisecond * 100)
-	
+
 	for {
 		// sleep for 5 sec
-		time.Sleep(time.Second * 5)		
+		time.Sleep(time.Second * 5)
 
 		conn, err := initUnixWriteSocket(id)
 		if err != nil {
 			logger.Log("Error: %v\n", err)
 			continue
 		}
-		_, err = conn.Write([]byte("LOL!!!!!"))
+		err = json.NewEncoder(conn).Encode(map[string]interface{}{
+			"id":   id,
+			"data": "Hello from car",
+		})
+
 		if err != nil {
 			logger.Log("Error: %v\n", err)
 		}
@@ -118,7 +121,7 @@ func testWrite(id int) {
 }
 
 func initUnixWriteSocket(id int) (net.Conn, error) {
-	addr := fmt.Sprintf("/tmp/car%dwrite.socket", id)	
+	addr := fmt.Sprintf("/tmp/car%dwrite.socket", id)
 	logger.Log("Connecting to %s\n", addr)
 	conn, err := net.Dial("unixgram", addr)
 	if err != nil {
@@ -160,7 +163,6 @@ func main() {
 		os.Exit(1)
 	}
 	defer conn.Close()
-
 
 	d := json.NewDecoder(conn)
 	logger.Log("Listening to %s ..\n", socketAddress)

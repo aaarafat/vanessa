@@ -7,6 +7,7 @@ export interface SimulationState {
   cars: Car[];
   rsusData: Partial<IRSU>[];
   focusedCar: number | null;
+  carsReceivedMessages: Record<string, any>;
 }
 
 const initialState: SimulationState = {
@@ -32,6 +33,7 @@ const initialState: SimulationState = {
   ],
   rsus: [],
   cars: [],
+  carsReceivedMessages: {},
   focusedCar: null,
 };
 
@@ -53,6 +55,7 @@ export const simulationSlice = createSlice({
     },
     addCar: (state, action: PayloadAction<Car>) => {
       state.cars.push(action.payload);
+      state.carsReceivedMessages[action.payload.id] = [];
     },
     addRSU: (state, action: PayloadAction<RSU>) => {
       state.rsus.push(action.payload);
@@ -75,11 +78,20 @@ export const simulationSlice = createSlice({
     focusCar: (state, action: PayloadAction<number>) => {
       state.cars.forEach((car) => car.hide());
       state.cars[action.payload].show(true);
-      state.focusedCar = action.payload;
+      state.focusedCar = state.cars[action.payload].id;
     },
     unfocusCar: (state) => {
       state.cars.forEach((car) => car.show());
       state.focusedCar = null;
+    },
+    addMessage: (
+      state,
+      action: PayloadAction<{ id: number; message: any }>
+    ) => {
+      if (!state.carsReceivedMessages[action.payload.id]) return;
+      state.carsReceivedMessages[action.payload.id].push(
+        action.payload.message
+      );
     },
   },
 });
@@ -87,7 +99,14 @@ export const simulationSlice = createSlice({
 // export const { increment, decrement, incrementByAmount } =
 //   simulationSlice.actions;
 
-export const { initRSUs, addCar, addRSU, clearState, focusCar, unfocusCar } =
-  simulationSlice.actions;
+export const {
+  initRSUs,
+  addCar,
+  addRSU,
+  clearState,
+  focusCar,
+  unfocusCar,
+  addMessage,
+} = simulationSlice.actions;
 
 export default simulationSlice.reducer;

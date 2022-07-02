@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useContext, useEffect } from 'react';
 import styled from 'styled-components';
-import { useAppSelector } from './store';
+import { useAppDispatch, useAppSelector } from './store';
+import { SocketContext } from '../context';
+import { addMessage } from './store/simulationSlice';
 
 const Container = styled.div<{ open: boolean }>`
   display: flex;
@@ -18,6 +20,7 @@ const Container = styled.div<{ open: boolean }>`
   align-items: stretch;
   transition: right 0.3s ease-in-out;
   flex-direction: column;
+  overflow: auto;
 `;
 
 const Message = styled.div`
@@ -25,17 +28,33 @@ const Message = styled.div`
   padding: 0.5rem;
 `;
 
-const MessagesViewer: React.FC<{}> = () => {
-  const car = useAppSelector(({ simulation }) =>
+const MessagesViewer: React.FC = () => {
+  const socket = useContext(SocketContext);
+  const messages = useAppSelector(({ simulation }) =>
     simulation.focusedCar !== null
-      ? simulation.cars[simulation.focusedCar]
+      ? simulation.carsReceivedMessages[simulation.focusedCar]
       : null
   );
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    socket?.on('change', (data: ArrayBuffer) => {
+      const message = JSON.parse(
+        String.fromCharCode.apply(null, new Uint8Array(data) as any)
+      );
+      dispatch(
+        addMessage({
+          id: message.id as number,
+          message: message.data,
+        })
+      );
+    });
+  }, [socket]);
 
   return (
-    <Container open={!!car}>
-      {car?.receivedMessages.map((message, index) => (
-        <Message key={index}>{JSON.stringify(message, null, 2)}</Message>
+    <Container open={!!messages}>
+      {messages?.map((message: any, index: number) => (
+        <Message key={index}>{message}</Message>
       ))}
     </Container>
   );

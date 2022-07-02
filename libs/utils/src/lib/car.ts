@@ -320,10 +320,6 @@ export class Car {
         coordinates: this.coordinates,
       });
     });
-
-    this.socket.on('change', (data: any) => {
-      this.receivedMessages.push(data);
-    });
   };
 
   private onClick = () => {
