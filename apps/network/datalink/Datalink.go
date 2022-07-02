@@ -12,7 +12,7 @@ type DataLinkLayerChannel struct {
 	source    net.HardwareAddr
 	etherType Ethertype
 	channel   *packet.Conn
-	Ifi 		 net.Interface
+	IfiIndex 	int
 }
 
 type Ethertype int
@@ -26,7 +26,7 @@ const (
 
 )
 
-func newDataLinkLayerChannel(ether Ethertype , ifi net.Interface) (*DataLinkLayerChannel, error) {
+func newDataLinkLayerChannel(ether Ethertype , ifi net.Interface, ifiIndex int) (*DataLinkLayerChannel, error) {
 
 	// Open a raw socket using same EtherType as our frame.
 	c, err := packet.Listen(&ifi, packet.Raw, int(ether), nil)
@@ -39,7 +39,7 @@ func newDataLinkLayerChannel(ether Ethertype , ifi net.Interface) (*DataLinkLaye
 		etherType: ether, // Set the channel type
 		channel:   c,
 		source:    ifi.HardwareAddr, // Identify the car as the sender.
-		Ifi: ifi,
+		IfiIndex: ifiIndex,
 	}, nil
 
 }
@@ -50,7 +50,7 @@ func NewDataLinkLayerChannel(ether Ethertype) (*DataLinkLayerChannel, error) {
 		return nil, err
 	}
 	ifi := interfaces[1]
-	return newDataLinkLayerChannel(ether,ifi)
+	return newDataLinkLayerChannel(ether,ifi,1)
 }
 
 func NewDataLinkLayerChannelWithInterface(ether Ethertype, index int) (*DataLinkLayerChannel, error) {
@@ -65,7 +65,7 @@ func NewDataLinkLayerChannelWithInterface(ether Ethertype, index int) (*DataLink
 		log.Fatalf("failed to open interface: %v", err)
 		return nil, err
 	}
-	return newDataLinkLayerChannel(ether,ifi)
+	return newDataLinkLayerChannel(ether,ifi,index)
 }
 
 func (d *DataLinkLayerChannel) SendTo(payload []byte, destination net.HardwareAddr) {

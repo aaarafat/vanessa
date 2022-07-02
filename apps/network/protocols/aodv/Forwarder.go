@@ -25,9 +25,8 @@ func NewForwarder(srcIP net.IP, channels []*DataLinkLayerChannel) *Forwarder {
 func (f *Forwarder) ForwardToAllExcept(payload []byte, addr net.HardwareAddr) {
 	for item := range f.neighborsTable.Iter() {
 		neighborMac := item.MAC
-		neighborIfiIndex := item.IfiIndex
 		if neighborMac.String() != addr.String() {
-			f.ForwardTo(payload, neighborMac, neighborIfiIndex)
+			f.ForwardTo(payload, neighborMac, 1)
 		}
 	}
 }
@@ -41,11 +40,13 @@ func (f *Forwarder) ForwardTo(payload []byte, addr net.HardwareAddr, index int) 
 func (f *Forwarder) ForwardToAll(payload []byte) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
-	for _, channel := range f.channels {
-		channel.Broadcast(payload)
-	}
+	f.channels[1].Broadcast(payload)
 }
 
 func (f *Forwarder) Start() {
 	go f.neighborsTable.Run()
+}
+
+func (f *Forwarder) Close() {
+	f.neighborsTable.Close()
 }
