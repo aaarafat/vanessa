@@ -3,7 +3,6 @@ package datalink
 import (
 	"log"
 	"net"
-	"sync"
 
 	"github.com/mdlayher/ethernet"
 	"github.com/mdlayher/packet"
@@ -13,7 +12,7 @@ type DataLinkLayerChannel struct {
 	source    net.HardwareAddr
 	etherType Ethertype
 	channel   *packet.Conn
-	lock 		  sync.RWMutex
+	Ifi 		 net.Interface
 }
 
 type Ethertype int
@@ -40,6 +39,7 @@ func newDataLinkLayerChannel(ether Ethertype , ifi net.Interface) (*DataLinkLaye
 		etherType: ether, // Set the channel type
 		channel:   c,
 		source:    ifi.HardwareAddr, // Identify the car as the sender.
+		Ifi: ifi,
 	}, nil
 
 }

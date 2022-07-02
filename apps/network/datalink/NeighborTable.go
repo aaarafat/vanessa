@@ -11,35 +11,52 @@ import (
 
 type VNeighborTable struct {
 	table *hashmap.HashMap
-	channel *DataLinkLayerChannel
+	channels []*DataLinkLayerChannel
 	SrcIP net.IP
 }
 
 type VNeighborEntry struct {
 	MAC  net.HardwareAddr
 	IP net.IP
+	IfiIndex int
 }
 
 const (
 	VNeighborTable_UPDATE_INTERVAL = 5
 )
 
-func NewNeighborTable(srcIP  net.IP) *VNeighborTable {
-	d, err := NewDataLinkLayerChannel(VNDEtherType)
+func createChannels() []*DataLinkLayerChannel {
+	interfaces, err := net.Interfaces()
 	if err != nil {
-		log.Fatalf("failed to create channel: %v", err)
+		log.Fatalf("failed to open interface: %v", err)
+		return nil
 	}
+	channels := make([]*DataLinkLayerChannel, len(interfaces))
+	for i, ifiIndex := range interfaces {
+		ch, err := NewDataLinkLayerChannelWithInterface(VNDEtherType, ifiIndex.Index)
+		if err != nil {
+			log.Fatalf("failed to create channel: %v", err)
+		}
+		channels[i] = ch
+	}
+
+	return channels
+}
+
+func NewNeighborTable(srcIP  net.IP) *VNeighborTable {
+	channels := createChannels()
 
 	return &VNeighborTable{
 		table: &hashmap.HashMap{},
-		channel: d,
+		channels: channels,
 		SrcIP: srcIP,
 	}
 }
-func NewNeighborEntry(ip net.IP, mac net.HardwareAddr) *VNeighborEntry {
+func NewNeighborEntry(ip net.IP, mac net.HardwareAddr, ifiIndex int) *VNeighborEntry {
 	return &VNeighborEntry{
 		IP: ip,
 		MAC: mac,
+		IfiIndex: ifiIndex,
 	}
 }
 
@@ -122,10 +139,10 @@ func (nt *VNeighborTable) Iter() <-chan *VNeighborEntry {
 	}()
 	return ch
 }
-func (nt *VNeighborTable) Update() {
+func (nt *VNeighborTable) Update(channel *DataLinkLayerChannel) {
 	for {
-		payload, addr, err := nt.channel.Read()
-		entry := NewNeighborEntry(net.IP(payload), addr)
+		payload, addr, err := channel.Read()
+		entry := NewNeighborEntry(net.IP(payload), addr, channel.Ifi.Index)
 		nt.Set(addr.String() ,entry)
 		if err != nil {
 			log.Fatalf("failed to read from channel: %v", err)
@@ -133,10 +150,16 @@ func (nt *VNeighborTable) Update() {
 	}
 }
 
-func (nt *VNeighborTable) Run() {
-	go nt.Update()
+func (nt *VNeighborTable) SendHello(channel *DataLinkLayerChannel) {
 	for {
-		nt.channel.Broadcast([]byte(nt.SrcIP))
+		channel.Broadcast([]byte(nt.SrcIP))
 		time.Sleep(VNeighborTable_UPDATE_INTERVAL * time.Second)
+	}
+}
+
+func (nt *VNeighborTable) Run() {
+	for _, channel := range nt.channels {
+		go nt.Update(channel)
+		go nt.SendHello(channel)
 	}
 }
