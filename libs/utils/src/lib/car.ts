@@ -330,6 +330,7 @@ export class Car {
       this.popup.remove();
       this.popup = null;
     }
+    console.log('test');
     this.popup = new mapboxgl.Popup()
       .setLngLat(this.coordinates as mapboxgl.LngLatLike)
       .setHTML(this.description)
@@ -509,12 +510,14 @@ export class Car {
       'visibility',
       'none'
     );
-    if (this.focused) this.focused = false;
+    this.focused = false;
     this.map.off('click', this.sourceId, this.onClick);
   }
   public show(focus = false) {
     this.map.setLayoutProperty(this.sourceId, 'visibility', 'visible');
-    this.map.on('click', this.sourceId, this.onClick);
+    this.map
+      .off('click', this.sourceId, this.onClick)
+      .on('click', this.sourceId, this.onClick);
     this.focused = false;
     if (focus) {
       this.focused = true;
