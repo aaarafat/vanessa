@@ -330,7 +330,6 @@ export class Car {
       this.popup.remove();
       this.popup = null;
     }
-    console.log('test');
     this.popup = new mapboxgl.Popup()
       .setLngLat(this.coordinates as mapboxgl.LngLatLike)
       .setHTML(this.description)

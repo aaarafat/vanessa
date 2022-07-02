@@ -170,8 +170,7 @@ export const Simulation: React.FC = () => {
     });
 
     car.on('focus', () => {
-      console.log(id);
-      if (+id !== car.id) history.push(`/${car.id}`);
+      history.push(`/${car.id}`);
     });
     car.on('popup-closed', () => {
       mapDirections.unfreeze();
