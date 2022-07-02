@@ -6,6 +6,7 @@ export interface SimulationState {
   rsus: RSU[];
   cars: Car[];
   rsusData: Partial<IRSU>[];
+  focusedCar: number | null;
 }
 
 const initialState: SimulationState = {
@@ -31,6 +32,7 @@ const initialState: SimulationState = {
   ],
   rsus: [],
   cars: [],
+  focusedCar: null,
 };
 
 export const simulationSlice = createSlice({
@@ -73,9 +75,11 @@ export const simulationSlice = createSlice({
     focusCar: (state, action: PayloadAction<number>) => {
       state.cars.forEach((car) => car.hide());
       state.cars[action.payload].show(true);
+      state.focusedCar = action.payload;
     },
     unfocusCar: (state) => {
       state.cars.forEach((car) => car.show());
+      state.focusedCar = null;
     },
   },
 });

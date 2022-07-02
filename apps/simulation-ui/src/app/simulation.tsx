@@ -17,6 +17,7 @@ import {
   unfocusCar,
 } from './store/simulationSlice';
 import { useHistory, useParams } from 'react-router-dom';
+import MessagesViewer from './messages-viewer';
 
 const spin = keyframes`
   0% {
@@ -271,6 +272,7 @@ export const Simulation: React.FC = () => {
           onImport={handleImport}
           onClearMap={() => clearMap(false)}
         />
+        <MessagesViewer />
       </div>
     </>
   );

@@ -169,8 +169,6 @@ const ControlPanel: React.FC<{
     }
   }, [map, mapDirections]);
 
-  if (id) return null;
-
   return (
     <>
       <OpenButton

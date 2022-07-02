@@ -26,6 +26,7 @@ export class Car {
   public route: Coordinates[];
   public originalDirections: GeoJSON.Feature;
   public sourceId: string;
+  public receivedMessages: any[];
   private routeIndex: number;
   private source: mapboxgl.GeoJSONSource | undefined;
   private layer: mapboxgl.CircleLayer | undefined;
@@ -67,15 +68,11 @@ export class Car {
     this.wasFlyingToCar = false;
     this.animationFrame = 0;
     this.obstacleDetected = car.obstacleDetected || false;
+    this.receivedMessages = [];
 
     this.socket.emit('add-car', {
       id: this.id,
       coordinates: this.coordinates,
-    });
-
-    // TODO: REMOVE THIS!!!!!!!!!!!!!!!!!!!!
-    this.socket.on('change', (data: any) => {
-      console.log(data);
     });
 
     this.draw();
@@ -322,6 +319,10 @@ export class Car {
         id: this.id,
         coordinates: this.coordinates,
       });
+    });
+
+    this.socket.on('change', (data: any) => {
+      this.receivedMessages.push(data);
     });
   };
 
