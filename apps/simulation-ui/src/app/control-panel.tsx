@@ -3,6 +3,7 @@ import { CLICK_SOURCE_ID } from './constants';
 import { Coordinates, ICar } from '@vanessa/utils';
 import { MapContext } from '@vanessa/map';
 import styled from 'styled-components';
+import { useParams } from 'react-router-dom';
 
 const Container = styled.div<{ open: boolean }>`
   display: flex;
@@ -90,6 +91,9 @@ const ControlPanel: React.FC<{
   const [carInputs, setCarInputs] = React.useState<Partial<ICar>>(initialState);
   const [accidentInput, setAccidentInput] = React.useState<Coordinates>();
   const [isOpen, setIsOpen] = React.useState(true);
+  const { id } = useParams<{
+    id: string;
+  }>();
 
   const handleCarInputsChange = (newValue: Partial<ICar>) => {
     setCarInputs((prev) => ({
@@ -164,6 +168,8 @@ const ControlPanel: React.FC<{
       });
     }
   }, [map, mapDirections]);
+
+  if (id) return null;
 
   return (
     <>

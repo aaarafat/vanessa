@@ -19,6 +19,7 @@ export interface ICar extends ICommon {
   speed: number;
   route: Coordinates[];
   originalDirections: GeoJSON.Feature;
+  obstacleDetected?: boolean;
 }
 export interface IRSU extends ICommon {
   radius: number;

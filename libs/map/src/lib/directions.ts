@@ -44,7 +44,7 @@ export class Directions extends MapboxDirections {
   private overrideClickEvent() {
     this._map.off('click', this.onClick);
     this._map.on('click', (e: mapboxgl.MapMouseEvent) => {
-      if (this._isPointOnCar(e.point)) {
+      if (this.options.interactive === false || this._isPointOnCar(e.point)) {
         return;
       }
 

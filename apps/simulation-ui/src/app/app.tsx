@@ -15,7 +15,7 @@ const StyledApp = styled.div`
 export function App() {
   return (
     <StyledApp>
-      <Route path="/" exact render={() => <Simulation />} />
+      <Route path="/:id?" exact render={() => <Simulation />} />
       {/* END: routes */}
     </StyledApp>
   );

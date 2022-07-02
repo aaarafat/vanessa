@@ -7,31 +7,16 @@ import mapboxgl from 'mapbox-gl';
 import { SocketContext } from '../context';
 import { CLICK_SOURCE_ID } from './constants';
 import ControlPanel from './control-panel';
-
-const rsusData: Partial<IRSU>[] = [
-  {
-    id: 1,
-    lng: 31.213,
-    lat: 30.0252,
-    radius: 0.25,
-  },
-  {
-    id: 2,
-    lng: 31.2029,
-    lat: 30.0269,
-    radius: 0.5,
-  },
-  {
-    id: 3,
-    lng: 31.2129,
-    lat: 30.0185,
-    radius: 0.5,
-  },
-];
-
-const rsus: RSU[] = [];
-
-const cars: Car[] = [];
+import { useAppDispatch, useAppSelector } from './store';
+import {
+  addCar,
+  addRSU,
+  clearState,
+  focusCar,
+  initRSUs,
+  unfocusCar,
+} from './store/simulationSlice';
+import { useHistory, useParams } from 'react-router-dom';
 
 const spin = keyframes`
   0% {
@@ -75,12 +60,23 @@ export const Simulation: React.FC = () => {
     type: 'FeatureCollection',
     features: [],
   });
+  const dispatch = useAppDispatch();
+  const { cars, rsus } = useAppSelector((state) => state.simulation);
+  const history = useHistory();
+  const { id } = useParams<{
+    id: string;
+  }>();
 
   useEffect(() => {
     if (map && socket) {
       map.setMaxZoom(18);
       map.on('load', () => {
-        rsusData.forEach((rsu) => rsus.push(new RSU({ ...rsu, map, socket })));
+        dispatch(
+          initRSUs({
+            map,
+            socket,
+          })
+        );
         setMapLoaded(true);
       });
     }
@@ -114,6 +110,29 @@ export const Simulation: React.FC = () => {
     }
   }, [obstacles, map, mapLoaded]);
 
+  useEffect(() => {
+    if (id && isNaN(Number(id))) {
+      history.replace('/');
+      return;
+    }
+    if (mapLoaded) {
+      if (!id) {
+        dispatch(unfocusCar());
+        map?.setLayoutProperty('obstacles', 'visibility', 'visible');
+        mapDirections.options.interactive = true;
+        return;
+      }
+      const index = cars.findIndex((c) => c.id === +id);
+      if (index === -1) {
+        history.replace('/');
+        return;
+      }
+      dispatch(focusCar(index));
+      map?.setLayoutProperty('obstacles', 'visibility', 'none');
+      mapDirections.options.interactive = false;
+    }
+  }, [id, mapLoaded]);
+
   const handleAddObstacle = (coordinates: Coordinates | null) => {
     if (!coordinates) return;
     setObstacles((prev) => ({
@@ -145,15 +164,19 @@ export const Simulation: React.FC = () => {
       socket,
     });
 
-    // add to cars list
-    cars.push(car);
     car.on('click', () => {
       mapDirections.reset();
       mapDirections.freeze();
     });
+
+    car.on('focus', () => {
+      console.log(id);
+      if (+id !== car.id) history.push(`/${car.id}`);
+    });
     car.on('popup-closed', () => {
       mapDirections.unfreeze();
     });
+    dispatch(addCar(car));
 
     mapDirections.reset();
   };
@@ -180,16 +203,16 @@ export const Simulation: React.FC = () => {
 
   const clearMap = (removeRSUs = false) => {
     if (!map) return;
-    (map.getSource('obstacles') as mapboxgl.GeoJSONSource).setData({
+
+    dispatch(
+      clearState({
+        removeRSUs,
+      })
+    );
+    setObstacles({
       type: 'FeatureCollection',
       features: [],
     });
-    cars.forEach((car) => car.remove());
-    cars.splice(0, cars.length);
-    if (removeRSUs) {
-      rsus.forEach((rsu) => rsu.remove());
-      rsus.splice(0, rsus.length);
-    }
     mapDirections.reset();
   };
 
@@ -206,7 +229,7 @@ export const Simulation: React.FC = () => {
             ...item,
           });
         } else if (item.type === 'rsu') {
-          rsus.push(new RSU({ ...item, map, socket }));
+          dispatch(addRSU(new RSU({ ...item, map, socket })));
         } else if (item.type === 'obstacles') {
           setObstacles({
             type: 'FeatureCollection',

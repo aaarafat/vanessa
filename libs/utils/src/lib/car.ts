@@ -45,6 +45,7 @@ export class Car {
   private wasFlyingToCar: boolean;
   private animationFrame: number;
   private removed = false;
+  private focused: boolean;
 
   constructor(car: PartialExcept<ICar, 'map' | 'socket'>) {
     this.id = car.id || Date.now();
@@ -57,6 +58,7 @@ export class Car {
     this.map = car.map;
     this.socket = car.socket;
     this.popup = null;
+    this.focused = false;
     this.originalDirections = turf.lineString(
       this.route.map((r: Coordinates) => [r.lng, r.lat])
     );
@@ -64,7 +66,7 @@ export class Car {
     this.handlers = {};
     this.wasFlyingToCar = false;
     this.animationFrame = 0;
-    this.obstacleDetected = false;
+    this.obstacleDetected = car.obstacleDetected || false;
 
     this.socket.emit('add-car', {
       id: this.id,
@@ -277,7 +279,9 @@ export class Car {
       ._data;
     const lineStep = turf.lineString([
       [this.coordinates.lng, this.coordinates.lat],
-      [this.route[this.routeIndex].lng, this.route[this.routeIndex].lat],
+      ...this.route
+        .slice(this.routeIndex, this.routeIndex + 2)
+        .map((c) => [c.lng, c.lat]),
     ]);
     const sensorRangeEndPoint = turf.along(lineStep, 100, {
       units: 'meters',
@@ -322,10 +326,22 @@ export class Car {
   };
 
   private onClick = () => {
+    if (this.popup) {
+      this.popup.remove();
+      this.popup = null;
+    }
     this.popup = new mapboxgl.Popup()
       .setLngLat(this.coordinates as mapboxgl.LngLatLike)
       .setHTML(this.description)
       .addTo(this.map);
+
+    const el = this.popup
+      .getElement()
+      .querySelector(`#link${this.id}`) as HTMLAnchorElement;
+    if (el)
+      el.onclick = () => {
+        this.emit('focus');
+      };
 
     this.popup.once('close', () => {
       this.popup = null;
@@ -339,7 +355,15 @@ export class Car {
     });
 
     this.on('props-updated', () => {
-      this.popup?.setHTML(this.description);
+      if (!this.popup) return;
+      this.popup.setHTML(this.description);
+      const el = this.popup
+        .getElement()
+        .querySelector(`#link${this.id}`) as HTMLAnchorElement;
+      if (el)
+        el.onclick = () => {
+          this.emit('focus');
+        };
     });
 
     this.map?.setLayoutProperty(
@@ -397,6 +421,8 @@ export class Car {
     if (this.obstacleDetected) {
       description += '<p>Obstacle detected</p>';
     }
+    if (!this.focused)
+      description += '<a id="link{id}">Go to the car interface</a>';
     return interpolateString(description, this);
   }
 
@@ -404,6 +430,7 @@ export class Car {
   public on(
     type:
       | 'click'
+      | 'focus'
       | 'move'
       | 'popup-closed'
       | 'props-updated'
@@ -418,6 +445,7 @@ export class Car {
   private subscribe(
     type:
       | 'click'
+      | 'focus'
       | 'move'
       | 'popup-closed'
       | 'props-updated'
@@ -432,6 +460,7 @@ export class Car {
   private emit(
     type:
       | 'click'
+      | 'focus'
       | 'move'
       | 'popup-closed'
       | 'props-updated'
@@ -453,6 +482,7 @@ export class Car {
       speed: this.speed,
       lng: this.route[0].lng,
       lat: this.route[0].lat,
+      obstacleDetected: this.obstacleDetected,
       type: 'car',
     };
   }
@@ -463,9 +493,34 @@ export class Car {
     this.map.removeSource(this.sourceId);
     this.map.removeLayer(`car-${this.id}-route`);
     this.map.removeSource(`car-${this.id}-route`);
+    this.map.removeLayer(`car-${this.id}-com-range`);
+    this.map.removeSource(`car-${this.id}-com-range`);
     cancelAnimationFrame(this.animationFrame);
     this.removed = true;
     this.map.off('click', this.sourceId, this.onClick);
+  }
+
+  public hide() {
+    this.popup?.remove();
+    this.map.setLayoutProperty(this.sourceId, 'visibility', 'none');
+    this.map.setLayoutProperty(`car-${this.id}-route`, 'visibility', 'none');
+    this.map.setLayoutProperty(
+      `car-${this.id}-com-range`,
+      'visibility',
+      'none'
+    );
+    if (this.focused) this.focused = false;
+    this.map.off('click', this.sourceId, this.onClick);
+  }
+  public show(focus = false) {
+    this.map.setLayoutProperty(this.sourceId, 'visibility', 'visible');
+    this.map.on('click', this.sourceId, this.onClick);
+    this.focused = false;
+    if (focus) {
+      this.focused = true;
+      this.onClick();
+    }
+    this.emit('props-updated');
   }
 }
 
