@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net"
+	"net/netip"
 	"os"
 	"strconv"
 	"strings"
@@ -32,8 +33,10 @@ func main() {
 	address := addresses[0]
 	s := strings.Split(address.String(), "/")[0]
 	ip := net.ParseIP(s)
+	ip4, _ := netip.ParseAddr(s)
+	ip6 := net.ParseIP(netip.AddrFrom16(ip4.As16()).String())
 	if ip.To4() != nil {
-		log.Printf("IP4: %s, Mapped IP6: %s", ip.String(), ip.To16().String())
+		log.Printf("IP4: %s, Mapped IP6: %s , %s", ip.String(), netip.AddrFrom16(ip4.As16()).String(), ip6.String())
 	} else if ip.To16() != nil {
 		log.Printf("IP6: %s", ip.String())
 	} else {
