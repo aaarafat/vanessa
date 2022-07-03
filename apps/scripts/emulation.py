@@ -16,6 +16,7 @@ from mn_wifi.net import Mininet_wifi
 from mn_wifi.wmediumdConnector import interference
 
 from mininet.node import Controller
+from mininet.node import UserSwitch
 from mn_wifi.node import UserAP
 import json
 # ap_scan
@@ -117,7 +118,7 @@ rsu3 = net.addAccessPoint('rsu3', ssid='VANESSA', mode='g', channel='1',
                         ip='10.1.0.3/16', cls=UserAP, inNamespace=True)
 
 c1 = net.addController('c1')
-
+s0 = net.addSwitch("s0",cls=UserSwitch, inNamespace=True)
 def topology(args):
 
     net.setPropagationModel(model="logDistance", exp=4)
@@ -148,6 +149,11 @@ def topology(args):
                 ht_cap='HT40+', **kwargs)
     stations["car3"].setIP('10.0.1.3/24',
                   intf='car3-wlan1')
+    
+    net.addLink(s0,rsu1)
+    net.addLink(s0,rsu2)
+    net.addLink(s0,rsu3)
+    
     # net.addLink(ap1, ap2)
     info("*** Plotting network\n")
     net.plotGraph(max_x=500, max_y=500)
@@ -161,6 +167,7 @@ def topology(args):
     info("*** Starting network\n")
     net.build()
     c1.start()
+    s0.start([c1])
     rsu1.start([c1])
     rsu2.start([c1])
     rsu3.start([c1])
