@@ -267,6 +267,8 @@ def topology(args):
     for i, rsu in enumerate(rsus_pool):
         rsu.start([c1])
 
+    s0.cmd('sudo apps/scripts/switch &')
+
     info("*** Running CLI\n")
     CLI(net)
     info("*** Stopping network\n")
