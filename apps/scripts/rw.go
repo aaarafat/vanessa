@@ -7,7 +7,7 @@ import (
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
 )
 
-func read(d *DataLinkLayerChannel) {
+func read(d *DataLinkLayerChannel, index int) {
 	for {
 
 		payload, addr, err := d.Read()
@@ -15,7 +15,7 @@ func read(d *DataLinkLayerChannel) {
 			log.Fatalf("failed to read from channel: %v", err)
 		}
 		fmt.Println()
-		log.Printf("Received \"%s\" from: [ %s ]", string(payload), addr.String())
+		log.Printf("Received \"%s\" from: [%s] on intf-%d", string(payload), addr.String(), index)
 	}
 
 }
@@ -23,12 +23,12 @@ func read(d *DataLinkLayerChannel) {
 func main() {
 
 	d, err := NewDataLinkLayerChannel(VEtherType)
-	drsu, err := NewDataLinkLayerChannelWithInterface(VEtherType,2)
+	drsu, err := NewDataLinkLayerChannelWithInterface(VEtherType, 2)
 	if err != nil {
 		log.Fatalf("failed to create channel: %v", err)
 	}
-	go read(d)
-	go read(drsu)
+	go read(d, 1)
+	go read(drsu, 2)
 
 	var message string
 	var mtype int
