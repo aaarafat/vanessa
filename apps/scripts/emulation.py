@@ -113,7 +113,7 @@ def obstacle_detected(message):
 
 
 @sio.on('add-rsu')
-def add_car(message):
+def add_rsu(message):
     if len(rsus_pool) == 0:
         raise Exception("Pool ran out of stations")
 
@@ -122,8 +122,19 @@ def add_car(message):
     ap_rsus[id] = rsu
 
     coordinates = message["coordinates"]
+    rsu_range = message["range"]
+
     position = to_grid(coordinates)
-    rsu.setPosition(position)
+    try:
+        rsu.setRange(rsu_range)
+    except:
+        #! IMPORTANT
+        pass
+    try:
+        rsu.setPosition(position)
+    except:
+        #! IMPORTANT
+        pass
     print(position)
 
     rsu.cmd(f"sudo dist/apps/network rsu &")

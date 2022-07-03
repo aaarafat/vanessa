@@ -45,6 +45,15 @@ export class RSU {
     this.handlers = {};
     this.wasFlyingToRSU = false;
 
+    this.socket.emit('add-rsu', {
+      id: this.id,
+      coordinates: {
+        lng: this.lng,
+        lat: this.lat,
+      },
+      range: this.radius * 1000,
+    });
+
     this.draw();
     this.attachHandlers();
   }
