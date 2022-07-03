@@ -9,7 +9,7 @@ import (
 )
 
 type Aodv struct {
-	channel *DataLinkLayerChannel
+	channels []*DataLinkLayerChannel
 	forwarder *Forwarder
 	routingTable *VRoutingTable
 	seqTable *VFloodingSeqTable
@@ -23,36 +23,34 @@ type Aodv struct {
 	callback func(data[]byte)
 }
 
-func NewAodvWithInterface(srcIP net.IP, callback func(data[]byte),ifiname string) *Aodv {
-	d, err := NewDataLinkLayerChannelWithInterface(VAODVEtherType, ifiname)
+func createChannels() []*DataLinkLayerChannel {
+	interfaces, err := net.Interfaces()
 	if err != nil {
-		log.Fatalf("failed to create channel: %v", err)
+		log.Fatalf("failed to open interface: %v", err)
+		return nil
+	}
+	channels := make([]*DataLinkLayerChannel, len(interfaces))
+	for i, ifi := range interfaces {
+		if ifi.Name == "lo" {
+			continue
+		}
+		log.Printf("Creating channel in AODV for interface: %s Index: %d\n", ifi.Name, i)
+		ch, err := NewDataLinkLayerChannelWithInterface(VAODVEtherType, i)
+		if err != nil {
+			log.Fatalf("failed to create channel: %v", err)
+		}
+		channels[i] = ch
 	}
 
-	return &Aodv{
-		channel: d,
-		forwarder: NewForwarder(srcIP, d),
-		routingTable: NewVRoutingTable(),
-		seqTable: NewVFloodingSeqTable(),
-		dataSeqTable: NewVFloodingSeqTable(),
-		dataBuffer: &hashmap.HashMap{},
-		srcIP: srcIP,
-		seqNum: 0,
-		dataSeqNum: 0,
-		rreqID: 0,
-		callback: callback,
-	}
+	return channels
 }
 
 func NewAodv(srcIP net.IP, callback func(data[]byte)) *Aodv {
-	d, err := NewDataLinkLayerChannel(VAODVEtherType)
-	if err != nil {
-		log.Fatalf("failed to create channel: %v", err)
-	}
+	channels := createChannels()
 
 	return &Aodv{
-		channel: d,
-		forwarder: NewForwarder(srcIP, d),
+		channels: channels,
+		forwarder: NewForwarder(srcIP, channels),
 		routingTable: NewVRoutingTable(),
 		seqTable: NewVFloodingSeqTable(),
 		dataSeqTable: NewVFloodingSeqTable(),
@@ -76,7 +74,7 @@ func (a *Aodv) Send(payload []byte, dest net.IP) {
 	item, ok := a.routingTable.Get(dest);
 	if ok {
 		// forward the packet
-		a.forwarder.ForwardTo(payload, item.NextHop)
+		a.forwarder.ForwardTo(payload, item.NextHop, item.IfiIndex)
 	} else {
 		// send a RREQ or RRER
 		a.SendRREQ(dest)
@@ -84,11 +82,19 @@ func (a *Aodv) Send(payload []byte, dest net.IP) {
 }
 
 func (a *Aodv) forwardData(data *DataMessage) {
+	// handle rsu connection
+	if data.DestenationIP.Equal(net.ParseIP(RsuIP)) && connectedToRSU(2) {
+		mac, err := net.ParseMAC(getRSUMac(2))
+		if err != nil {
+			log.Fatalf("failed to parse MAC: %v", err)
+		}
+		a.routingTable.Update(data.DestenationIP, mac, data.HopCount, ActiveRouteTimeMS, a.seqNum, 2)
+	}
 	// check if the destination in the routing table
 	item, ok := a.routingTable.Get(data.DestenationIP);
 	if ok {
 		// forward the packet
-		a.forwarder.ForwardTo(data.Marshal(), item.NextHop)
+		a.forwarder.ForwardTo(data.Marshal(), item.NextHop, item.IfiIndex)
 	} else {
 		// send a RREQ or RRER
 		buf, ok := a.dataBuffer.Get(data.DestenationIP.String())
@@ -134,151 +140,53 @@ func (a *Aodv) SendRREQ(destination net.IP) {
 	a.forwarder.ForwardToAll(rreq.Marshal())
 }
 
-func (a *Aodv) SendRREP(destination net.IP) {
+func (a *Aodv) SendRREP(destination net.IP, forRSU bool) {
 	rrep := NewRREPMessage(destination, a.srcIP)
 	rrep.DestinationSeqNum = a.seqNum
+	if forRSU {
+		rrep.DestinationIP = net.ParseIP(RsuIP)
+		rrep.HopCount = 1
+		mac, err := net.ParseMAC(getRSUMac(2))
+		if err != nil {
+			log.Fatalf("failed to parse MAC: %v", err)
+		}
+		go a.routingTable.Update(rrep.DestinationIP, mac, rrep.HopCount, rrep.LifeTime, rrep.DestinationSeqNum, 2)
+	}
 	
 	// broadcast the RREP
 	log.Printf("Sending: %s\n", rrep.String())
 	a.Send(rrep.Marshal(), destination)
 }
 
-func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr) {
-	rreq, err := UnmarshalRREQ(payload)
-	if err != nil {
-		log.Printf("Failed to unmarshal RREQ: %v\n", err)
-		return
-	}
-	
-	if rreq.Invalid(a.seqTable, a.srcIP) {
-		// drop the packet
-		log.Printf("Dropping %s\n", rreq.String())
-		return
-	}
 
-	log.Printf("Received: %s\n", rreq.String())
-	// update the routing table
-	go a.routingTable.Update(rreq.OriginatorIP, from, rreq.HopCount, ActiveRouteTimeMS, rreq.OriginatorSequenceNumber)
-	// update seq table
-	go a.seqTable.Set(rreq.OriginatorIP, rreq.RREQID)
-
-	// check if the RREQ is for me
-	if rreq.DestinationIP.Equal(a.srcIP) {
-		// update the sequence number if it is not unknown
-		if !rreq.HasFlag(RREQFlagU) {
-			a.updateSeqNum(rreq.DestinationSeqNum)
-		}
-		// send a RREP
-		a.SendRREP(rreq.OriginatorIP)
-	} else {
-		// increment hop count
-		rreq.HopCount = rreq.HopCount + 1
-		// forward the RREQ
-		a.forwarder.ForwardToAllExcept(rreq.Marshal(), from)
-	}
-}
-
-func (a *Aodv) handleRREP(payload []byte, from net.HardwareAddr) {
-	rrep, err := UnmarshalRREP(payload)
-	if err != nil {
-		log.Printf("Failed to unmarshal RREP: %v\n", err)
-		return
-	}
-
-	// check RREP hop count
-	if rrep.Invalid() {
-		// drop the packet
-		log.Printf("Dropping %s\n", rrep.String())
-		return
-	}
-
-	log.Printf("Received: %s\n", rrep.String())
-	// update the routing table
-	go a.routingTable.Update(rrep.DestinationIP, from, rrep.HopCount, rrep.LifeTime, rrep.DestinationSeqNum)
-
-	// check if the RREP is for me
-	if rrep.OriginatorIP.Equal(a.srcIP) {
-		// Arrived Successfully
-		log.Printf("Path Descovery is successful for ip=%s !!!!", rrep.DestinationIP)
-		// handle data in the buffer
-		data, ok := a.dataBuffer.Get(rrep.DestinationIP.String())
-		if ok {
-			// send the data
-			msgs := data.([]DataMessage)
-			for _, msg := range msgs {
-				go a.SendData(msg.Marshal(), msg.DestenationIP)
-			}
-			// remove the data from the buffer
-			a.dataBuffer.Del(rrep.DestinationIP.String())
-		}
-	} else {
-		// increment hop count
-		rrep.HopCount = rrep.HopCount + 1
-		// forward the RREP
-		a.Send(rrep.Marshal(), rrep.OriginatorIP)
-	}
-}
-
-func (a *Aodv) handleData(payload []byte, from net.HardwareAddr) {
-	data, err := UnmarshalData(payload)
-	if err != nil {
-		log.Printf("Failed to unmarshal data: %v\n", err)
-		return
-	}
-
-	if data.OriginatorIP.Equal(a.srcIP) || a.dataSeqTable.Exists(data.OriginatorIP, data.SeqNumber) {
-		// drop the packet
-		log.Printf("Dropping %s\n", data.String())
-		return
-	} 
-
-	if data.DestenationIP.Equal(a.srcIP) || data.DestenationIP.Equal(net.ParseIP(BroadcastIP)) {
-		log.Printf("Received: %s\n", data.String())
-		go a.callback(data.Data)
-	}
-	// update seq table
-	go a.dataSeqTable.Set(data.OriginatorIP, data.SeqNumber)
-
-	// forward the data
-	if data.DestenationIP.Equal(net.ParseIP(BroadcastIP)) {
-		a.forwarder.ForwardToAllExcept(data.Marshal(), from)
-	} else {
-		a.forwardData(data)
-	}
-}
-
-func (a *Aodv) handleMessage(payload []byte, from net.HardwareAddr) {
-	msgType := uint8(payload[0])
-	// handle the message
-	switch msgType {
-	case RREQType:
-		a.handleRREQ(payload, from)
-	case RREPType:
-		a.handleRREP(payload, from)
-	case DataType:
-		a.handleData(payload, from)
-	default:
-		log.Println("Unknown message type: ", msgType)
-	}
-}
-
-func (a *Aodv) Listen() {
+func (a *Aodv) Listen(channel *DataLinkLayerChannel) {
 	log.Println("Listening for AODV packets...")
 	for {
-		payload, addr, err := a.channel.Read()
+		payload, addr, err := channel.Read()
 		if err != nil {
 			log.Fatalf("failed to read from channel: %v", err)
 		}
-		go a.handleMessage(payload, addr)
+		go a.handleMessage(payload, addr, channel.IfiIndex)
 	}
 }
 
 func (a *Aodv) Start() {
 	log.Printf("Starting AODV for IP: %s.....\n", a.srcIP)
 	go a.forwarder.Start()
-	go a.Listen()
+	for _, channel := range a.channels {
+		if channel == nil {
+			continue
+		}
+		go a.Listen(channel)
+	}
 }
 
 func (a *Aodv) Close() {
-	a.channel.Close()
+	for _, channel := range a.channels {
+		if channel == nil {
+			continue
+		}
+		channel.Close()
+	}
+	a.forwarder.Close()
 }

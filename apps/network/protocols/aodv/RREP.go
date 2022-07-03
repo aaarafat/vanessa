@@ -67,6 +67,25 @@ func UnmarshalRREP(data []byte) (*RREPMessage, error) {
 	return rrep, nil
 }
 
+func (rrep* RREPMessage) SetFlag(flag uint16) *RREPMessage {
+	rrep.Flags |= flag
+	return rrep
+}
+
+func (rrep* RREPMessage) ClearFlag(flag uint16) *RREPMessage {
+	rrep.Flags &= ^flag
+	return rrep
+}
+
+func (rrep* RREPMessage) ToggleFlag(flag uint16) *RREPMessage {
+	rrep.Flags ^= flag
+	return rrep
+}
+
+func (rrep* RREPMessage) HasFlag(flag uint16) bool {
+	return rrep.Flags & flag != 0
+}
+
 func (rrep *RREPMessage) Invalid() bool {
 	return rrep.Type != RREPType ||
 				rrep.HopCount > HopCountLimit

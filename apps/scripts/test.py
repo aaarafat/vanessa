@@ -13,23 +13,23 @@ from mn_wifi.net import Mininet_wifi
 from mn_wifi.vanet import vanet
 from mn_wifi.wmediumdConnector import interference
 
-#ap_scan
-#configureAdhoc
-#configureMacAddr
-#get_default_gw
-#setAdhocMode
-#get_pid_filename
-#setAdhocMode
-#setConnected
+# ap_scan
+# configureAdhoc
+# configureMacAddr
+# get_default_gw
+# setAdhocMode
+# get_pid_filename
+# setAdhocMode
+# setConnected
 
 
-
-HOST = "127.0.0.1"  
-PORT = 65432 
+HOST = "127.0.0.1"
+PORT = 65432
 
 
 "Create a network."
-net = Mininet_wifi(link=wmediumd, wmediumd_mode=interference, autoAssociation = True,controller=Controller, accessPoint=UserAP)
+net = Mininet_wifi(link=wmediumd, wmediumd_mode=interference,
+                   autoAssociation=True, controller=Controller, accessPoint=UserAP)
 stations = {}
 kwargs = dict()
 
@@ -38,13 +38,11 @@ info("*** Creating nodes\n")
 
 #kwargs['range'] = 100
 stations["car1"] = net.addStation('car1', position="50, 100, 0", wlans=1, bgscan_threshold=-60,
-                   s_inverval=5, l_interval=10)
+                                  s_inverval=5, l_interval=10)
 stations["car2"] = net.addStation('car2', position="100, 100, 0", wlans=2, bgscan_threshold=-60,
-                   s_inverval=5, l_interval=10)
+                                  s_inverval=5, l_interval=10)
 stations["car3"] = net.addStation('car3', position="140, 100, 0", wlans=1, bgscan_threshold=-60,
-                   s_inverval=5, l_interval=10)
-
-
+                                  s_inverval=5, l_interval=10)
 
 
 def topology(args):
@@ -53,15 +51,15 @@ def topology(args):
     net.setPropagationModel(model="logDistance", exp=4)
     ap1 = net.addAccessPoint('ap1', ssid="handover",
                              mode="g", channel="1", passwd='123456789a',
-                             encrypt='wpa2', position='50,50,0',cls=UserAP, inNamespace=True)
-    
+                             encrypt='wpa2', position='50,50,0', cls=UserAP, inNamespace=True)
+
     ap2 = net.addAccessPoint('ap2', ssid="handover",
                              mode="g", channel="1", passwd='123456789a',
-                             encrypt='wpa2', position='0,50,0',cls=UserAP, inNamespace=True)
-    
+                             encrypt='wpa2', position='0,50,0', cls=UserAP, inNamespace=True)
+
     ap3 = net.addAccessPoint('ap3', ssid="handover",
                              mode="g", channel="1", passwd='123456789a',
-                             encrypt='wpa2', position='75,100,0',cls=UserAP, inNamespace=True)
+                             encrypt='wpa2', position='75,100,0', cls=UserAP, inNamespace=True)
     c1 = net.addController('c1')
     info("*** Configuring wifi nodes\n")
     net.configureWifiNodes()
@@ -86,13 +84,13 @@ def topology(args):
     net.addLink(stations["car3"], cls=adhoc, intf='car3-wlan0',
                 ssid='adhocNet', mode='g', channel=5,
                 ht_cap='HT40+', **kwargs)
-    
+
     s0 = net.addSwitch("s0")
-    
+
     # net.addLink(s0,ap1)
     # net.addLink(s0,ap2)
     # net.addLink(s0,ap3)
-    
+
     info("*** Plotting network\n")
     net.plotGraph(max_x=500, max_y=500)
     # net.setMobilityModel(time=0, model='RandomDirection', max_x=1000, max_y=1000,
@@ -105,12 +103,10 @@ def topology(args):
     info("*** Starting network\n")
     net.build()
     c1.start()
-    
+
     ap1.start([])
     ap2.start([])
     ap3.start([])
-   
-
 
     # info("\n*** Addressing...\n")
     # if 'proto' not in kwargs:

@@ -140,3 +140,7 @@ func (nt *VNeighborTable) Run() {
 		time.Sleep(VNeighborTable_UPDATE_INTERVAL * time.Second)
 	}
 }
+
+func (nt *VNeighborTable) Close() {
+	nt.channel.Close()
+}

@@ -16,6 +16,9 @@ const (
 	RREQFlagG uint16 = 1 << 2
 	RREQFlagD uint16 = 1 << 3
 	RREQFlagU uint16 = 1 << 4
+
+	RREPFlagR uint16 = 1 << 0
+	RREPFlagA uint16 = 1 << 1
 )
 
 // Lengths
@@ -40,4 +43,5 @@ const (
 
 const (
 	BroadcastIP = "255.255.255.255"
+	RsuIP = "224.4.24.4"
 )

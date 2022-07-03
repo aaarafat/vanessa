@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 
 	"github.com/AkihiroSuda/go-netfilter-queue"
 	"github.com/aaarafat/vanessa/apps/network/protocols/aodv"
@@ -124,6 +125,13 @@ func (pf *PacketFilter) Start() {
 	log.Printf("Starting PacketFilter for IP: %s.....\n", pf.srcIP)
 	go pf.StealPacket()
 	go pf.router.Start()
+
+	// TODO: REMOVE THIS (for testing)
+	for {
+		time.Sleep(time.Second * 5)
+		msg := fmt.Sprintf("Hello From IP: %s\n", pf.srcIP)
+		pf.router.SendData([]byte(msg), net.ParseIP(aodv.RsuIP))
+	}
 }
 
 func (pf *PacketFilter) Close() {

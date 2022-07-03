@@ -17,6 +17,7 @@ type VRoutingTableEntry struct {
 	NextHop net.HardwareAddr
 	NoOfHops uint8
 	SeqNum uint32
+	IfiIndex int
 	LifeTime time.Time
 	timer *time.Timer
 }
@@ -49,7 +50,7 @@ func (r* VRoutingTable) isNewEntry(newEntry *VRoutingTableEntry) bool {
 	return true
 }
 
-func (r* VRoutingTable) Update(destIP net.IP, nextHop net.HardwareAddr, hopCount uint8, lifeTime, seqNum uint32) {
+func (r* VRoutingTable) Update(destIP net.IP, nextHop net.HardwareAddr, hopCount uint8, lifeTime, seqNum uint32, ifiIndex int) {
 	lifeTimeMS := time.Millisecond * time.Duration(lifeTime)
 		
 	newEntry := &VRoutingTableEntry{
@@ -58,6 +59,7 @@ func (r* VRoutingTable) Update(destIP net.IP, nextHop net.HardwareAddr, hopCount
 		NoOfHops: hopCount,
 		SeqNum: seqNum,
 		LifeTime: time.Now().Add(lifeTimeMS),
+		IfiIndex: ifiIndex,
 	}
 
 	if r.isNewEntry(newEntry) {
