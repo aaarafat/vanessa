@@ -41,6 +41,7 @@ running = True
 stations_pool = []
 rsus_pool = []
 stations_car = {}
+ap_rsus = {}
 
 STATIONS_COUNT = 5
 RSU_COUNT = 5
@@ -109,6 +110,23 @@ def obstacle_detected(message):
         }
     }
     send_to_car(f"/tmp/car{id}.socket", payload)
+
+
+@sio.on('add-rsu')
+def add_car(message):
+    if len(rsus_pool) == 0:
+        raise Exception("Pool ran out of stations")
+
+    rsu = rsus_pool.pop(0)
+    id = message['id']
+    ap_rsus[id] = rsu
+
+    coordinates = message["coordinates"]
+    position = to_grid(coordinates)
+    rsu.setPosition(position)
+    print(position)
+
+    rsu.cmd(f"sudo dist/apps/network rsu &")
 
 
 @sio.on('add-car')
