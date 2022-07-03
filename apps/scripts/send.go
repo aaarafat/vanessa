@@ -60,7 +60,7 @@ func main() {
 		// Identify frame with an unused EtherType.
 		EtherType: VEtherType,
 		// Send a simple message.
-		Payload: []byte("Hello"),
+		Payload: []byte("Hello from :" + s),
 	}
 	b, err := f.MarshalBinary()
 	if err != nil {
