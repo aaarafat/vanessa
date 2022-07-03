@@ -108,13 +108,14 @@ stations["car3"] = net.addStation('car3', position="140, 100, 0",
 
 rsu1 = net.addAccessPoint('rsu1', ssid='VANESSA', mode='g', channel='1',
                         failMode="standalone", position='15,70,0', range=100,
-                        ip='10.0.1.1', cls=UserAP, inNamespace=True)
+                        ip='10.1.0.1/16', cls=UserAP, inNamespace=True)
 rsu2 = net.addAccessPoint('rsu2', ssid='VANESSA', mode='g', channel='1',
                         failMode="standalone", position='45,70,0', range=100, 
-                        ip='10.0.1.2', cls=UserAP, inNamespace=True)
+                        ip='10.1.0.2/16', cls=UserAP, inNamespace=True)
 rsu3 = net.addAccessPoint('rsu3', ssid='VANESSA', mode='g', channel='1',
                         failMode="standalone", position='75,70,0', range=100, 
-                        ip='10.0.1.3', cls=UserAP, inNamespace=True)
+                        ip='10.1.0.3/16', cls=UserAP, inNamespace=True)
+
 c1 = net.addController('c1')
 
 def topology(args):
@@ -135,12 +136,18 @@ def topology(args):
     net.addLink(stations["car1"], cls=adhoc, intf='car1-wlan0',
                 ssid='adhocNet', mode='g', channel=5,
                 ht_cap='HT40+',  **kwargs)
+    stations["car1"].setIP('10.0.1.1/24',
+                  intf='car1-wlan1')
     net.addLink(stations["car2"], cls=adhoc, intf='car2-wlan0',
                 ssid='adhocNet', mode='g', channel=5,
                 ht_cap='HT40+',  **kwargs)
+    stations["car2"].setIP('10.0.1.2/24',
+                  intf='car2-wlan1')
     net.addLink(stations["car3"], cls=adhoc, intf='car3-wlan0',
                 ssid='adhocNet', mode='g', channel=5,
                 ht_cap='HT40+', **kwargs)
+    stations["car3"].setIP('10.0.1.3/24',
+                  intf='car3-wlan1')
     # net.addLink(ap1, ap2)
     info("*** Plotting network\n")
     net.plotGraph(max_x=500, max_y=500)
