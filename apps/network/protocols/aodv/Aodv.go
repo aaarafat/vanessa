@@ -82,6 +82,14 @@ func (a *Aodv) Send(payload []byte, dest net.IP) {
 }
 
 func (a *Aodv) forwardData(data *DataMessage) {
+	// handle rsu connection
+	if data.DestenationIP.Equal(net.ParseIP(RsuIP)) && connectedToRSU(2) {
+		mac, err := net.ParseMAC(getRSUMac(2))
+		if err != nil {
+			log.Fatalf("failed to parse MAC: %v", err)
+		}
+		a.routingTable.Update(data.DestenationIP, mac, data.HopCount, ActiveRouteTimeMS, a.seqNum, 2)
+	}
 	// check if the destination in the routing table
 	item, ok := a.routingTable.Get(data.DestenationIP);
 	if ok {
@@ -132,9 +140,18 @@ func (a *Aodv) SendRREQ(destination net.IP) {
 	a.forwarder.ForwardToAll(rreq.Marshal())
 }
 
-func (a *Aodv) SendRREP(destination net.IP) {
+func (a *Aodv) SendRREP(destination net.IP, forRSU bool) {
 	rrep := NewRREPMessage(destination, a.srcIP)
 	rrep.DestinationSeqNum = a.seqNum
+	if forRSU {
+		rrep.DestinationIP = net.ParseIP(RsuIP)
+		rrep.HopCount = 1
+		mac, err := net.ParseMAC(getRSUMac(2))
+		if err != nil {
+			log.Fatalf("failed to parse MAC: %v", err)
+		}
+		go a.routingTable.Update(rrep.DestinationIP, mac, rrep.HopCount, rrep.LifeTime, rrep.DestinationSeqNum, 2)
+	}
 	
 	// broadcast the RREP
 	log.Printf("Sending: %s\n", rrep.String())

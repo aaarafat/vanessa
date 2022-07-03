@@ -27,13 +27,13 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr, IfiIndex int) {
 	go a.seqTable.Set(rreq.OriginatorIP, rreq.RREQID)
 
 	// check if the RREQ is for me
-	if rreq.DestinationIP.Equal(a.srcIP) {
+	if rreq.DestinationIP.Equal(a.srcIP) || (rreq.DestinationIP.Equal(net.ParseIP(RsuIP)) && connectedToRSU(2)) {
 		// update the sequence number if it is not unknown
 		if !rreq.HasFlag(RREQFlagU) {
 			a.updateSeqNum(rreq.DestinationSeqNum)
 		}
 		// send a RREP
-		a.SendRREP(rreq.OriginatorIP)
+		a.SendRREP(rreq.OriginatorIP, rreq.DestinationIP.Equal(net.ParseIP(RsuIP)))
 	} else {
 		// increment hop count
 		rreq.HopCount = rreq.HopCount + 1
@@ -64,6 +64,7 @@ func (a *Aodv) handleRREP(payload []byte, from net.HardwareAddr, IfiIndex int) {
 	if rrep.OriginatorIP.Equal(a.srcIP) {
 		// Arrived Successfully
 		log.Printf("Path Descovery is successful for ip=%s !!!!", rrep.DestinationIP)
+
 		// handle data in the buffer
 		data, ok := a.dataBuffer.Get(rrep.DestinationIP.String())
 		if ok {
@@ -99,6 +100,7 @@ func (a *Aodv) handleData(payload []byte, from net.HardwareAddr) {
 	if data.DestenationIP.Equal(a.srcIP) || data.DestenationIP.Equal(net.ParseIP(BroadcastIP)) {
 		log.Printf("Received: %s\n", data.String())
 		go a.callback(data.Data)
+		return
 	}
 	// update seq table
 	go a.dataSeqTable.Set(data.OriginatorIP, data.SeqNumber)
