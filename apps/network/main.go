@@ -2,11 +2,10 @@ package main
 
 import (
 	"log"
-	"net"
 	"os"
 
 	. "github.com/aaarafat/vanessa/apps/network/packetFilter"
-	"github.com/aaarafat/vanessa/apps/network/protocols/aodv"
+	. "github.com/aaarafat/vanessa/apps/network/rsu"
 )
 
 func print(data []byte) {
@@ -14,10 +13,12 @@ func print(data []byte) {
 }
 
 func rsu() {
-	aodv := aodv.NewAodv(net.ParseIP(aodv.RsuIP), print)	
-	aodv.Start()
-}
+	// create a new RSU
+	rsu := NewRSU()
 
+	// start the RSU
+	rsu.Start()
+}
 
 func car() {
 	packetfilter, err := NewPacketFilter()
