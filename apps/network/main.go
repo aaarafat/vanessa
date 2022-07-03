@@ -8,35 +8,27 @@ import (
 	. "github.com/aaarafat/vanessa/apps/network/rsu"
 )
 
-func print(data []byte) {
-	log.Printf("Received data: %s\n", data)
-}
-
-func rsu() {
-	// create a new RSU
-	rsu := NewRSU()
-
-	// start the RSU
-	rsu.Start()
-}
-
-func car() {
-	packetfilter, err := NewPacketFilter()
-
-	if err != nil {
-		log.Panicf("failed to create packet filter: %v", err)
-	}
-
-	packetfilter.Start()
-}
-
 func main() {
 	name := os.Args[1]
 
 	if name == "rsu" {
-		rsu()
+		// create a new RSU
+		rsu := NewRSU()
+
+		// start the RSU
+		rsu.Start()
+
+		defer rsu.Close()
 	} else if name == "car" {
-		car()
+		packetfilter, err := NewPacketFilter()
+
+		if err != nil {
+			log.Panicf("failed to create packet filter: %v", err)
+		}
+
+		packetfilter.Start()
+
+		defer packetfilter.Close()
 	} else {
 		log.Panicf("invalid name: %s, Please Enter car or rsu\n", name)
 	}

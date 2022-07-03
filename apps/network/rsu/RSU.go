@@ -83,3 +83,8 @@ func (r *RSU) Start() {
 	go r.readFromETHInterface()
 	go r.readFromWLANInterface()
 }
+
+func (r *RSU) Close() {
+	r.ethChannel.Close()
+	r.wlanChannel.Close()
+}

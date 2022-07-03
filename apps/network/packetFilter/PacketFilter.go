@@ -136,4 +136,5 @@ func (pf *PacketFilter) Start() {
 
 func (pf *PacketFilter) Close() {
 	pf.nfq.Close()
+	pf.router.Close()
 }
