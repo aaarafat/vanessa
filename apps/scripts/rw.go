@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net"
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
 )
@@ -40,6 +41,22 @@ func main() {
 			d.Broadcast([]byte(message))
 		case 1:
 			drsu.Broadcast([]byte(message))
+		case 2:
+			mac, err := net.ParseMAC(message)
+			if err != nil {
+				log.Panicln("not a valid mac")
+			}
+
+			log.Println(mac.String())
+			drsu.SendTo([]byte("a7a"), mac)
+		case 3:
+			mac, err := net.ParseMAC(message)
+			if err != nil {
+				log.Panicln("not a valid mac")
+			}
+
+			log.Println(mac.String())
+			d.SendTo([]byte("unicast"), mac)
 		}
 	}
 }
