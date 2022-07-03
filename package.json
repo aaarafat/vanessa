@@ -13,7 +13,8 @@
     "affected:compile": "nx affected --target=compile",
     "affected:build": "nx affected:build",
     "dep-graph": "nx dep-graph",
-    "format": "nx format:write"
+    "format": "nx format:write",
+    "emulation": "sudo python apps/scripts/emulation.py"
   },
   "private": true,
   "devDependencies": {
@@ -37,6 +38,7 @@
     "@types/react-dom": "17.0.9",
     "@types/react-is": "17.0.2",
     "@types/react-router-dom": "5.3.3",
+    "@types/redux-state-sync": "^3.1.3",
     "@types/styled-components": "5.1.24",
     "@typescript-eslint/eslint-plugin": "~5.10.0",
     "@typescript-eslint/parser": "~5.10.0",
@@ -58,6 +60,7 @@
   "dependencies": {
     "@mapbox/mapbox-gl-directions": "^4.1.0",
     "@mapbox/polyline": "^1.1.1",
+    "@reduxjs/toolkit": "^1.8.3",
     "@turf/turf": "^6.5.0",
     "@types/mapbox__mapbox-gl-geocoder": "^4.7.2",
     "core-js": "^3.6.5",
@@ -65,10 +68,13 @@
     "react": "17.0.2",
     "react-dom": "17.0.2",
     "react-is": "17.0.2",
+    "react-redux": "^8.0.2",
     "react-router-dom": "5.3.0",
+    "redux-state-sync": "^3.1.2",
     "regenerator-runtime": "0.13.9",
+    "socket.io-client": "^4.5.1",
     "styled-components": "5.3.3",
     "tslib": "^2.0.0",
-    "vanessa-mapbox-gl-directions": "^4.1.1"
+    "vanessa-mapbox-gl-directions": "^4.1.92"
   }
 }

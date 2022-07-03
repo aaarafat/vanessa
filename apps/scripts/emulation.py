@@ -1,46 +1,56 @@
-#!/usr/bin/python
-
-
-from ipaddress import IPv4Address
-import os
-import sys
-from turtle import position
-import threading
-from flask_socketio import SocketIO, emit
-from flask import Flask
-
-from mininet.log import setLogLevel, info
-from mn_wifi.link import wmediumd, adhoc
-from mn_wifi.cli import CLI
-from mn_wifi.net import Mininet_wifi
+from numpy import stack
+import socket
+import json
 from mn_wifi.wmediumdConnector import interference
-
+from mn_wifi.vanet import vanet
+from mn_wifi.net import Mininet_wifi
+from mn_wifi.cli import CLI
+from mn_wifi.link import wmediumd, adhoc
+from mininet.log import setLogLevel, info
+from flask import Flask
+from flask_socketio import SocketIO, emit
+import threading
+from turtle import position
+import sys
+import os
 from mininet.node import Controller
 from mininet.node import UserSwitch
 from mn_wifi.node import UserAP
-import json
-# ap_scan
-# configureAdhoc
-# configureMacAddr
-# get_default_gw
-# setAdhocMode
-# get_pid_filename
-# setAdhocMode
-# setConnected
-# py car1.wintfs[1].apsInRange
-# py car3.wintfs[1].ssid
-# py car1.wintfs[1].associatedTo
+
+import time
+import shutil
+import math
+from http import client
+import glob
 
 
 HOST = "127.0.0.1"
-PORT = 65432
+IO_PORT = 65432
+PORT = 65433
 APP = Flask("mininet")
+
+LINK_CONFIG = {
+    "ssid": 'adhocNet',
+    "mode": 'g',
+    "channel": 5,
+    "ht_cap": 'HT40+'
+}
+
+running = True
+
+stations_pool = []
+stations_car = {}
+
+STATIONS_COUNT = 5
+
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.bind((HOST, PORT))
 
 
 sio = SocketIO(APP, cors_allowed_origins="*")
 "Create a network."
 net = Mininet_wifi(link=wmediumd, wmediumd_mode=interference,
-                   controller=Controller, accessPoint=UserAP, autoAssociation=True, ac_method='ssf') #ssf or llf
+                   controller=Controller, accessPoint=UserAP, autoAssociation=True, ac_method='ssf')  # ssf or llf
 stations = {}
 accessPoints = {}
 car_kwargs = dict(
@@ -48,7 +58,8 @@ car_kwargs = dict(
     bgscan_threshold=-60,
     s_inverval=5,
     l_interval=10
-    )
+)
+
 
 @sio.on('connect')
 def connected():
@@ -60,34 +71,123 @@ def disconnected():
     print('Disconnected')
 
 
-@sio.on('test')
-def test(message):
-    print(message["data"])
+@sio.on('destination-reached')
+def destination_reached(message):
+    id = message['id']
+    st = stations_car[id]
 
-    emit('testResponse', {'data': message["data"] + " recieved"})
+    coordinates = message['coordinates']
+    position = to_grid(coordinates)
+    st.setPosition(position)
+
+    payload = {
+        'type': 'destination-reached',
+        'data': {
+            'coordinates': coordinates,
+        }
+    }
+    send_to_car(f"/tmp/car{id}.socket", payload)
 
 
-@sio.on('position')
-def position(message):
-    print("position updated")
-    stations["car1"].setPosition("782,120,0")
+@sio.on('obstacle-detected')
+def obstacle_detected(message):
+    id = message['id']
+    st = stations_car[id]
+
+    coordinates = message['coordinates']
+    position = to_grid(coordinates)
+    st.setPosition(position)
+
+    obstacle_coordinates = message['obstacle_coordinates']
+    payload = {
+        'type': 'obstacle-detected',
+        'data': {
+            'coordinates': coordinates,
+            'obstacle_coordinates': obstacle_coordinates
+        }
+    }
+    send_to_car(f"/tmp/car{id}.socket", payload)
 
 
-@sio.on('add_car')
-def add_car(data):
-    print(f"card id : {data.id}")
-    print(f"card position : {data.pos}")
-    stations[data.id] = net.addStation(data.id, position=data.pos,
-                                       **car_kwargs)
-    net.addLink(stations[data.id], cls=adhoc, intf=f"{data.id}-wlan0",
-                ssid='adhocNet', mode='g', channel=5,
-                ht_cap='HT40+')
-    # TODO save to json file
-    # TODO the aodv protocol
+@sio.on('add-car')
+def add_car(message):
+    if len(stations_pool) == 0:
+        raise Exception("Pool ran out of stations")
+
+    st = stations_pool.pop(0)
+    id = message['id']
+    stations_car[id] = st
+
+    coordinates = message["coordinates"]
+    position = to_grid(coordinates)
+    st.setPosition(position)
+    print(position)
+
+    st.cmd(f"sudo apps/scripts/car-unix -id {id} -debug &")
+
+    payload = {
+        'type': 'add-car',
+        'data': {
+            'coordinates': coordinates,
+        }
+    }
+    time.sleep(0.01)
+    send_to_car(f"/tmp/car{id}.socket", payload)
+
+    # run in a new thread
+    time.sleep(0.01)
+    threading.Thread(target=recieve_from_car, args=(
+        f"/tmp/car{id}write.socket",)).start()
+
+
+@sio.on('update-location')
+def update_locations(message):
+    id = message['id']
+    if id not in stations_car:
+        raise Exception("Car not found")
+
+    coordinates = message["coordinates"]
+    position = to_grid(coordinates)
+    stations_car[id].setPosition(position)
+
+    lng, lat = coordinates["lng"], coordinates["lat"]
+    # print(f"car {id} moved to {position}, lng: {lng} lat: {lat}")
+
+    payload = {
+        'type': 'update-location',
+        'data': {
+            'coordinates': coordinates,
+        }
+    }
+    send_to_car(f"/tmp/car{id}.socket", payload)
+
+
+def recieve_from_car(car_socket):
+    try:
+        server = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        server.bind(car_socket)
+        print(f"Listening on {car_socket}")
+        while True:
+            data = server.recv(1024)
+            sio.emit('change', data)
+
+    except Exception as e:
+        print(f'recieve_from_car error: {e}')
+        pass
+
+
+def send_to_car(car_socket, payload):
+    try:
+        client = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        client.connect(car_socket)
+        client.send(json.dumps(payload).encode('ASCII'))
+    except Exception as e:
+        print(f'send_to_car error: {e}')
+        pass
 
 
 def run_socket():
-    sio.run(APP, host=HOST, port=PORT)
+    sio.run(APP, host=HOST, port=IO_PORT)
 
 
 def save(path, content):
@@ -95,8 +195,21 @@ def save(path, content):
         f.write(content)
 
 
-info("*** Creating nodes\n")
+EARTH_RAD = 6371 * 1000
 
+
+def to_grid(coordinates):
+    lng, lat = coordinates["lng"], coordinates["lat"]
+    lng += 360 if lng < 0 else 0
+    lat += 360 if lat < 0 else 0
+
+    x = EARTH_RAD * lng * math.pi/180
+    y = EARTH_RAD * lat * math.pi/180
+
+    return f"{x},{y},0"
+
+
+info("*** Creating nodes\n")
 
 
 stations["car1"] = net.addStation('car1', position="50, 100, 0",
@@ -108,17 +221,19 @@ stations["car3"] = net.addStation('car3', position="140, 100, 0",
 
 
 rsu1 = net.addAccessPoint('rsu1', ssid='VANESSA', mode='g', channel='1',
-                        failMode="standalone", position='15,70,0', range=100,
-                        ip='10.1.0.1/16', cls=UserAP, inNamespace=True)
+                          failMode="standalone", position='15,70,0', range=100,
+                          ip='10.1.0.1/16', cls=UserAP, inNamespace=True)
 rsu2 = net.addAccessPoint('rsu2', ssid='VANESSA', mode='g', channel='1',
-                        failMode="standalone", position='45,70,0', range=100, 
-                        ip='10.1.0.2/16', cls=UserAP, inNamespace=True)
+                          failMode="standalone", position='45,70,0', range=100,
+                          ip='10.1.0.2/16', cls=UserAP, inNamespace=True)
 rsu3 = net.addAccessPoint('rsu3', ssid='VANESSA', mode='g', channel='1',
-                        failMode="standalone", position='75,70,0', range=100, 
-                        ip='10.1.0.3/16', cls=UserAP, inNamespace=True)
+                          failMode="standalone", position='75,70,0', range=100,
+                          ip='10.1.0.3/16', cls=UserAP, inNamespace=True)
 
 c1 = net.addController('c1')
-s0 = net.addSwitch("s0",cls=UserSwitch, inNamespace=True)
+s0 = net.addSwitch("s0", cls=UserSwitch, inNamespace=True)
+
+
 def topology(args):
 
     net.setPropagationModel(model="logDistance", exp=4)
@@ -138,22 +253,22 @@ def topology(args):
                 ssid='adhocNet', mode='g', channel=5,
                 ht_cap='HT40+',  **kwargs)
     stations["car1"].setIP('10.0.1.1/24',
-                  intf='car1-wlan1')
+                           intf='car1-wlan1')
     net.addLink(stations["car2"], cls=adhoc, intf='car2-wlan0',
                 ssid='adhocNet', mode='g', channel=5,
                 ht_cap='HT40+',  **kwargs)
     stations["car2"].setIP('10.0.1.2/24',
-                  intf='car2-wlan1')
+                           intf='car2-wlan1')
     net.addLink(stations["car3"], cls=adhoc, intf='car3-wlan0',
                 ssid='adhocNet', mode='g', channel=5,
                 ht_cap='HT40+', **kwargs)
     stations["car3"].setIP('10.0.1.3/24',
-                  intf='car3-wlan1')
-    
-    net.addLink(s0,rsu1)
-    net.addLink(s0,rsu2)
-    net.addLink(s0,rsu3)
-    
+                           intf='car3-wlan1')
+
+    net.addLink(s0, rsu1)
+    net.addLink(s0, rsu2)
+    net.addLink(s0, rsu3)
+
     # net.addLink(ap1, ap2)
     info("*** Plotting network\n")
     net.plotGraph(max_x=500, max_y=500)
@@ -171,11 +286,11 @@ def topology(args):
     rsu1.start([c1])
     rsu2.start([c1])
     rsu3.start([c1])
-   
+
     # stations["car1"].cmd('sysctl net.ipv4.ip_forward=1')
     # stations["car2"].cmd('echo 1 > /proc/sys/net/ipv4/ip_forward')
     # stations["car3"].cmd('sysctl net.ipv4.ip_forward=1')
-   
+
     metadata = {'mac': dict(),
                 'mac2ip': dict()}
     for id in stations:
@@ -187,7 +302,7 @@ def topology(args):
             f'sudo {os.path.join(os.path.dirname(__file__), "../../dist/apps/router")} {stations[id].name} {len(stations)} &')
     # ap2.cmd(f"./rsuWatcher {ap2.wintfs[0].ssid}")
     # ap1.cmd(f"./rsuWatcher {ap1.wintfs[0].ssid}")
-    
+
     info("*** Running CLI\n")
     CLI(net)
     info("*** Stopping network\n")
@@ -196,6 +311,11 @@ def topology(args):
 
 if __name__ == '__main__':
     setLogLevel('info')
+    shutil.rmtree('/logs', ignore_errors=True)
+    for f in glob.glob('/tmp/car*.socket'):
+        try:
+            os.remove(f)
+        except:
+            pass
     threading.Thread(target=run_socket, daemon=True).start()
     topology(sys.argv)
-    

@@ -424,6 +424,12 @@ a.mapboxgl-ctrl-logo.mapboxgl-compact {
   will-change: transform;
   pointer-events: none;
 }
+.mapboxgl-popup-content a {
+  color: #0078a0;
+  text-decoration: underline;
+  font-size: 12px;
+  cursor: pointer;
+}
 .mapboxgl-popup-anchor-top,
 .mapboxgl-popup-anchor-top-left,
 .mapboxgl-popup-anchor-top-right {
