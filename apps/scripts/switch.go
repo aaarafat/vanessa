@@ -26,7 +26,7 @@ func readFromInterface(d *DataLinkLayerChannel, index int) {
 }
 func BroadcastToInterfaces(payload []byte, from int) {
 	for index, c := range channels {
-		if index == from {
+		if index+1 == from {
 			continue
 		}
 		c.Broadcast(payload)
