@@ -13,18 +13,18 @@ import (
 )
 
 type PacketFilter struct {
-	nfq *netfilter.NFQueue
+	nfq   *netfilter.NFQueue
 	srcIP net.IP
-	id int
+	id    int
 
 	// TODO: replace this with router object
 	router *aodv.Aodv
-	unix *unix.UnixSocket
+	unix   *unix.UnixSocket
 }
 
 func newPacketFilter(id int, ifi net.Interface) (*PacketFilter, error) {
 	var err error
-	
+
 	if err := ChainNFQUEUE(); err != nil {
 		DeleteIPTablesRule()
 		log.Panic("Reversed chaining NFQUEUE")
@@ -42,7 +42,7 @@ func newPacketFilter(id int, ifi net.Interface) (*PacketFilter, error) {
 		log.Panicf("failed to get iface ips, err: %s", err)
 		return nil, err
 	}
-	
+
 	SetMSS(ifi.Name, ip, 1400)
 
 	nfq, err := netfilter.NewNFQueue(0, 100, netfilter.NF_DEFAULT_PACKET_SIZE)
@@ -52,11 +52,11 @@ func newPacketFilter(id int, ifi net.Interface) (*PacketFilter, error) {
 	}
 
 	pf := &PacketFilter{
-		nfq: nfq,
-		srcIP: ip,
-		id: id,
+		nfq:    nfq,
+		srcIP:  ip,
+		id:     id,
 		router: nil,
-		unix: unix.NewUnixSocket(id),
+		unix:   unix.NewUnixSocket(id),
 	}
 
 	pf.router = aodv.NewAodv(ip, pf.DataCallback)
@@ -79,13 +79,12 @@ func NewPacketFilterWithInterface(id int, ifi net.Interface) (*PacketFilter, err
 	return newPacketFilter(id, ifi)
 }
 
-
 func (pf *PacketFilter) DataCallback(dataByte []byte) {
 	header, err := UnmarshalIPHeader(dataByte)
 
 	if err != nil {
 		log.Println(err)
-		return	
+		return
 	}
 
 	if header.destIP.Equal(pf.srcIP) {
@@ -124,7 +123,6 @@ func (pf *PacketFilter) StealPacket() {
 
 				UpdateChecksum(packet)
 
-
 				log.Println(header.Version)
 				go pf.router.SendData(packet, header.destIP)
 			}
@@ -148,14 +146,13 @@ func (pf *PacketFilter) ObstacleHandler() {
 				return
 			}
 			log.Printf("Packet Filter : Obstacle detected: %v\n", data)
-	
+
 			// TODO: send it with loopback interface to the router to be processed by the AODV
 			go pf.router.SendData(data, net.ParseIP(aodv.BroadcastIP))
 			pf.unix.Write(data)
 		}
 	}
 }
-
 
 func (pf *PacketFilter) DestinationReachedHandler() {
 	destinationReachedChannel := make(chan json.RawMessage)
@@ -172,7 +169,7 @@ func (pf *PacketFilter) DestinationReachedHandler() {
 				return
 			}
 			log.Printf("Packet Filter : destination-reached: %v\n", data)
-	
+
 			pf.unix.Write(data)
 		}
 	}
@@ -193,12 +190,11 @@ func (pf *PacketFilter) UpdateLocationHandler() {
 				return
 			}
 			log.Printf("Packet Filter : update-location: %v\n", data)
-	
+
 			pf.unix.Write(data)
 		}
 	}
 }
-
 
 func (pf *PacketFilter) Start() {
 	log.Printf("Starting PacketFilter for IP: %s.....\n", pf.srcIP)
@@ -207,7 +203,7 @@ func (pf *PacketFilter) Start() {
 	go pf.unix.Start()
 	go pf.ObstacleHandler()
 	go pf.DestinationReachedHandler()
-	go pf.UpdateLocationHandler()
+	// go pf.UpdateLocationHandler()
 
 	// TODO: REMOVE THIS (for testing)
 	for {

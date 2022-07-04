@@ -14,7 +14,8 @@
     "affected:build": "nx affected:build",
     "dep-graph": "nx dep-graph",
     "format": "nx format:write",
-    "emulation": "sudo python apps/scripts/emulation.py"
+    "emulation": "sudo python apps/scripts/emulation.py",
+    "build:network": "go build -o dist/apps/network apps/network/main.go"
   },
   "private": true,
   "devDependencies": {

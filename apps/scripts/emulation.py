@@ -117,9 +117,12 @@ def add_rsu(message):
     if len(rsus_pool) == 0:
         raise Exception("Pool ran out of stations")
 
-    rsu = rsus_pool.pop(0)
     id = message['id']
-    ap_rsus[id] = rsu
+    if id not in ap_rsus:
+        rsu = rsus_pool.pop(0)
+        ap_rsus[id] = rsu
+    else:
+        rsu = ap_rsus[id]
 
     coordinates = message["coordinates"]
     rsu_range = message["range"]
@@ -145,9 +148,12 @@ def add_car(message):
     if len(stations_pool) == 0:
         raise Exception("Pool ran out of stations")
 
-    st = stations_pool.pop(0)
     id = message['id']
-    stations_car[id] = st
+    if id not in stations_car:
+        st = stations_pool.pop(0)
+        stations_car[id] = st
+    else:
+        st = stations_car[id]
 
     coordinates = message["coordinates"]
     position = to_grid(coordinates)
