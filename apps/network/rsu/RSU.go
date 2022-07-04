@@ -84,6 +84,7 @@ func (r *RSU) readFromWLANInterface() {
 
 		log.Printf("Received \"%s\" from: [%s] on intf-%d", string(data.Data), addr.String(), RSUWLANInterface)
 		r.ethChannel.Broadcast(payload)
+		r.wlanChannel.Broadcast(payload)
 	}
 }
 

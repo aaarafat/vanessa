@@ -16,6 +16,7 @@ type Forwarder struct {
 
 
 func NewForwarder(srcIP net.IP, channels []*DataLinkLayerChannel) *Forwarder {
+	
 	return &Forwarder{
 		neighborsTable: NewNeighborTable(srcIP),
 		channels: channels,
@@ -24,6 +25,14 @@ func NewForwarder(srcIP net.IP, channels []*DataLinkLayerChannel) *Forwarder {
 }
 
 func (f *Forwarder) ForwardToAllExcept(payload []byte, addr net.HardwareAddr) {
+	for item := range f.neighborsTable.Iter() {
+		neighborMac := item.MAC
+		if neighborMac.String() != addr.String() {
+			f.ForwardTo(payload, neighborMac, 1)
+		}
+	}
+
+	// forward to RSU if connected
 	if connectedToRSU(2) {
 		mac, err := net.ParseMAC(getRSUMac(2))
 		if err != nil {
@@ -31,12 +40,6 @@ func (f *Forwarder) ForwardToAllExcept(payload []byte, addr net.HardwareAddr) {
 		}
 		if mac.String() != addr.String() {
 			f.ForwardTo(payload, mac, 2)
-		}
-	}
-	for item := range f.neighborsTable.Iter() {
-		neighborMac := item.MAC
-		if neighborMac.String() != addr.String() {
-			f.ForwardTo(payload, neighborMac, 1)
 		}
 	}
 }
@@ -52,14 +55,17 @@ func (f *Forwarder) ForwardToAll(payload []byte) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	f.channels[1].Broadcast(payload)
+	log.Printf("Broadcasting to interface 1\n")
+
+	// forward to RSU if connected
 	if connectedToRSU(2) {
 		mac, err := net.ParseMAC(getRSUMac(2))
 		if err != nil {
 			log.Fatalf("failed to parse MAC: %v", err)
 		}
-		f.ForwardTo(payload, mac, 2)
+		log.Println("Broadcasting to interface 2, RSU MAC: ", mac.String())
+		f.channels[2].SendTo(payload, mac)
 	}
-	log.Printf("Broadcasting to interface 1\n")
 }
 
 func (f *Forwarder) Start() {
