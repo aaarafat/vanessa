@@ -137,7 +137,7 @@ def add_rsu(message):
         pass
     print(position)
 
-    rsu.cmd(f"sudo dist/apps/network rsu &")
+    rsu.cmd(f"sudo dist/apps/network -id {id} -name rsu -debug &")
 
 
 @sio.on('add-car')
@@ -154,7 +154,7 @@ def add_car(message):
     st.setPosition(position)
     print(position)
 
-    st.cmd(f"sudo apps/scripts/car-unix -id {id} -debug &")
+    st.cmd(f"sudo dist/apps/network -id {id} -name car -debug &")
 
     payload = {
         'type': 'add-car',
