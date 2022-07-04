@@ -154,12 +154,54 @@ func (pf *PacketFilter) ObstacleHandler() {
 	}
 }
 
+
+func (pf *PacketFilter) DestinationReachedHandler() {
+	destinationReachedChannel := make(chan json.RawMessage)
+	destinationReachedSubscriber := &unix.Subscriber{Messages: &destinationReachedChannel}
+	pf.unix.Subscribe(unix.DestinationReachedEvent, destinationReachedSubscriber)
+
+	select {
+	case data := <-*destinationReachedSubscriber.Messages:
+		var destinationReached unix.DestinationReachedData
+		err := json.Unmarshal(data, &destinationReached)
+		if err != nil {
+			log.Printf("Error decoding destination-reached data: %v", err)
+			return
+		}
+		log.Printf("Packet Filter : destination-reached: %v\n", data)
+
+		pf.unix.Write(data)
+	}
+}
+
+func (pf *PacketFilter) UpdateLocationHandler() {
+	updateLocationChannel := make(chan json.RawMessage)
+	updateLocationSubscriber := &unix.Subscriber{Messages: &updateLocationChannel}
+	pf.unix.Subscribe(unix.UpdateLocationEvent, updateLocationSubscriber)
+
+	select {
+	case data := <-*updateLocationSubscriber.Messages:
+		var updateLocation unix.UpdateLocationData
+		err := json.Unmarshal(data, &updateLocation)
+		if err != nil {
+			log.Printf("Error decoding update-location data: %v", err)
+			return
+		}
+		log.Printf("Packet Filter : update-location: %v\n", data)
+
+		pf.unix.Write(data)
+	}
+}
+
+
 func (pf *PacketFilter) Start() {
 	log.Printf("Starting PacketFilter for IP: %s.....\n", pf.srcIP)
 	go pf.StealPacket()
 	go pf.router.Start()
 	go pf.unix.Start()
 	go pf.ObstacleHandler()
+	go pf.DestinationReachedHandler()
+	go pf.UpdateLocationHandler()
 
 	// TODO: REMOVE THIS (for testing)
 	for {
