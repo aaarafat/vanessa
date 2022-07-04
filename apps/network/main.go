@@ -8,7 +8,6 @@ import (
 
 	. "github.com/aaarafat/vanessa/apps/network/packetFilter"
 	. "github.com/aaarafat/vanessa/apps/network/rsu"
-	"github.com/aaarafat/vanessa/apps/network/unix"
 )
 
 func initLogger(debug bool, id int, name string) {
@@ -52,9 +51,7 @@ func main() {
 
 		defer rsu.Close()
 	} else if name == "car" {
-		unix := unix.NewUnixSocket(id)
-		go unix.Start()
-		packetfilter, err := NewPacketFilter()
+		packetfilter, err := NewPacketFilter(id)
 
 		if err != nil {
 			log.Panicf("failed to create packet filter: %v", err)

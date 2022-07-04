@@ -14,6 +14,15 @@ type Position struct {
 	Lng float64
 }
 
+type Event string
+
+const (
+	DestinationReachedEvent Event   = "destination-reached"
+	ObstacleDetectedEvent   Event   = "obstacle-detected"
+	AddCarEvent             Event   = "add-car"
+	UpdateLocationEvent     Event   = "update-location"
+)
+
 type DestinationReachedData struct {
 	Coordinates Position
 }
@@ -30,14 +39,35 @@ type UpdateLocationData struct {
 	Coordinates Position
 }
 
+type Subscriber struct {
+	Messages *chan json.RawMessage
+}
+
 type UnixSocket struct {
 	id  int
+	topics map[Event][]*Subscriber
 }
 
 func NewUnixSocket(id int) *UnixSocket {
-	return &UnixSocket{id: id}
+	return &UnixSocket{id: id, topics: make(map[Event][]*Subscriber)}
 }
 
+
+func (u *UnixSocket) Subscribe(topic Event, subscriber *Subscriber) {
+	if u.topics[topic] == nil {
+		u.topics[topic] = []*Subscriber{}
+	}
+	u.topics[topic] = append(u.topics[topic], subscriber)
+}
+
+func (u *UnixSocket) Publish(topic Event, message json.RawMessage) {
+	if u.topics[topic] == nil {
+		return
+	}
+	for _, subscriber := range u.topics[topic] {
+		*subscriber.Messages <- message
+	}
+}
 
 func (unix *UnixSocket) reader(d *json.Decoder) {
 	var m map[string]json.RawMessage
@@ -48,7 +78,7 @@ func (unix *UnixSocket) reader(d *json.Decoder) {
 			return
 		}
 
-		var eventType string
+		var eventType Event
 		err = json.Unmarshal(m["type"], &eventType)
 		if err != nil {
 			log.Printf("Error: %v\n", err)
@@ -57,7 +87,7 @@ func (unix *UnixSocket) reader(d *json.Decoder) {
 		log.Printf("Event type: %s\n", eventType)
 
 		switch eventType {
-		case "destination-reached":
+		case DestinationReachedEvent:
 			var p DestinationReachedData
 			err := json.Unmarshal(m["data"], &p)
 			if err != nil {
@@ -65,8 +95,9 @@ func (unix *UnixSocket) reader(d *json.Decoder) {
 				return
 			}
 			log.Printf("Destination reached: %v\n", p)
+			unix.Publish(DestinationReachedEvent, m["data"])
 
-		case "obstacle-detected":
+		case ObstacleDetectedEvent:
 			var p ObstacleDetectedData
 			err := json.Unmarshal(m["data"], &p)
 			if err != nil {
@@ -74,8 +105,9 @@ func (unix *UnixSocket) reader(d *json.Decoder) {
 				return
 			}
 			log.Printf("Obstacle detected: %v\n", p)
+			unix.Publish(ObstacleDetectedEvent, m["data"])
 
-		case "add-car":
+		case AddCarEvent:
 			var p AddCarData
 			err := json.Unmarshal(m["data"], &p)
 			if err != nil {
@@ -83,8 +115,9 @@ func (unix *UnixSocket) reader(d *json.Decoder) {
 				return
 			}
 			log.Printf("Car added: %v\n", p)
+			unix.Publish(AddCarEvent, m["data"])
 
-		case "update-location":
+		case UpdateLocationEvent:
 			var p UpdateLocationData
 			err := json.Unmarshal(m["data"], &p)
 			if err != nil {
@@ -92,7 +125,26 @@ func (unix *UnixSocket) reader(d *json.Decoder) {
 				return
 			}
 			log.Printf("Updated Location: %v\n", p)
+			unix.Publish(UpdateLocationEvent, m["data"])
 		}
+	}
+}
+
+func (unix *UnixSocket) Write(message any) {
+	conn, err := unix.initUnixWriteSocket()
+	if err != nil {
+		log.Printf("Error: %v\n", err)
+		return
+	}
+	defer conn.Close()
+
+	err = json.NewEncoder(conn).Encode(map[string]interface{}{
+		"id":   unix.id,
+		"data": message,
+	})
+	if err != nil {
+		log.Printf("Error: %v\n", err)
+		return
 	}
 }
 
@@ -102,22 +154,7 @@ func (unix *UnixSocket) testWrite() {
 	for {
 		// sleep for 5 sec
 		time.Sleep(time.Second * 5)
-
-		conn, err := unix.initUnixWriteSocket()
-		if err != nil {
-			log.Printf("Error: %v\n", err)
-			continue
-		}
-		err = json.NewEncoder(conn).Encode(map[string]interface{}{
-			"id":   unix.id,
-			"data": "Hello from car",
-		})
-
-		if err != nil {
-			log.Printf("Error: %v\n", err)
-		}
-		log.Printf("Sent message\n")
-		conn.Close()
+		unix.Write("Hello from car")
 	}
 }
 
@@ -157,7 +194,7 @@ func (unix *UnixSocket) Start() {
 	d := json.NewDecoder(conn)
 	log.Printf("Listening to %s ..\n", socketAddress)
 
-	go unix.testWrite()
+	// go unix.testWrite()
 
 	unix.reader(d)
 }

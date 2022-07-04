@@ -97,7 +97,7 @@ func (a *Aodv) handleData(payload []byte, from net.HardwareAddr) {
 		return
 	} 
 
-	if data.DestenationIP.Equal(a.srcIP) || data.DestenationIP.Equal(net.ParseIP(BroadcastIP)) {
+	if data.DestenationIP.Equal(a.srcIP) {
 		log.Printf("Received: %s\n", data.String())
 		go a.callback(data.Data)
 		return
@@ -107,6 +107,17 @@ func (a *Aodv) handleData(payload []byte, from net.HardwareAddr) {
 
 	// forward the data
 	if data.DestenationIP.Equal(net.ParseIP(BroadcastIP)) {
+		log.Printf("Received: %s\n", data.String())
+		go a.callback(data.Data)
+		
+		if connectedToRSU(2) {
+			mac, err := net.ParseMAC(getRSUMac(2))
+			if err != nil {
+				log.Fatalf("failed to parse MAC: %v", err)
+			}
+			a.forwarder.ForwardTo(payload, mac, 2)
+		}
+		
 		a.forwarder.ForwardToAllExcept(data.Marshal(), from)
 	} else {
 		a.forwardData(data)

@@ -1,6 +1,7 @@
 package packetfilter
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -8,17 +9,20 @@ import (
 
 	"github.com/AkihiroSuda/go-netfilter-queue"
 	"github.com/aaarafat/vanessa/apps/network/protocols/aodv"
+	"github.com/aaarafat/vanessa/apps/network/unix"
 )
 
 type PacketFilter struct {
 	nfq *netfilter.NFQueue
 	srcIP net.IP
+	id int
 
 	// TODO: replace this with router object
 	router *aodv.Aodv
+	unix *unix.UnixSocket
 }
 
-func newPacketFilter(ifi net.Interface) (*PacketFilter, error) {
+func newPacketFilter(id int, ifi net.Interface) (*PacketFilter, error) {
 	var err error
 	
 	if err := ChainNFQUEUE(); err != nil {
@@ -50,7 +54,9 @@ func newPacketFilter(ifi net.Interface) (*PacketFilter, error) {
 	pf := &PacketFilter{
 		nfq: nfq,
 		srcIP: ip,
+		id: id,
 		router: nil,
+		unix: unix.NewUnixSocket(id),
 	}
 
 	pf.router = aodv.NewAodv(ip, pf.DataCallback)
@@ -58,7 +64,7 @@ func newPacketFilter(ifi net.Interface) (*PacketFilter, error) {
 	return pf, nil
 }
 
-func NewPacketFilter() (*PacketFilter, error) {
+func NewPacketFilter(id int) (*PacketFilter, error) {
 
 	interfaces, err := net.Interfaces()
 	if err != nil {
@@ -66,16 +72,16 @@ func NewPacketFilter() (*PacketFilter, error) {
 		return nil, err
 	}
 	iface := interfaces[1]
-	return newPacketFilter(iface)
+	return newPacketFilter(id, iface)
 }
 
-func NewPacketFilterWithInterface(ifi net.Interface) (*PacketFilter, error) {
-	return newPacketFilter(ifi)
+func NewPacketFilterWithInterface(id int, ifi net.Interface) (*PacketFilter, error) {
+	return newPacketFilter(id, ifi)
 }
 
 
-func (pf *PacketFilter) DataCallback(data []byte) {
-	header, err := UnmarshalIPHeader(data)
+func (pf *PacketFilter) DataCallback(dataByte []byte) {
+	header, err := UnmarshalIPHeader(dataByte)
 
 	if err != nil {
 		log.Println(err)
@@ -86,8 +92,14 @@ func (pf *PacketFilter) DataCallback(data []byte) {
 		log.Println("packet is for me")
 	}
 
-	payload := data[header.Length:]
-	log.Printf("PacketFilter received data: %v\n", payload)
+	payload := dataByte[header.Length:]
+	data, err := aodv.UnmarshalData(payload)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	log.Printf("PacketFilter received data: %v\n", data.Data)
+	pf.unix.Write(data.Data)
 }
 
 func (pf *PacketFilter) StealPacket() {
@@ -121,10 +133,33 @@ func (pf *PacketFilter) StealPacket() {
 	}
 }
 
+func (pf *PacketFilter) ObstacleHandler() {
+	obstacleChannel := make(chan json.RawMessage)
+	obstableSubscriber := &unix.Subscriber{Messages: &obstacleChannel}
+	pf.unix.Subscribe(unix.ObstacleDetectedEvent, obstableSubscriber)
+
+	select {
+	case data := <-*obstableSubscriber.Messages:
+		var obstacle unix.ObstacleDetectedData
+		err := json.Unmarshal(data, &obstacle)
+		if err != nil {
+			log.Printf("Error decoding obstacle-detected data: %v", err)
+			return
+		}
+		log.Printf("Packet Filter : Obstacle detected: %v\n", data)
+
+		// TODO: send it with loopback interface to the router to be processed by the AODV
+		go pf.router.SendData(data, net.ParseIP(aodv.BroadcastIP))
+		pf.unix.Write(data)
+	}
+}
+
 func (pf *PacketFilter) Start() {
 	log.Printf("Starting PacketFilter for IP: %s.....\n", pf.srcIP)
 	go pf.StealPacket()
 	go pf.router.Start()
+	go pf.unix.Start()
+	go pf.ObstacleHandler()
 
 	// TODO: REMOVE THIS (for testing)
 	for {
