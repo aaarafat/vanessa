@@ -138,19 +138,21 @@ func (pf *PacketFilter) ObstacleHandler() {
 	obstableSubscriber := &unix.Subscriber{Messages: &obstacleChannel}
 	pf.unix.Subscribe(unix.ObstacleDetectedEvent, obstableSubscriber)
 
-	select {
-	case data := <-*obstableSubscriber.Messages:
-		var obstacle unix.ObstacleDetectedData
-		err := json.Unmarshal(data, &obstacle)
-		if err != nil {
-			log.Printf("Error decoding obstacle-detected data: %v", err)
-			return
+	for {
+		select {
+		case data := <-*obstableSubscriber.Messages:
+			var obstacle unix.ObstacleDetectedData
+			err := json.Unmarshal(data, &obstacle)
+			if err != nil {
+				log.Printf("Error decoding obstacle-detected data: %v", err)
+				return
+			}
+			log.Printf("Packet Filter : Obstacle detected: %v\n", data)
+	
+			// TODO: send it with loopback interface to the router to be processed by the AODV
+			go pf.router.SendData(data, net.ParseIP(aodv.BroadcastIP))
+			pf.unix.Write(data)
 		}
-		log.Printf("Packet Filter : Obstacle detected: %v\n", data)
-
-		// TODO: send it with loopback interface to the router to be processed by the AODV
-		go pf.router.SendData(data, net.ParseIP(aodv.BroadcastIP))
-		pf.unix.Write(data)
 	}
 }
 
@@ -160,17 +162,19 @@ func (pf *PacketFilter) DestinationReachedHandler() {
 	destinationReachedSubscriber := &unix.Subscriber{Messages: &destinationReachedChannel}
 	pf.unix.Subscribe(unix.DestinationReachedEvent, destinationReachedSubscriber)
 
-	select {
-	case data := <-*destinationReachedSubscriber.Messages:
-		var destinationReached unix.DestinationReachedData
-		err := json.Unmarshal(data, &destinationReached)
-		if err != nil {
-			log.Printf("Error decoding destination-reached data: %v", err)
-			return
+	for {
+		select {
+		case data := <-*destinationReachedSubscriber.Messages:
+			var destinationReached unix.DestinationReachedData
+			err := json.Unmarshal(data, &destinationReached)
+			if err != nil {
+				log.Printf("Error decoding destination-reached data: %v", err)
+				return
+			}
+			log.Printf("Packet Filter : destination-reached: %v\n", data)
+	
+			pf.unix.Write(data)
 		}
-		log.Printf("Packet Filter : destination-reached: %v\n", data)
-
-		pf.unix.Write(data)
 	}
 }
 
@@ -179,17 +183,19 @@ func (pf *PacketFilter) UpdateLocationHandler() {
 	updateLocationSubscriber := &unix.Subscriber{Messages: &updateLocationChannel}
 	pf.unix.Subscribe(unix.UpdateLocationEvent, updateLocationSubscriber)
 
-	select {
-	case data := <-*updateLocationSubscriber.Messages:
-		var updateLocation unix.UpdateLocationData
-		err := json.Unmarshal(data, &updateLocation)
-		if err != nil {
-			log.Printf("Error decoding update-location data: %v", err)
-			return
+	for {
+		select {
+		case data := <-*updateLocationSubscriber.Messages:
+			var updateLocation unix.UpdateLocationData
+			err := json.Unmarshal(data, &updateLocation)
+			if err != nil {
+				log.Printf("Error decoding update-location data: %v", err)
+				return
+			}
+			log.Printf("Packet Filter : update-location: %v\n", data)
+	
+			pf.unix.Write(data)
 		}
-		log.Printf("Packet Filter : update-location: %v\n", data)
-
-		pf.unix.Write(data)
 	}
 }
 

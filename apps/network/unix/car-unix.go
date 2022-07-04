@@ -131,6 +131,7 @@ func (unix *UnixSocket) reader(d *json.Decoder) {
 }
 
 func (unix *UnixSocket) Write(message any) {
+	log.Printf("Writing: %v\n", message)
 	conn, err := unix.initUnixWriteSocket()
 	if err != nil {
 		log.Printf("Error: %v\n", err)
