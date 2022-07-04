@@ -42,10 +42,11 @@ const MessagesViewer: React.FC = () => {
       const message = JSON.parse(
         String.fromCharCode.apply(null, new Uint8Array(data) as any)
       );
+
       dispatch(
         addMessage({
           id: message.id as number,
-          message: message.data,
+          message: JSON.stringify(message.data, null, 2),
         })
       );
     });

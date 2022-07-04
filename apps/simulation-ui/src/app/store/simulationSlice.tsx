@@ -89,7 +89,7 @@ export const simulationSlice = createSlice({
       action: PayloadAction<{ id: number; message: any }>
     ) => {
       if (!state.carsReceivedMessages[action.payload.id]) return;
-      state.carsReceivedMessages[action.payload.id].push(
+      state.carsReceivedMessages[action.payload.id].unshift(
         action.payload.message
       );
     },
