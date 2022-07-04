@@ -60,6 +60,5 @@ func getRSUMac(ifiIndex int) string {
 		return ""
 	}
 	mac, _ := getRSU(interfaces[ifiIndex].Name)
-	log.Println(mac)
 	return mac
 }

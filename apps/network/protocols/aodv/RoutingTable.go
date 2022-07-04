@@ -71,7 +71,6 @@ func (r* VRoutingTable) Update(destIP net.IP, nextHop net.HardwareAddr, hopCount
 		
 		r.set(newEntry)
 	}
-	r.Print()
 }
 
 func (r* VRoutingTable) Get(destination net.IP) (*VRoutingTableEntry, bool) {

@@ -117,6 +117,13 @@ func (a *Aodv) SendData(payload []byte, dest net.IP) {
 	log.Printf("Sending: %s\n", data.String())
 	
 	if data.DestenationIP.Equal(net.ParseIP(BroadcastIP)) {
+		if connectedToRSU(2) {
+			mac, err := net.ParseMAC(getRSUMac(2))
+			if err != nil {
+				log.Fatalf("failed to parse MAC: %v", err)
+			}
+			a.forwarder.ForwardTo(payload, mac, 2)
+		}
 		a.forwarder.ForwardToAll(data.Marshal())
 	} else {
 		a.forwardData(data)

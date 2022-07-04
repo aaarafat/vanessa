@@ -63,6 +63,6 @@ func UnmarshalData(data []byte) (*DataMessage, error) {
 }
 
 func (data *DataMessage) String() string {
-	return fmt.Sprintf("DataMessage{Type: %d, Flags: %d, HopCount: %d, SeqNumber: %d, OriginatorIP: %s, DestintionIO: %s, Data: %v}",
+	return fmt.Sprintf("DataMessage{Type: %d, Flags: %d, HopCount: %d, SeqNumber: %d, OriginatorIP: %s, DestintionIP: %s, Data: %v}",
 		data.Type, data.Flags, data.HopCount, data.SeqNumber, data.OriginatorIP, data.DestenationIP, data.Data)
 }

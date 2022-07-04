@@ -1,6 +1,7 @@
 package aodv
 
 import (
+	"log"
 	"net"
 	"sync"
 
@@ -35,12 +36,14 @@ func (f *Forwarder) ForwardTo(payload []byte, addr net.HardwareAddr, index int) 
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	f.channels[index].SendTo(payload, addr)
+	log.Printf("Forwarding to %s interface %d\n", addr.String(), index)
 }
 
 func (f *Forwarder) ForwardToAll(payload []byte) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	f.channels[1].Broadcast(payload)
+	log.Printf("Broadcasting to interface 1\n")
 }
 
 func (f *Forwarder) Start() {
