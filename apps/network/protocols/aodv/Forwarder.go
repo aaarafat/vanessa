@@ -24,6 +24,15 @@ func NewForwarder(srcIP net.IP, channels []*DataLinkLayerChannel) *Forwarder {
 }
 
 func (f *Forwarder) ForwardToAllExcept(payload []byte, addr net.HardwareAddr) {
+	if connectedToRSU(2) {
+		mac, err := net.ParseMAC(getRSUMac(2))
+		if err != nil {
+			log.Fatalf("failed to parse MAC: %v", err)
+		}
+		if mac.String() != addr.String() {
+			f.ForwardTo(payload, mac, 2)
+		}
+	}
 	for item := range f.neighborsTable.Iter() {
 		neighborMac := item.MAC
 		if neighborMac.String() != addr.String() {
@@ -43,6 +52,13 @@ func (f *Forwarder) ForwardToAll(payload []byte) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
 	f.channels[1].Broadcast(payload)
+	if connectedToRSU(2) {
+		mac, err := net.ParseMAC(getRSUMac(2))
+		if err != nil {
+			log.Fatalf("failed to parse MAC: %v", err)
+		}
+		f.ForwardTo(payload, mac, 2)
+	}
 	log.Printf("Broadcasting to interface 1\n")
 }
 
