@@ -62,6 +62,7 @@ func (r* RSU) readFromETHInterface() {
 		}
 
 		log.Printf("Received \"%s\" from: [%s] on intf-%d", string(data.Data), addr.String(), RSUETHInterface)
+		// TODO: Forward up with callback to decide what to do
 		r.wlanChannel.Broadcast(payload)
 	}
 }
@@ -83,6 +84,7 @@ func (r *RSU) readFromWLANInterface() {
 		}
 
 		log.Printf("Received \"%s\" from: [%s] on intf-%d", string(data.Data), addr.String(), RSUWLANInterface)
+		// TODO: Forward up with callback to decide what to do
 		r.ethChannel.Broadcast(payload)
 		r.wlanChannel.Broadcast(payload)
 	}

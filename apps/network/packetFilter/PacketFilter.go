@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/AkihiroSuda/go-netfilter-queue"
+	. "github.com/aaarafat/vanessa/apps/network/ip"
 	"github.com/aaarafat/vanessa/apps/network/protocols/aodv"
 	"github.com/aaarafat/vanessa/apps/network/unix"
 )
@@ -16,6 +17,7 @@ type PacketFilter struct {
 	nfq   *netfilter.NFQueue
 	srcIP net.IP
 	id    int
+	ipConn *IPConnection
 
 	// TODO: replace this with router object
 	router *aodv.Aodv
@@ -51,10 +53,17 @@ func newPacketFilter(id int, ifi net.Interface) (*PacketFilter, error) {
 		return nil, err
 	}
 
+	ipConn, err := NewIPConnection()
+	if err != nil {
+		log.Println(err)
+		return nil, err	
+	}
+
 	pf := &PacketFilter{
 		nfq:    nfq,
 		srcIP:  ip,
 		id:     id,
+		ipConn: ipConn,
 		router: nil,
 		unix:   unix.NewUnixSocket(id),
 	}
@@ -80,24 +89,24 @@ func NewPacketFilterWithInterface(id int, ifi net.Interface) (*PacketFilter, err
 }
 
 func (pf *PacketFilter) DataCallback(dataByte []byte) {
-	header, err := UnmarshalIPHeader(dataByte)
+	packet, err := UnmarshalPacket(dataByte)
 
 	if err != nil {
 		log.Println(err)
 		return
 	}
 
-	if header.destIP.Equal(pf.srcIP) {
+	if packet.Header.DestIP.Equal(pf.srcIP) {
 		log.Println("packet is for me")
 	}
 
-	payload := dataByte[header.Length:]
+	payload := dataByte[packet.Header.Length:]
 	data, err := aodv.UnmarshalData(payload)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	log.Printf("PacketFilter received data: %v\n", data.Data)
+	log.Printf("PacketFilter received data: %s\n", data.Data)
 	pf.unix.Write(data.Data)
 }
 
@@ -110,12 +119,15 @@ func (pf *PacketFilter) StealPacket() {
 			log.Printf("PacketFilter received packet: %v\n", packet)
 
 			header, err := UnmarshalIPHeader(packet)
-
 			if err != nil {
+				log.Printf("Error decoding IP header: %v\n", err)
 				p.SetVerdict(netfilter.NF_DROP)
+				return
 			}
 
-			if pf.srcIP.Equal(header.destIP) {
+			log.Printf("PacketFilter received DestIP: %s, SrcIP: %s\n", header.DestIP, header.SrcIP)
+
+			if pf.srcIP.Equal(header.DestIP) {
 				fmt.Println(p.Packet)
 				p.SetVerdict(netfilter.NF_ACCEPT)
 			} else {
@@ -124,7 +136,7 @@ func (pf *PacketFilter) StealPacket() {
 				UpdateChecksum(packet)
 
 				log.Println(header.Version)
-				go pf.router.SendData(packet, header.destIP)
+				go pf.router.SendData(packet, header.DestIP)
 			}
 
 		}
@@ -148,7 +160,7 @@ func (pf *PacketFilter) ObstacleHandler() {
 			log.Printf("Packet Filter : Obstacle detected: %v\n", data)
 
 			// TODO: send it with loopback interface to the router to be processed by the AODV
-			go pf.router.SendData(data, net.ParseIP(aodv.BroadcastIP))
+			go pf.ipConn.Write(data, pf.srcIP, net.ParseIP(aodv.BroadcastIP))
 			pf.unix.Write(data)
 		}
 	}
@@ -209,11 +221,12 @@ func (pf *PacketFilter) Start() {
 	for {
 		time.Sleep(time.Second * 5)
 		msg := fmt.Sprintf("Hello From IP: %s\n", pf.srcIP)
-		pf.router.SendData([]byte(msg), net.ParseIP(aodv.RsuIP))
+		pf.ipConn.Write([]byte(msg), pf.srcIP, net.ParseIP(aodv.RsuIP))
 	}
 }
 
 func (pf *PacketFilter) Close() {
 	pf.nfq.Close()
 	pf.router.Close()
+	pf.ipConn.Close()
 }

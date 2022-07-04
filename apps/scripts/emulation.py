@@ -1,3 +1,4 @@
+import http
 from numpy import stack
 import socket
 import json
@@ -42,6 +43,8 @@ stations_pool = []
 rsus_pool = []
 stations_car = {}
 ap_rsus = {}
+
+running_threads = []
 
 STATIONS_COUNT = 5
 RSU_COUNT = 5
@@ -173,8 +176,12 @@ def add_car(message):
 
     # run in a new thread
     time.sleep(0.01)
-    threading.Thread(target=recieve_from_car, args=(
-        f"/tmp/car{id}write.socket",)).start()
+    thread = threading.Thread(target=recieve_from_car, args=(
+        f"/tmp/car{id}write.socket",), daemon=True)
+
+    running_threads.append(thread)
+
+    thread.start()
 
 
 @sio.on('update-location')
@@ -200,11 +207,12 @@ def update_locations(message):
 
 
 def recieve_from_car(car_socket):
+    global running
     try:
         server = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
         server.bind(car_socket)
         print(f"Listening on {car_socket}")
-        while True:
+        while running:
             data = server.recv(1024)
             sio.emit('change', data)
 
@@ -289,7 +297,16 @@ def topology(args):
     info("*** Running CLI\n")
     CLI(net)
     info("*** Stopping network\n")
-    net.stop()
+    global running
+    running = False
+    time.sleep(0.5)
+    for thread in running_threads:
+        thread.join(0.1)
+
+    try:
+        net.stop()
+    except:
+        pass
 
 
 if __name__ == '__main__':
@@ -300,5 +317,7 @@ if __name__ == '__main__':
             os.remove(f)
         except:
             pass
-    threading.Thread(target=run_socket, daemon=True).start()
+    thread = threading.Thread(target=run_socket, daemon=True)
+    running_threads.append(thread)
+    thread.start()
     topology(sys.argv)

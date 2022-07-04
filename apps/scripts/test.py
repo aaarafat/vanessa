@@ -49,17 +49,17 @@ def topology(args):
     kwargs = dict(wlans=1)
 
     net.setPropagationModel(model="logDistance", exp=4)
-    ap1 = net.addAccessPoint('ap1', ssid="handover",
-                             mode="g", channel="1", passwd='123456789a',
-                             encrypt='wpa2', position='50,50,0', cls=UserAP, inNamespace=True)
+    ap1 = net.addAccessPoint('rsu1', ssid='VANESSA', mode='g', channel='1',
+                             failMode="standalone", position='50,50,0', range=100,
+                             ip=f'10.1.0.1/16', cls=UserAP, inNamespace=True)
 
-    ap2 = net.addAccessPoint('ap2', ssid="handover",
-                             mode="g", channel="1", passwd='123456789a',
-                             encrypt='wpa2', position='0,50,0', cls=UserAP, inNamespace=True)
+    ap2 = net.addAccessPoint('rsu2', ssid='VANESSA', mode='g', channel='1',
+                             failMode="standalone", position='0,50,0', range=100,
+                             ip=f'10.1.0.2/16', cls=UserAP, inNamespace=True)
 
-    ap3 = net.addAccessPoint('ap3', ssid="handover",
-                             mode="g", channel="1", passwd='123456789a',
-                             encrypt='wpa2', position='75,100,0', cls=UserAP, inNamespace=True)
+    ap3 = net.addAccessPoint('rsu3', ssid='VANESSA', mode='g', channel='1',
+                             failMode="standalone", position='75,100,0', range=100,
+                             ip=f'10.1.0.3/16', cls=UserAP, inNamespace=True)
     c1 = net.addController('c1')
     info("*** Configuring wifi nodes\n")
     net.configureWifiNodes()
@@ -87,9 +87,9 @@ def topology(args):
 
     s0 = net.addSwitch("s0")
 
-    # net.addLink(s0,ap1)
-    # net.addLink(s0,ap2)
-    # net.addLink(s0,ap3)
+    net.addLink(s0, ap1)
+    net.addLink(s0, ap2)
+    net.addLink(s0, ap3)
 
     info("*** Plotting network\n")
     net.plotGraph(max_x=500, max_y=500)
@@ -103,10 +103,10 @@ def topology(args):
     info("*** Starting network\n")
     net.build()
     c1.start()
-
-    ap1.start([])
-    ap2.start([])
-    ap3.start([])
+    s0.start([c1])
+    ap1.start([c1])
+    ap2.start([c1])
+    ap3.start([c1])
 
     # info("\n*** Addressing...\n")
     # if 'proto' not in kwargs:
