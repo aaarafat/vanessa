@@ -55,7 +55,14 @@ func (r* RSU) readFromETHInterface() {
 			log.Fatalf("failed to read from channel: %v", err)
 		}
 		fmt.Println()
-		log.Printf("Received \"%s\" from: [%s] on intf-%d", string(payload), addr.String(), RSUETHInterface)
+		data, err := aodv.UnmarshalData(payload)
+		if err != nil {
+			log.Printf("Failed to unmarshal data: %v\n", err)
+			return
+		}
+
+		log.Printf("Received \"%s\" from: [%s] on intf-%d", string(data.Data), addr.String(), RSUETHInterface)
+		r.wlanChannel.Broadcast(payload)
 	}
 }
 
@@ -66,6 +73,7 @@ func (r *RSU) readFromWLANInterface() {
 		if err != nil {
 			log.Fatalf("failed to read from channel: %v", err)
 		}
+		// Unmarshalling the data received from the WLAN interface.
 		fmt.Println()
 
 		data, err := aodv.UnmarshalData(payload)
@@ -75,7 +83,7 @@ func (r *RSU) readFromWLANInterface() {
 		}
 
 		log.Printf("Received \"%s\" from: [%s] on intf-%d", string(data.Data), addr.String(), RSUWLANInterface)
-		r.ethChannel.Broadcast(data.Data)
+		r.ethChannel.Broadcast(payload)
 	}
 }
 
