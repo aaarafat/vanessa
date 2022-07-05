@@ -12,6 +12,7 @@ import (
 
 func initLogger(debug bool, id int, name string) {
 	log.SetPrefix("[vanessa]")
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	if !debug {
 		log.SetOutput(os.Stdout)
 		return // don't do anything if debug is false
@@ -28,7 +29,6 @@ func initLogger(debug bool, id int, name string) {
 		os.Exit(1)
 	}
 	log.SetOutput(file)
-	log.SetFlags(log.LstdFlags)
 }
 
 func main() {
@@ -47,9 +47,9 @@ func main() {
 		rsu := NewRSU()
 
 		// start the RSU
+		defer rsu.Close()
 		rsu.Start()
 
-		defer rsu.Close()
 	} else if name == "car" {
 		packetfilter, err := NewPacketFilter(id)
 
@@ -57,9 +57,9 @@ func main() {
 			log.Panicf("failed to create packet filter: %v", err)
 		}
 
+		defer packetfilter.Close()
 		packetfilter.Start()
 
-		defer packetfilter.Close()
 	} else {
 		log.Panicf("invalid name: %s, Please Enter car or rsu\n", name)
 	}

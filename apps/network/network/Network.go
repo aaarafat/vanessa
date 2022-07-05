@@ -46,11 +46,11 @@ func (n *NetworkLayer) openChannels()  {
 		log.Fatalf("failed to open interface: %v", err)
 	}
 
-	for _, ifi := range interfaces {
+	for index, ifi := range interfaces {
 		if ifi.Name == "lo" {
 			continue
 		}
-		channels[ifi.Index], err = NewDataLinkLayerChannelWithInterface(VDATAEtherType, ifi.Index)
+		channels[index], err = NewDataLinkLayerChannelWithInterface(VDATAEtherType, index)
 		if err != nil {
 			log.Fatalf("failed to open interface: %v", err)
 		}
@@ -75,7 +75,7 @@ func (n *NetworkLayer) Start() {
 	n.openChannels()
 	n.openForwarders()
 	n.openListeners()
-	
+
 	n.unicastProtocol.Start()
 }
 

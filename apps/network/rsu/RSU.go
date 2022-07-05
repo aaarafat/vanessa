@@ -6,6 +6,7 @@ import (
 	"net"
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
+	. "github.com/aaarafat/vanessa/apps/network/network/ip"
 	"github.com/aaarafat/vanessa/apps/network/protocols/aodv"
 )
 
@@ -50,43 +51,43 @@ func NewRSU() *RSU {
 func (r* RSU) readFromETHInterface() {
 	for {
 
-		payload, addr, err := r.ethChannel.Read()
+		data, addr, err := r.ethChannel.Read()
 		if err != nil {
 			log.Fatalf("failed to read from channel: %v", err)
 		}
 		fmt.Println()
-		data, err := aodv.UnmarshalData(payload)
+		
+		packet, err := UnmarshalPacket(data)
 		if err != nil {
 			log.Printf("Failed to unmarshal data: %v\n", err)
 			return
 		}
 
-		log.Printf("Received \"%s\" from: [%s] on intf-%d", string(data.Data), addr.String(), RSUETHInterface)
+		log.Printf("Received \"%s\" from: [%s] on intf-%d", string(packet.Payload), addr.String(), RSUETHInterface)
 		// TODO: Forward up with callback to decide what to do
-		r.wlanChannel.Broadcast(payload)
+		r.wlanChannel.Broadcast(data)
 	}
 }
 
 func (r *RSU) readFromWLANInterface() {
 	for {
 
-		payload, addr, err := r.wlanChannel.Read()
+		data, addr, err := r.wlanChannel.Read()
 		if err != nil {
 			log.Fatalf("failed to read from channel: %v", err)
 		}
 		// Unmarshalling the data received from the WLAN interface.
 		fmt.Println()
 
-		data, err := aodv.UnmarshalData(payload)
+		packet, err := UnmarshalPacket(data)
 		if err != nil {
 			log.Printf("Failed to unmarshal data: %v\n", err)
 			return
 		}
 
-		log.Printf("Received \"%s\" from: [%s] on intf-%d", string(data.Data), addr.String(), RSUWLANInterface)
+		log.Printf("Received \"%s\" from: [%s] on intf-%d", string(packet.Payload), addr.String(), RSUWLANInterface)
 		// TODO: Forward up with callback to decide what to do
-		r.ethChannel.Broadcast(payload)
-		r.wlanChannel.Broadcast(payload)
+		r.ethChannel.Broadcast(data)
 	}
 }
 

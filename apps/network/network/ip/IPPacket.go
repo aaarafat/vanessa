@@ -41,13 +41,13 @@ func UnmarshalPacket(data []byte) (*IPPacket, error) {
 	
 	return &IPPacket{
 		Header: header,
-		Payload: data[header.Length:],
+		Payload: data[header.LengthInBytes():],
 	}, nil
 }
 
 func MarshalIPPacket(packet *IPPacket) []byte {
 	data := make([]byte, packet.Header.TotalLength)
 	copy(data, MarshalIPHeader(packet.Header))
-	copy(data[packet.Header.Length * 4:], packet.Payload)
+	copy(data[packet.Header.LengthInBytes():], packet.Payload)
 	return data
 }

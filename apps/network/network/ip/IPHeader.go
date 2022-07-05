@@ -25,13 +25,11 @@ type IPHeader struct {
 }
 
 func UnmarshalIPHeader(data []byte) (*IPHeader, error) {
-	fmt.Printf("UnmarshalIPHeader: %v\n", data)
 	if len(data) < IPv4HeaderLen {
 		return nil, fmt.Errorf("IPHeader length is %d, expected %d", len(data), IPv4HeaderLen)
 	}
 
 	header := &IPHeader{}
-	fmt.Println(data[0])
 	header.Version = byte(data[0]) >> 4
 
 	if header.Version != 4 {
@@ -71,6 +69,10 @@ func MarshalIPHeader(header *IPHeader) []byte {
 	return data
 }
 
+func (h *IPHeader) LengthInBytes() int {
+	return int(h.Length * 4)
+}
+
 func HeaderChecksum(data []byte) uint16 {
 	var sum uint32 = 0
 	for i := 0; i < IPv4HeaderLen; i += 2 {
@@ -86,4 +88,13 @@ func UpdateChecksum(data []byte) {
 	csum := HeaderChecksum(data)
 	data[10] = byte(csum >> 8) // MSB
 	data[11] = byte(csum)      // LSB
+}
+
+func UpdateTTL(data []byte) {
+	data[8] = data[8] - 1
+}
+
+func Update(data []byte) {
+	UpdateChecksum(data)
+	UpdateTTL(data)
 }

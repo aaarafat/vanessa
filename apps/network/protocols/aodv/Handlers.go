@@ -3,7 +3,21 @@ package aodv
 import (
 	"log"
 	"net"
+
+	. "github.com/aaarafat/vanessa/apps/network/datalink"
 )
+
+
+func (a *Aodv) listen(channel *DataLinkLayerChannel) {
+	log.Printf("Listening for AODV packets on channel: %d....\n", channel.IfiIndex)
+	for {
+		payload, addr, err := channel.Read()
+		if err != nil {
+			log.Fatalf("failed to read from channel: %v", err)
+		}
+		go a.handleMessage(payload, addr, channel.IfiIndex)
+	}
+}
 
 
 func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr, IfiIndex int) {
@@ -27,7 +41,7 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr, IfiIndex int) {
 	go a.seqTable.Set(rreq.OriginatorIP, rreq.RREQID)
 
 	// check if the RREQ is for me
-	if rreq.DestinationIP.Equal(a.srcIP) || (rreq.DestinationIP.Equal(net.ParseIP(RsuIP)) && connectedToRSU(2)) {
+	if rreq.DestinationIP.Equal(a.srcIP) || (rreq.DestinationIP.Equal(net.ParseIP(RsuIP)) && ConnectedToRSU(2)) {
 		// update the sequence number if it is not unknown
 		if !rreq.HasFlag(RREQFlagU) {
 			a.updateSeqNum(rreq.DestinationSeqNum)

@@ -50,7 +50,16 @@ func (a *Aodv) GetRoute(destIP net.IP) (*VRoute, bool) {
 	item, ok := a.routingTable.Get(destIP)
 	if ok {
 		return NewVRoute(item.Destination, item.NextHop, item.IfiIndex, int(item.NoOfHops)), true
+	} 
+
+	if destIP.Equal(net.ParseIP(RsuIP)) && ConnectedToRSU(2) {
+		mac, err := net.ParseMAC(GetRSUMac(2))
+		if err != nil {
+			log.Fatalf("failed to parse mac: %v", err)
+		}
+		return NewVRoute(destIP, mac, 2, 0), true
 	}
+
 	return nil, false
 }
 
@@ -73,8 +82,8 @@ func (a *Aodv) Send(payload []byte, dest net.IP) {
 
 func (a *Aodv) forwardData(data *DataMessage) {
 	// handle rsu connection
-	if data.DestenationIP.Equal(net.ParseIP(RsuIP)) && connectedToRSU(2) {
-		mac, err := net.ParseMAC(getRSUMac(2))
+	if data.DestenationIP.Equal(net.ParseIP(RsuIP)) && ConnectedToRSU(2) {
+		mac, err := net.ParseMAC(GetRSUMac(2))
 		if err != nil {
 			log.Fatalf("failed to parse MAC: %v", err)
 		}
@@ -136,7 +145,7 @@ func (a *Aodv) SendRREP(destination net.IP, forRSU bool) {
 	if forRSU {
 		rrep.DestinationIP = net.ParseIP(RsuIP)
 		rrep.HopCount = 1
-		mac, err := net.ParseMAC(getRSUMac(2))
+		mac, err := net.ParseMAC(GetRSUMac(2))
 		if err != nil {
 			log.Fatalf("failed to parse MAC: %v", err)
 		}
@@ -148,22 +157,10 @@ func (a *Aodv) SendRREP(destination net.IP, forRSU bool) {
 	a.Send(rrep.Marshal(), destination)
 }
 
-
-func (a *Aodv) Listen(channel *DataLinkLayerChannel) {
-	log.Printf("Listening for AODV packets on channel: %d....\n", channel.IfiIndex)
-	for {
-		payload, addr, err := channel.Read()
-		if err != nil {
-			log.Fatalf("failed to read from channel: %v", err)
-		}
-		go a.handleMessage(payload, addr, channel.IfiIndex)
-	}
-}
-
 func (a *Aodv) Start() {
 	log.Printf("Starting AODV for IP: %s.....\n", a.srcIP)
 	go a.forwarder.Start()
-	go a.Listen(a.channel)
+	go a.listen(a.channel)
 }
 
 func (a *Aodv) Close() {

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/AkihiroSuda/go-netfilter-queue"
+	. "github.com/aaarafat/vanessa/apps/network/network"
 	. "github.com/aaarafat/vanessa/apps/network/network/ip"
 	"github.com/aaarafat/vanessa/apps/network/protocols/aodv"
 	"github.com/aaarafat/vanessa/apps/network/unix"
@@ -17,10 +18,9 @@ type PacketFilter struct {
 	nfq   *netfilter.NFQueue
 	srcIP net.IP
 	id    int
-	ipConn *IPConnection
+	networkLayer *NetworkLayer 
+	ipConn *IPConnection 
 
-	// TODO: replace this with router object
-	router *aodv.Aodv
 	unix   *unix.UnixSocket
 }
 
@@ -64,11 +64,9 @@ func newPacketFilter(id int, ifi net.Interface) (*PacketFilter, error) {
 		srcIP:  ip,
 		id:     id,
 		ipConn: ipConn,
-		router: nil,
+		networkLayer: NewNetworkLayer(ip),
 		unix:   unix.NewUnixSocket(id),
 	}
-
-	pf.router = aodv.NewAodv(ip, pf.DataCallback)
 
 	return pf, nil
 }
@@ -135,13 +133,10 @@ func (pf *PacketFilter) StealPacket() {
 			} else {
 				p.SetVerdict(netfilter.NF_DROP)
 
-				UpdateChecksum(packet)
+				Update(packet)
 
-				log.Println(header.Version)
-				go pf.router.SendData(packet, header.DestIP)
-
+				go pf.networkLayer.SendUnicast(packet, header.DestIP)
 			}
-
 		}
 	}
 }
@@ -214,10 +209,10 @@ func (pf *PacketFilter) UpdateLocationHandler() {
 func (pf *PacketFilter) Start() {
 	log.Printf("Starting PacketFilter for IP: %s.....\n", pf.srcIP)
 	go pf.StealPacket()
-	go pf.router.Start()
 	go pf.unix.Start()
-	go pf.ObstacleHandler()
-	go pf.DestinationReachedHandler()
+	go pf.networkLayer.Start()
+	// go pf.ObstacleHandler()
+	// go pf.DestinationReachedHandler()
 	// go pf.UpdateLocationHandler()
 
 	// TODO: REMOVE THIS (for testing)
@@ -230,6 +225,6 @@ func (pf *PacketFilter) Start() {
 
 func (pf *PacketFilter) Close() {
 	pf.nfq.Close()
-	pf.router.Close()
 	pf.ipConn.Close()
+	pf.networkLayer.Close()
 }
