@@ -23,6 +23,7 @@ const (
 	VNDEtherType = 0x7032   // for neighbor discovery
 	VAODVEtherType = 0x7033 // for AODV protocol
 	VIEtherType = 0x7034   // for contacting infrastructure
+	VDATAEtherType = 0x7035   // for sending and receiving IP data packets
 
 )
 

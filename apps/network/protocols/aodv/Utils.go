@@ -8,6 +8,12 @@ import (
 )
 
 
+func (a *Aodv) updateSeqNum(newSeqNum uint32) {
+	if newSeqNum > a.seqNum {
+		a.seqNum = newSeqNum
+	}
+}
+
 func getRSU(intfName string) (string, string){
 
 	out, err := exec.Command("iw", "dev", intfName, "link").Output()

@@ -5,11 +5,12 @@ import (
 	"net"
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
+	. "github.com/aaarafat/vanessa/apps/network/protocols"
 	"github.com/cornelk/hashmap"
 )
 
 type Aodv struct {
-	channels []*DataLinkLayerChannel
+	channel *DataLinkLayerChannel
 	forwarder *Forwarder
 	routingTable *VRoutingTable
 	seqTable *VFloodingSeqTable
@@ -23,34 +24,16 @@ type Aodv struct {
 	callback func(data[]byte)
 }
 
-func createChannels() []*DataLinkLayerChannel {
-	interfaces, err := net.Interfaces()
-	if err != nil {
-		log.Fatalf("failed to open interface: %v", err)
-		return nil
-	}
-	channels := make([]*DataLinkLayerChannel, len(interfaces))
-	for i, ifi := range interfaces {
-		if ifi.Name == "lo" {
-			continue
-		}
-		log.Printf("Creating channel in AODV for interface: %s Index: %d\n", ifi.Name, i)
-		ch, err := NewDataLinkLayerChannelWithInterface(VAODVEtherType, i)
-		if err != nil {
-			log.Fatalf("failed to create channel: %v", err)
-		}
-		channels[i] = ch
-	}
-
-	return channels
-}
 
 func NewAodv(srcIP net.IP, callback func(data[]byte)) *Aodv {
-	channels := createChannels()
+	channel, err := CreateChannel(VAODVEtherType, 1)
+	if err != nil {
+		log.Fatalf("failed to create channel: %v", err)
+	}
 
 	return &Aodv{
-		channels: channels,
-		forwarder: NewForwarder(srcIP, channels),
+		channel: channel,
+		forwarder: NewForwarder(srcIP, channel),
 		routingTable: NewVRoutingTable(),
 		seqTable: NewVFloodingSeqTable(),
 		dataSeqTable: NewVFloodingSeqTable(),
@@ -63,10 +46,17 @@ func NewAodv(srcIP net.IP, callback func(data[]byte)) *Aodv {
 	}
 }
 
-func (a *Aodv) updateSeqNum(newSeqNum uint32) {
-	if newSeqNum > a.seqNum {
-		a.seqNum = newSeqNum
+func (a *Aodv) GetRoute(destIP net.IP) (*VRoute, bool) {
+	item, ok := a.routingTable.Get(destIP)
+	if ok {
+		return NewVRoute(item.Destination, item.NextHop, item.IfiIndex, int(item.NoOfHops)), true
 	}
+	return nil, false
+}
+
+func (a *Aodv) BuildRoute(destIP net.IP) {
+	// send a RREQ
+	a.SendRREQ(destIP)
 }
 
 func (a *Aodv) Send(payload []byte, dest net.IP) {
@@ -74,7 +64,7 @@ func (a *Aodv) Send(payload []byte, dest net.IP) {
 	item, ok := a.routingTable.Get(dest);
 	if ok {
 		// forward the packet
-		a.forwarder.ForwardTo(payload, item.NextHop, item.IfiIndex)
+		a.forwarder.ForwardTo(payload, item.NextHop)
 	} else {
 		// send a RREQ or RRER
 		a.SendRREQ(dest)
@@ -94,7 +84,7 @@ func (a *Aodv) forwardData(data *DataMessage) {
 	item, ok := a.routingTable.Get(data.DestenationIP);
 	if ok {
 		// forward the packet
-		a.forwarder.ForwardTo(data.Marshal(), item.NextHop, item.IfiIndex)
+		a.forwarder.ForwardTo(data.Marshal(), item.NextHop)
 	} else {
 		// send a RREQ or RRER
 		buf, ok := a.dataBuffer.Get(data.DestenationIP.String())
@@ -160,7 +150,7 @@ func (a *Aodv) SendRREP(destination net.IP, forRSU bool) {
 
 
 func (a *Aodv) Listen(channel *DataLinkLayerChannel) {
-	log.Println("Listening for AODV packets...")
+	log.Printf("Listening for AODV packets on channel: %d....\n", channel.IfiIndex)
 	for {
 		payload, addr, err := channel.Read()
 		if err != nil {
@@ -173,20 +163,10 @@ func (a *Aodv) Listen(channel *DataLinkLayerChannel) {
 func (a *Aodv) Start() {
 	log.Printf("Starting AODV for IP: %s.....\n", a.srcIP)
 	go a.forwarder.Start()
-	for _, channel := range a.channels {
-		if channel == nil {
-			continue
-		}
-		go a.Listen(channel)
-	}
+	go a.Listen(a.channel)
 }
 
 func (a *Aodv) Close() {
-	for _, channel := range a.channels {
-		if channel == nil {
-			continue
-		}
-		channel.Close()
-	}
+	a.channel.Close()
 	a.forwarder.Close()
 }

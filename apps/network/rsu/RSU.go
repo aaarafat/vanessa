@@ -29,7 +29,7 @@ func createETHChannel() *DataLinkLayerChannel {
 }
 
 func createWLANChannel() *DataLinkLayerChannel {
-	c, err := NewDataLinkLayerChannelWithInterface(VAODVEtherType, RSUWLANInterface)
+	c, err := NewDataLinkLayerChannelWithInterface(VDATAEtherType, RSUWLANInterface)
 	if err != nil {
 		log.Panicln("No interfaces")
 	}

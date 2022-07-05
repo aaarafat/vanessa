@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/AkihiroSuda/go-netfilter-queue"
-	. "github.com/aaarafat/vanessa/apps/network/ip"
+	. "github.com/aaarafat/vanessa/apps/network/network/ip"
 	"github.com/aaarafat/vanessa/apps/network/protocols/aodv"
 	"github.com/aaarafat/vanessa/apps/network/unix"
 )
@@ -130,6 +130,8 @@ func (pf *PacketFilter) StealPacket() {
 			if pf.srcIP.Equal(header.DestIP) {
 				fmt.Println(p.Packet)
 				p.SetVerdict(netfilter.NF_ACCEPT)
+
+				// TODO : grpc call to the router to process the packet
 			} else {
 				p.SetVerdict(netfilter.NF_DROP)
 
@@ -137,6 +139,7 @@ func (pf *PacketFilter) StealPacket() {
 
 				log.Println(header.Version)
 				go pf.router.SendData(packet, header.DestIP)
+
 			}
 
 		}

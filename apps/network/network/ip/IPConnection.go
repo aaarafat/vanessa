@@ -27,7 +27,11 @@ func (c *IPConnection) Write(payload []byte, srcIp, destIp net.IP) error {
 	packetBytes := MarshalIPPacket(packet)
 	UpdateChecksum(packetBytes)
 
-	err := syscall.Sendto(c.fd, packetBytes, 0, &syscall.SockaddrInet4{Port: 0, Addr: [4]byte{127, 0, 0, 1}})
+	return c.Forward(packetBytes)
+}
+
+func (c *IPConnection) Forward(packet []byte) error {
+	err := syscall.Sendto(c.fd, packet, 0, &syscall.SockaddrInet4{Port: 0, Addr: [4]byte{127, 0, 0, 1}})
 	if err != nil {
 		log.Printf("failed to send data: %v", err)
 		return err
