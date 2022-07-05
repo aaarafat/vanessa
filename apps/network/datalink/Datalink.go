@@ -23,6 +23,7 @@ const (
 	VNDEtherType = 0x7032   // for neighbor discovery
 	VAODVEtherType = 0x7033 // for AODV protocol
 	VIEtherType = 0x7034   // for contacting infrastructure
+	VRSUARPType = 0x7036   // for cars to send heartbeats to infrastructure
 
 )
 
