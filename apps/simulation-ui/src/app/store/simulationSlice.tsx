@@ -45,17 +45,17 @@ export const simulationSlice = createSlice({
       state,
       action: PayloadAction<{
         map: mapboxgl.Map;
-        socket: any;
       }>
     ) => {
-      const { map, socket } = action.payload;
+      const { map } = action.payload;
       state.rsusData.forEach((rsu) =>
-        state.rsus.push(new RSU({ ...rsu, map, socket }))
+        state.rsus.push(new RSU({ ...rsu, map }))
       );
     },
     addCar: (state, action: PayloadAction<Car>) => {
-      state.cars.push(action.payload);
-      state.carsReceivedMessages[action.payload.id] = [];
+      const car = action.payload;
+      state.cars.push(car);
+      state.carsReceivedMessages[car.id] = [];
     },
     addRSU: (state, action: PayloadAction<RSU>) => {
       state.rsus.push(action.payload);
@@ -95,9 +95,6 @@ export const simulationSlice = createSlice({
     },
   },
 });
-
-// export const { increment, decrement, incrementByAmount } =
-//   simulationSlice.actions;
 
 export const {
   initRSUs,

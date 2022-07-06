@@ -1,5 +1,3 @@
-import { Socket } from 'socket.io-client';
-
 export type PartialExcept<T, K extends keyof T> = Partial<T> & Pick<T, K>;
 
 export interface Coordinates {
@@ -12,7 +10,6 @@ export interface ICommon {
   lat: number;
   lng: number;
   map: mapboxgl.Map;
-  socket: Socket;
 }
 
 export interface ICar extends ICommon {

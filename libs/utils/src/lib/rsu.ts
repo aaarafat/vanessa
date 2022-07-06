@@ -1,10 +1,9 @@
 import mapboxgl from 'mapbox-gl';
-import { interpolateString } from './string-utils';
+import { interpolateString } from './utils';
 import { Coordinates, IRSU, PartialExcept, RSUProps } from './types';
 import * as turf from '@turf/turf';
-import { Socket } from 'socket.io-client';
 
-const carDefaultProps: RSUProps = {
+const rsuDefaultProps: RSUProps = {
   title: 'RSU',
   description: `<ul class="popup">
     <li>id: {id}</li>
@@ -13,7 +12,7 @@ const carDefaultProps: RSUProps = {
 };
 
 /**
- * Car Class
+ * RSU Class
  */
 export class RSU {
   public id: number;
@@ -21,38 +20,26 @@ export class RSU {
   public lng: number;
   public radius: number;
   public sourceId: string;
-  private source: mapboxgl.GeoJSONSource | undefined;
-  private layer: mapboxgl.LineLayer | undefined;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private map: mapboxgl.Map;
-  private socket: Socket;
   private popup: mapboxgl.Popup | null;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private handlers: Record<string, ((...arg: any) => void)[]>;
   private wasFlyingToRSU: boolean;
 
-  constructor(rsu: PartialExcept<IRSU, 'map' | 'socket'>) {
+  constructor(rsu: PartialExcept<IRSU, 'map'>) {
     this.id = rsu.id || Date.now();
-    this.sourceId = `car-${this.id}`;
+    this.sourceId = `rsu-${this.id}`;
     this.lat = rsu.lat || 0;
     this.lng = rsu.lng || 0;
     this.radius = rsu.radius || 10;
     this.map = rsu.map;
-    this.socket = rsu.socket;
+
     this.popup = null;
 
     this.handlers = {};
     this.wasFlyingToRSU = false;
-
-    this.socket.emit('add-rsu', {
-      id: this.id,
-      coordinates: {
-        lng: this.lng,
-        lat: this.lat,
-      },
-      range: this.radius * 1000,
-    });
 
     this.draw();
     this.attachHandlers();
@@ -76,11 +63,11 @@ export class RSU {
       data,
     };
 
-    this.source = this.map
+    this.map
       .addSource(this.sourceId, geojson)
       .getSource(this.sourceId) as mapboxgl.GeoJSONSource;
 
-    this.layer = this.map
+    this.map
       .addLayer({
         id: this.sourceId,
         source: this.sourceId,
@@ -96,7 +83,7 @@ export class RSU {
 
   private get props(): RSUProps {
     return {
-      ...carDefaultProps,
+      ...rsuDefaultProps,
       id: this.id,
       lat: this.lat,
       lng: this.lng,
@@ -116,19 +103,8 @@ export class RSU {
 
     this.popup.on('close', () => {
       this.popup = null;
-      this.map?.setLayoutProperty(`car-${this.id}-route`, 'visibility', 'none');
-      this.emit('popup-closed', this);
+      this.emit('popup:close', this);
     });
-
-    this.on('props-updated', () => {
-      this.popup?.setHTML(this.description);
-    });
-
-    this.map?.setLayoutProperty(
-      `car-${this.id}-route`,
-      'visibility',
-      'visible'
-    );
 
     this.smoothlyFlyToRSU(true);
     this.emit('click', this);
@@ -158,7 +134,7 @@ export class RSU {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public on(
-    type: 'click' | 'move' | 'popup-closed' | 'props-updated',
+    type: 'click' | 'move' | 'popup:close' | 'props:change',
     handler: any
   ) {
     this.subscribe(type, handler);
@@ -167,7 +143,7 @@ export class RSU {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private subscribe(
-    type: 'click' | 'move' | 'popup-closed' | 'props-updated',
+    type: 'click' | 'move' | 'popup:close' | 'props:change',
     handler: (...args: any) => void
   ) {
     if (!this.handlers[type]) this.handlers[type] = [];
@@ -176,7 +152,7 @@ export class RSU {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private emit(
-    type: 'click' | 'move' | 'popup-closed' | 'props-updated',
+    type: 'click' | 'move' | 'popup:close' | 'props:change',
     ...args: any[]
   ) {
     if (!this.handlers[type]) return;
