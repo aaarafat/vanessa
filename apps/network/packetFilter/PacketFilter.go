@@ -19,7 +19,6 @@ type PacketFilter struct {
 	srcIP net.IP
 	id    int
 	networkLayer *NetworkLayer 
-	ipConn *IPConnection 
 
 	unix   *unix.UnixSocket
 }
@@ -29,13 +28,13 @@ func newPacketFilter(id int, ifi net.Interface) (*PacketFilter, error) {
 
 	if err := ChainNFQUEUE(); err != nil {
 		DeleteIPTablesRule()
-		log.Panic("Reversed chaining NFQUEUE")
+		log.Panicf("Reversed chaining NFQUEUE %v\n", err)
 		return nil, err
 	}
 
 	if err := AddDefaultGateway(); err != nil {
 		DeleteDefaultGateway()
-		log.Panic("Removed Default Gatway")
+		log.Panicf("Removed Default Gatway %v\n", err)
 		return nil, err
 	}
 	ip, _, err := MyIP(&ifi)
@@ -53,17 +52,10 @@ func newPacketFilter(id int, ifi net.Interface) (*PacketFilter, error) {
 		return nil, err
 	}
 
-	ipConn, err := NewIPConnection()
-	if err != nil {
-		log.Println(err)
-		return nil, err	
-	}
-
 	pf := &PacketFilter{
 		nfq:    nfq,
 		srcIP:  ip,
 		id:     id,
-		ipConn: ipConn,
 		networkLayer: NewNetworkLayer(ip),
 		unix:   unix.NewUnixSocket(id),
 	}
@@ -98,14 +90,8 @@ func (pf *PacketFilter) DataCallback(dataByte []byte) {
 		log.Println("packet is for me")
 	}
 
-	payload := dataByte[packet.Header.Length:]
-	data, err := aodv.UnmarshalData(payload)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	log.Printf("PacketFilter received data: %s\n", data.Data)
-	pf.unix.Write(data.Data)
+	log.Printf("PacketFilter received data: %s\n", packet.Payload)
+	pf.unix.Write(packet.Payload)
 }
 
 func (pf *PacketFilter) StealPacket() {
@@ -120,7 +106,7 @@ func (pf *PacketFilter) StealPacket() {
 			if err != nil {
 				log.Printf("Error decoding IP header: %v\n", err)
 				p.SetVerdict(netfilter.NF_DROP)
-				return
+				continue
 			}
 
 			log.Printf("PacketFilter received DestIP: %s, SrcIP: %s\n", header.DestIP, header.SrcIP)
@@ -158,7 +144,7 @@ func (pf *PacketFilter) ObstacleHandler() {
 			log.Printf("Packet Filter : Obstacle detected: %v\n", data)
 
 			// TODO: send it with loopback interface to the router to be processed by the AODV
-			go pf.ipConn.Write(data, pf.srcIP, net.ParseIP(aodv.BroadcastIP))
+			go pf.networkLayer.Send(data, pf.srcIP, net.ParseIP(aodv.BroadcastIP))
 			pf.unix.Write(data)
 		}
 	}
@@ -206,25 +192,33 @@ func (pf *PacketFilter) UpdateLocationHandler() {
 	}
 }
 
+func (pf *PacketFilter) SendHelloToRSU() {
+	for {
+		time.Sleep(time.Second * 5)
+		msg := fmt.Sprintf("Hello From IP: %s\n", pf.srcIP)
+		pf.networkLayer.Send([]byte(msg), pf.srcIP, net.ParseIP(aodv.RsuIP))
+	}
+}
+
 func (pf *PacketFilter) Start() {
 	log.Printf("Starting PacketFilter for IP: %s.....\n", pf.srcIP)
-	go pf.StealPacket()
 	go pf.unix.Start()
 	go pf.networkLayer.Start()
 	// go pf.ObstacleHandler()
 	// go pf.DestinationReachedHandler()
 	// go pf.UpdateLocationHandler()
-
 	// TODO: REMOVE THIS (for testing)
-	for {
-		time.Sleep(time.Second * 5)
-		msg := fmt.Sprintf("Hello From IP: %s\n", pf.srcIP)
-		pf.ipConn.Write([]byte(msg), pf.srcIP, net.ParseIP(aodv.RsuIP))
-	}
+	go pf.SendHelloToRSU()
+	
+	pf.StealPacket()
 }
 
 func (pf *PacketFilter) Close() {
-	pf.nfq.Close()
-	pf.ipConn.Close()
+	log.Printf("Closing PacketFilter for IP: %s.....\n", pf.srcIP)
+	DeleteIPTablesRule()
+	DeleteDefaultGateway()
+
 	pf.networkLayer.Close()
+
+	log.Printf("PacketFilter for IP: %s closed\n", pf.srcIP)
 }

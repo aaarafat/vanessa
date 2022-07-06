@@ -13,7 +13,7 @@ func (a *Aodv) listen(channel *DataLinkLayerChannel) {
 	for {
 		payload, addr, err := channel.Read()
 		if err != nil {
-			log.Fatalf("failed to read from channel: %v", err)
+			return
 		}
 		go a.handleMessage(payload, addr, channel.IfiIndex)
 	}

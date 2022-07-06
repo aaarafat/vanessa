@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
 
 	. "github.com/aaarafat/vanessa/apps/network/packetFilter"
 	. "github.com/aaarafat/vanessa/apps/network/rsu"
@@ -46,10 +47,18 @@ func main() {
 		// create a new RSU
 		rsu := NewRSU()
 
-		// start the RSU
-		defer rsu.Close()
-		rsu.Start()
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)	
+		go func(){
+				<- c
+				rsu.Close()
+				os.Exit(1)
+		}()
 
+		// start the RSU
+		go rsu.Start()
+		defer rsu.Close()
+		
 	} else if name == "car" {
 		packetfilter, err := NewPacketFilter(id)
 
@@ -57,9 +66,16 @@ func main() {
 			log.Panicf("failed to create packet filter: %v", err)
 		}
 
-		defer packetfilter.Close()
-		packetfilter.Start()
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, os.Interrupt)	
+		go func(){
+			<- c
+			packetfilter.Close()
+			os.Exit(1)
+	}()
 
+		defer packetfilter.Close()
+		go packetfilter.Start()
 	} else {
 		log.Panicf("invalid name: %s, Please Enter car or rsu\n", name)
 	}

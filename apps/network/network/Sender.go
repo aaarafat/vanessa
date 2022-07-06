@@ -5,6 +5,10 @@ import (
 	"net"
 )
 
+func (n *NetworkLayer) Send(payload []byte, srcIP net.IP, destIP net.IP) {
+	n.ipConn.Write(payload, srcIP, destIP)
+}
+
 
 func (n *NetworkLayer) SendUnicast(packet []byte, destIP net.IP) {
 	route, found := n.unicastProtocol.GetRoute(destIP)

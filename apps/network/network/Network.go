@@ -80,15 +80,18 @@ func (n *NetworkLayer) Start() {
 }
 
 func (n *NetworkLayer) Close() {
+	log.Printf("Closing network layer")
+
+	for _, forwarder := range n.forwarders {
+		forwarder.Close()
+	}
+
 	for _, channel := range n.channels {
 		channel.Close()
 	}
 
 	n.ipConn.Close()
 
-	for _, forwarder := range n.forwarders {
-		forwarder.Close()
-	}
-
 	n.unicastProtocol.Close()
+	log.Printf("Closed network layer")
 }

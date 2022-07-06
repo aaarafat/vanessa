@@ -11,7 +11,7 @@ func (n *NetworkLayer) listen(channel *DataLinkLayerChannel) {
 	for {
 		packet, _, err := channel.Read()
 		if err != nil {
-			log.Fatalf("failed to read from channel: %v", err)
+			return
 		}
 		go n.handleMessage(packet)
 	}

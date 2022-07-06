@@ -32,7 +32,7 @@ func newDataLinkLayerChannel(ether Ethertype , ifi net.Interface, ifiIndex int) 
 	// Open a raw socket using same EtherType as our frame.
 	c, err := packet.Listen(&ifi, packet.Raw, int(ether), nil)
 	if err != nil {
-		log.Fatalf("failed to listen on channel: %v", err)
+		log.Printf("failed to listen on channel: %v", err)
 		return nil, err
 	}
 
@@ -47,7 +47,7 @@ func newDataLinkLayerChannel(ether Ethertype , ifi net.Interface, ifiIndex int) 
 func NewDataLinkLayerChannel(ether Ethertype) (*DataLinkLayerChannel, error) {
 	interfaces, err := net.Interfaces()
 	if err != nil {
-		log.Fatalf("failed to open interface: %v", err)
+		log.Printf("failed to open interface: %v", err)
 		return nil, err
 	}
 	ifi := interfaces[1]
@@ -63,7 +63,7 @@ func NewDataLinkLayerChannelWithInterface(ether Ethertype, index int) (*DataLink
 	ifi := interfaces[index]
 	println("connecting to:",ifi.Name)
 	if err != nil {
-		log.Fatalf("failed to open interface: %v", err)
+		log.Printf("failed to open interface: %v", err)
 		return nil, err
 	}
 	return newDataLinkLayerChannel(ether,ifi,index)
@@ -86,7 +86,7 @@ func (d *DataLinkLayerChannel) SendTo(payload []byte, destination net.HardwareAd
 	// Broadcast the frame to all devices on our network segment.
 	addr := &packet.Addr{HardwareAddr: destination}
 	if _, err := d.channel.WriteTo(frame_binary, addr); err != nil {
-		log.Fatalf("failed to write Data link frame: %v", err)
+		log.Printf("failed to write Data link frame: %v", err)
 	}
 }
 
@@ -98,7 +98,7 @@ func (d *DataLinkLayerChannel) Read() ([]byte, net.HardwareAddr, error) {
 	buf := make([]byte, 1500)
 	n, addr, err := d.channel.ReadFrom(buf)
 	if err != nil {
-		log.Fatalf("failed to read from channel: %v", err)
+		log.Printf("failed to read from channel: %v", err)
 		return nil, nil, err
 	}
 	var f ethernet.Frame
