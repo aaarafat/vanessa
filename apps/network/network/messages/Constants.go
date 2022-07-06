@@ -15,7 +15,7 @@ type VHBeatMessage struct {
 }
 
 // Obstcale found message from car to the associated RSU
-type VObstcaleMessage struct {
+type VObstacleMessage struct {
 	// Type
 	Type uint8  
 	// The IP address of the node that originated the Obstcale alert.
@@ -28,10 +28,10 @@ type VObstcaleMessage struct {
 
 const (
 	VHBeatMessageLen = 13
-	VObstcaleMessageLen = 13
+	VObstacleMessageLen = 13
 )
 
 const (
 	VHBeatType uint8 = 1
-	VObstcaleType uint8 = 2
+	VObstacleType uint8 = 2
 )
