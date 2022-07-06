@@ -1,24 +1,23 @@
-/*package packetfilter
+package app
 
 import (
 	"encoding/json"
 	"log"
 	"net"
 
-	"github.com/aaarafat/vanessa/apps/network/protocols/aodv"
-	"github.com/aaarafat/vanessa/apps/network/unix"
+	"github.com/aaarafat/vanessa/apps/car/unix"
 )
 
-func (pf *PacketFilter) startSocketHandlers() {
-	go pf.obstacleHandler()
-	go pf.destinationReachedHandler()
-	go pf.updateLocationHandler()
+func (a *App) startSocketHandlers() {
+	go a.obstacleHandler()
+	go a.destinationReachedHandler()
+	go a.updateLocationHandler()
 }
 
-func (pf *PacketFilter) obstacleHandler() {
+func (a *App) obstacleHandler() {
 	obstacleChannel := make(chan json.RawMessage)
 	obstableSubscriber := &unix.Subscriber{Messages: &obstacleChannel}
-	pf.unix.Subscribe(unix.ObstacleDetectedEvent, obstableSubscriber)
+	a.unix.Subscribe(unix.ObstacleDetectedEvent, obstableSubscriber)
 
 	for {
 		select {
@@ -29,19 +28,19 @@ func (pf *PacketFilter) obstacleHandler() {
 				log.Printf("Error decoding obstacle-detected data: %v", err)
 				return
 			}
-			log.Printf("Packet Filter : Obstacle detected: %v\n", data)
+			log.Printf("Sockets : Obstacle detected: %v\n", data)
 
 			// TODO: send it with loopback interface to the router to be processed by the AODV
-			go pf.networkLayer.Send(data, pf.srcIP, net.ParseIP(aodv.RsuIP))
-			pf.unix.Write(data)
+			go a.ipConn.Write(data, a.ip, net.ParseIP(RSUIP))
+			a.unix.Write(data)
 		}
 	}
 }
 
-func (pf *PacketFilter) destinationReachedHandler() {
+func (a *App) destinationReachedHandler() {
 	destinationReachedChannel := make(chan json.RawMessage)
 	destinationReachedSubscriber := &unix.Subscriber{Messages: &destinationReachedChannel}
-	pf.unix.Subscribe(unix.DestinationReachedEvent, destinationReachedSubscriber)
+	a.unix.Subscribe(unix.DestinationReachedEvent, destinationReachedSubscriber)
 
 	for {
 		select {
@@ -52,18 +51,18 @@ func (pf *PacketFilter) destinationReachedHandler() {
 				log.Printf("Error decoding destination-reached data: %v", err)
 				return
 			}
-			log.Printf("Packet Filter : destination-reached: %v\n", data)
+			log.Printf("Sockets : destination-reached: %v\n", data)
 
-			go pf.networkLayer.Send(data, pf.srcIP, net.ParseIP(aodv.RsuIP))
-			pf.unix.Write(data)
+			go a.ipConn.Write(data, a.ip, net.ParseIP(RSUIP))
+			a.unix.Write(data)
 		}
 	}
 }
 
-func (pf *PacketFilter) updateLocationHandler() {
+func (a *App) updateLocationHandler() {
 	updateLocationChannel := make(chan json.RawMessage)
 	updateLocationSubscriber := &unix.Subscriber{Messages: &updateLocationChannel}
-	pf.unix.Subscribe(unix.UpdateLocationEvent, updateLocationSubscriber)
+	a.unix.Subscribe(unix.UpdateLocationEvent, updateLocationSubscriber)
 
 	for {
 		select {
@@ -74,11 +73,9 @@ func (pf *PacketFilter) updateLocationHandler() {
 				log.Printf("Error decoding update-location data: %v", err)
 				return
 			}
-			log.Printf("Packet Filter : update-location: %v\n", data)
 
-			go pf.networkLayer.Send(data, pf.srcIP, net.ParseIP(aodv.RsuIP))
-			pf.unix.Write(data)
+			go a.ipConn.Write(data, a.ip, net.ParseIP(RSUIP))
+			a.unix.Write(data)
 		}
 	}
 }
-*/

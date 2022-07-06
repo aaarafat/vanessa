@@ -24,7 +24,7 @@ func initLogger(debug bool, id int, name string) {
 		os.Exit(1)
 	}
 
-	file, err := os.OpenFile(fmt.Sprintf("/logs/%s%d.log", name, id), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(fmt.Sprintf("/var/log/vanessa/%s%d.log", name, id), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Printf("Error opening log file: %s\n", err)
 		os.Exit(1)
@@ -72,7 +72,7 @@ func main() {
 			<- c
 			packetfilter.Close()
 			os.Exit(1)
-	}()
+		}()
 
 		defer packetfilter.Close()
 		go packetfilter.Start()

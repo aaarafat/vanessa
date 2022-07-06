@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"os/signal"
+
+	. "github.com/aaarafat/vanessa/apps/car/app"
 )
 
 func initLogger(debug bool, id int) {
@@ -20,7 +23,7 @@ func initLogger(debug bool, id int) {
 		os.Exit(1)
 	}
 
-	file, err := os.OpenFile(fmt.Sprintf("/logs/car%d.log", id), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(fmt.Sprintf("/var/log/vanessa/car%d-app.log", id), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Printf("Error opening log file: %s\n", err)
 		os.Exit(1)
@@ -36,4 +39,19 @@ func main() {
 	flag.Parse()
 
 	initLogger(debug, id)
+
+	app := NewApp(id)
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)	
+	go func(){
+		<- c
+		app.Stop()
+		os.Exit(1)
+	}()
+
+	app.Run()
+	defer app.Stop()
+
+	select {}
 }
