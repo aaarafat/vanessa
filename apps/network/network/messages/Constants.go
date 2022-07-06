@@ -28,12 +28,33 @@ type VObstacleMessage struct {
 	Clear uint8
 }
 
+type VOREQMessage struct {
+	// Type
+	Type uint8  
+	// The IP address of the node that originated the Obstcales request.
+	OriginatorIP net.IP
+
+}
+
+type VOREPMessage struct {
+	// Type
+	Type uint8  
+	// length of the list of obstacles
+	Length uint8
+	// content of the list of obstacles
+	Obstacles string
+
+}
+
 const (
 	VHBeatMessageLen = 13
 	VObstacleMessageLen = 14
+	VOREQMessageLen = 5
 )
 
 const (
 	VHBeatType uint8 = 1
 	VObstacleType uint8 = 2
+	VOREQType uint8 = 3
+	VOREPType uint8 = 4
 )
