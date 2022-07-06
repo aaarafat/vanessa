@@ -38,12 +38,11 @@ func (RARP *RSUARP) Set(ip string, mac net.HardwareAddr) {
 		val.timer.Reset(lifeTimeMS*time.Millisecond)
 	}else {
 		
-		// timer := time.AfterFunc(lifeTimeMS, callback)
 		entry := &RARPEntry{
 			MAC: mac,
 			timer: time.AfterFunc(lifeTimeMS*time.Millisecond, callback),
 		}
-		// entry.timer = timer
+
 		RARP.table[ip] = *entry
 		log.Printf("adding %s with %s",ip , mac.String())
 	}
