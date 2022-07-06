@@ -2,6 +2,7 @@ import mapboxgl from 'mapbox-gl';
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const MapboxDirections = require('vanessa-mapbox-gl-directions/dist/mapbox-gl-directions');
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 
 export class Directions extends MapboxDirections {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-useless-constructor
@@ -43,7 +44,7 @@ export class Directions extends MapboxDirections {
   private overrideClickEvent() {
     this._map.off('click', this.onClick);
     this._map.on('click', (e: mapboxgl.MapMouseEvent) => {
-      if (this._isPointOnCar(e.point)) {
+      if (this.options.interactive === false || this._isPointOnCar(e.point)) {
         return;
       }
 
@@ -61,6 +62,7 @@ export class Directions extends MapboxDirections {
 
   reset() {
     this.resetUtil();
+    this.actions.eventEmit('reset', {});
     setTimeout(() => this.resetUtil(), 500);
   }
   private resetUtil() {

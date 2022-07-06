@@ -128,7 +128,7 @@ func (nt *VNeighborTable) Update() {
 		entry := NewNeighborEntry(net.IP(payload), addr)
 		nt.Set(addr.String() ,entry)
 		if err != nil {
-			log.Fatalf("failed to read from channel: %v", err)
+			return
 		}
 	}
 }

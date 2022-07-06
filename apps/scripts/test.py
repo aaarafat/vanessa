@@ -50,7 +50,7 @@ def topology(args):
 
     net.setPropagationModel(model="logDistance", exp=4)
     ap1 = net.addAccessPoint('rsu1', ssid='VANESSA', mode='g', channel='1',
-                             failMode="standalone", position='200,300,0', range=100,
+                             failMode="standalone", position='50,50,0', range=100,
                              ip=f'10.1.0.1/16', cls=UserAP, inNamespace=True)
 
     ap2 = net.addAccessPoint('rsu2', ssid='VANESSA', mode='g', channel='1',

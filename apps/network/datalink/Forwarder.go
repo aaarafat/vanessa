@@ -1,23 +1,23 @@
-package aodv
+package datalink
 
 import (
+	"log"
 	"net"
 	"sync"
-
-	. "github.com/aaarafat/vanessa/apps/network/datalink"
 )
 
 type Forwarder struct {
 	neighborsTable *VNeighborTable
-	channels []*DataLinkLayerChannel
+	channel *DataLinkLayerChannel
 	lock *sync.Mutex
 }
 
 
-func NewForwarder(srcIP net.IP, channels []*DataLinkLayerChannel) *Forwarder {
+func NewForwarder(srcIP net.IP, channel *DataLinkLayerChannel) *Forwarder {
+	
 	return &Forwarder{
 		neighborsTable: NewNeighborTable(srcIP),
-		channels: channels,
+		channel: channel,
 		lock: &sync.Mutex{},
 	}
 }
@@ -26,21 +26,23 @@ func (f *Forwarder) ForwardToAllExcept(payload []byte, addr net.HardwareAddr) {
 	for item := range f.neighborsTable.Iter() {
 		neighborMac := item.MAC
 		if neighborMac.String() != addr.String() {
-			f.ForwardTo(payload, neighborMac, 1)
+			f.ForwardTo(payload, neighborMac)
 		}
 	}
 }
 
-func (f *Forwarder) ForwardTo(payload []byte, addr net.HardwareAddr, index int) {
+func (f *Forwarder) ForwardTo(payload []byte, addr net.HardwareAddr) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
-	f.channels[index].SendTo(payload, addr)
+	f.channel.SendTo(payload, addr)
+	log.Printf("Forwarding to %s interface %d\n", addr.String(), f.channel.IfiIndex)
 }
 
 func (f *Forwarder) ForwardToAll(payload []byte) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
-	f.channels[1].Broadcast(payload)
+	f.channel.Broadcast(payload)
+	log.Printf("Broadcasting to interface %d\n", f.channel.IfiIndex)
 }
 
 func (f *Forwarder) Start() {

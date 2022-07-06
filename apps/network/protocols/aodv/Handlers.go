@@ -3,7 +3,21 @@ package aodv
 import (
 	"log"
 	"net"
+
+	. "github.com/aaarafat/vanessa/apps/network/datalink"
 )
+
+
+func (a *Aodv) listen(channel *DataLinkLayerChannel) {
+	log.Printf("Listening for AODV packets on channel: %d....\n", channel.IfiIndex)
+	for {
+		payload, addr, err := channel.Read()
+		if err != nil {
+			return
+		}
+		go a.handleMessage(payload, addr, channel.IfiIndex)
+	}
+}
 
 
 func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr, IfiIndex int) {
@@ -27,7 +41,7 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr, IfiIndex int) {
 	go a.seqTable.Set(rreq.OriginatorIP, rreq.RREQID)
 
 	// check if the RREQ is for me
-	if rreq.DestinationIP.Equal(a.srcIP) || (rreq.DestinationIP.Equal(net.ParseIP(RsuIP)) && connectedToRSU(2)) {
+	if rreq.DestinationIP.Equal(a.srcIP) || (rreq.DestinationIP.Equal(net.ParseIP(RsuIP)) && ConnectedToRSU(2)) {
 		// update the sequence number if it is not unknown
 		if !rreq.HasFlag(RREQFlagU) {
 			a.updateSeqNum(rreq.DestinationSeqNum)
@@ -97,7 +111,7 @@ func (a *Aodv) handleData(payload []byte, from net.HardwareAddr) {
 		return
 	} 
 
-	if data.DestenationIP.Equal(a.srcIP) || data.DestenationIP.Equal(net.ParseIP(BroadcastIP)) {
+	if data.DestenationIP.Equal(a.srcIP) {
 		log.Printf("Received: %s\n", data.String())
 		go a.callback(data.Data)
 		return
@@ -107,6 +121,9 @@ func (a *Aodv) handleData(payload []byte, from net.HardwareAddr) {
 
 	// forward the data
 	if data.DestenationIP.Equal(net.ParseIP(BroadcastIP)) {
+		log.Printf("Received: %s\n", data.String())
+		go a.callback(data.Data)
+	
 		a.forwarder.ForwardToAllExcept(data.Marshal(), from)
 	} else {
 		a.forwardData(data)
