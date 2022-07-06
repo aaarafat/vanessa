@@ -12,6 +12,9 @@ type App struct {
 	id int
 	ip net.IP
 
+	// car data
+	position *unix.Position
+
 	// to send messages to the network
 	ipConn *ip.IPConnection
 
@@ -34,6 +37,11 @@ func NewApp(id int) *App {
 	}
 
 	return &App{id: id, ip: ip, unix: unix.NewUnixSocket(id), ipConn: ipConn}
+}
+
+func (a *App) updatePosition(pos *unix.Position) {
+	a.position = pos
+	log.Printf("Position updated: lng: %f lat: %f", pos.Lng, pos.Lat)
 }
 
 func (a *App) Run() {
