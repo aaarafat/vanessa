@@ -1,4 +1,4 @@
-package packetfilter
+/*package packetfilter
 
 import (
 	"encoding/json"
@@ -81,3 +81,4 @@ func (pf *PacketFilter) updateLocationHandler() {
 		}
 	}
 }
+*/

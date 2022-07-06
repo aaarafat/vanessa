@@ -10,7 +10,6 @@ import (
 	. "github.com/aaarafat/vanessa/apps/network/network"
 	. "github.com/aaarafat/vanessa/apps/network/network/ip"
 	"github.com/aaarafat/vanessa/apps/network/protocols/aodv"
-	"github.com/aaarafat/vanessa/apps/network/unix"
 )
 
 type PacketFilter struct {
@@ -18,8 +17,6 @@ type PacketFilter struct {
 	srcIP net.IP
 	id    int
 	networkLayer *NetworkLayer 
-
-	unix   *unix.UnixSocket
 }
 
 func newPacketFilter(id int, ifi net.Interface) (*PacketFilter, error) {
@@ -56,7 +53,6 @@ func newPacketFilter(id int, ifi net.Interface) (*PacketFilter, error) {
 		srcIP:  ip,
 		id:     id,
 		networkLayer: NewNetworkLayer(ip),
-		unix:   unix.NewUnixSocket(id),
 	}
 
 	return pf, nil
@@ -86,8 +82,6 @@ func (pf *PacketFilter) dataCallback(dataByte []byte) {
 	}
 
 	log.Printf("Received: %s\n", packet.Payload)
-
-	pf.unix.Write(packet.Payload)
 }
 
 func (pf *PacketFilter) StealPacket() {
@@ -129,9 +123,7 @@ func (pf *PacketFilter) SendHelloToRSU() {
 
 func (pf *PacketFilter) Start() {
 	log.Printf("Starting PacketFilter for IP: %s.....\n", pf.srcIP)
-	go pf.unix.Start()
 	go pf.networkLayer.Start()
-	go pf.startSocketHandlers()
 	// TODO: REMOVE THIS (for testing)
 	go pf.SendHelloToRSU()
 	
