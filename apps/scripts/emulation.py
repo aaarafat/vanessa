@@ -164,6 +164,7 @@ def add_car(message):
     print(position)
 
     st.cmd(f"sudo dist/apps/network -id {id} -name car -debug &")
+    st.cmd(f"sudo dist/apps/car -id {id} -debug &")
 
     payload = {
         'type': 'add-car',
