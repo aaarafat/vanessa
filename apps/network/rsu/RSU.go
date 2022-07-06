@@ -14,6 +14,7 @@ type RSU struct {
 	ip net.IP
 	ethChannel *DataLinkLayerChannel
 	wlanChannel *DataLinkLayerChannel
+	RARP *RSUARP
 }
 
 const (
@@ -40,10 +41,12 @@ func createWLANChannel() *DataLinkLayerChannel {
 func NewRSU() *RSU {
 	ethChannel := createETHChannel()
 	wlanChannel := createWLANChannel()
+	RARP := NewRSUARP()
 	return &RSU{
-		ip: net.ParseIP(aodv.RsuIP),
+		ip: net.ParseIP(aodv.RsuIP), // TODO extract RSUIP out from aodv
 		ethChannel: ethChannel,
 		wlanChannel: wlanChannel,
+		RARP: RARP,
 	}
 }
 
@@ -91,6 +94,9 @@ func (r *RSU) readFromWLANInterface() {
 	}
 }
 
+
+
+
 func (r *RSU) Start() {
 	go r.readFromETHInterface()
 	go r.readFromWLANInterface()
@@ -100,3 +106,4 @@ func (r *RSU) Close() {
 	r.ethChannel.Close()
 	r.wlanChannel.Close()
 }
+
