@@ -46,8 +46,8 @@ func UnmarshalIPHeader(data []byte) (*IPHeader, error) {
 	header.SrcIP = net.IPv4(data[12], data[13], data[14], data[15])
 	header.DestIP = net.IPv4(data[16], data[17], data[18], data[19])
 
-	if HeaderChecksum(data) != 0 || header.TTL == 0 {
-		return nil, fmt.Errorf("IP Packet is invalid or outdated")
+	if csm := HeaderChecksum(data); csm != 0 || header.TTL == 0 {
+		return nil, fmt.Errorf("IP Packet is invalid or outdated csm: %d, ttl: %d", csm, header.TTL)
 	}
 
 	return header, nil
@@ -91,10 +91,10 @@ func UpdateChecksum(data []byte) {
 }
 
 func UpdateTTL(data []byte) {
-	data[8] = data[8] - 1
+	data[8] = byte(uint8(data[8]) - 1)
 }
 
 func Update(data []byte) {
-	UpdateChecksum(data)
 	UpdateTTL(data)
+	UpdateChecksum(data)
 }

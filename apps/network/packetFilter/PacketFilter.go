@@ -85,6 +85,8 @@ func (pf *PacketFilter) dataCallback(dataByte []byte) {
 		return
 	}
 
+	log.Printf("Received: %s\n", packet.Payload)
+
 	pf.unix.Write(packet.Payload)
 }
 
@@ -94,16 +96,12 @@ func (pf *PacketFilter) StealPacket() {
 		select {
 		case p := <-packets:
 			packet := p.Packet.Data()
-			log.Printf("PacketFilter received packet: %v\n", packet)
-
 			header, err := UnmarshalIPHeader(packet)
 			if err != nil {
 				log.Printf("Error decoding IP header: %v\n", err)
 				p.SetVerdict(netfilter.NF_DROP)
 				continue
 			}
-
-			log.Printf("PacketFilter received DestIP: %s, SrcIP: %s\n", header.DestIP, header.SrcIP)
 
 			if pf.srcIP.Equal(header.DestIP) {
 				pf.dataCallback(packet)

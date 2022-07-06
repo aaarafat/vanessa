@@ -35,10 +35,10 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr, IfiIndex int) {
 
 	log.Printf("Interface %d: Received: %s\n", IfiIndex, rreq.String())
 	// update the routing table
-	go a.routingTable.Update(rreq.OriginatorIP, from, rreq.HopCount, ActiveRouteTimeMS, rreq.OriginatorSequenceNumber, IfiIndex)
+	a.routingTable.Update(rreq.OriginatorIP, from, rreq.HopCount, ActiveRouteTimeMS, rreq.OriginatorSequenceNumber, IfiIndex)
 
 	// update seq table
-	go a.seqTable.Set(rreq.OriginatorIP, rreq.RREQID)
+	a.seqTable.Set(rreq.OriginatorIP, rreq.RREQID)
 
 	// check if the RREQ is for me
 	if rreq.DestinationIP.Equal(a.srcIP) || (rreq.DestinationIP.Equal(net.ParseIP(RsuIP)) && ConnectedToRSU(2)) {
@@ -72,13 +72,13 @@ func (a *Aodv) handleRREP(payload []byte, from net.HardwareAddr, IfiIndex int) {
 
 	log.Printf("Inteface %d: Received: %s\n", IfiIndex, rrep.String())
 	// update the routing table
-	go a.routingTable.Update(rrep.DestinationIP, from, rrep.HopCount, rrep.LifeTime, rrep.DestinationSeqNum, IfiIndex)
+	a.routingTable.Update(rrep.DestinationIP, from, rrep.HopCount, rrep.LifeTime, rrep.DestinationSeqNum, IfiIndex)
 
 	// check if the RREP is for me
 	if rrep.OriginatorIP.Equal(a.srcIP) {
 		// Arrived Successfully
 		log.Printf("Path Descovery is successful for ip=%s !!!!", rrep.DestinationIP)
-		go a.pathDiscoveryCallback(rrep.DestinationIP)
+		a.pathDiscoveryCallback(rrep.DestinationIP)
 	} else {
 		// increment hop count
 		rrep.HopCount = rrep.HopCount + 1

@@ -53,14 +53,14 @@ func (r* RSU) readFromETHInterface() {
 
 		data, addr, err := r.ethChannel.Read()
 		if err != nil {
-			log.Fatalf("failed to read from channel: %v", err)
+			return
 		}
 		fmt.Println()
 		
 		packet, err := UnmarshalPacket(data)
 		if err != nil {
 			log.Printf("Failed to unmarshal data: %v\n", err)
-			return
+			continue
 		}
 
 		log.Printf("Received \"%s\" from: [%s] on intf-%d", string(packet.Payload), addr.String(), RSUETHInterface)
@@ -74,7 +74,7 @@ func (r *RSU) readFromWLANInterface() {
 
 		data, addr, err := r.wlanChannel.Read()
 		if err != nil {
-			log.Fatalf("failed to read from channel: %v", err)
+			return
 		}
 		// Unmarshalling the data received from the WLAN interface.
 		fmt.Println()
@@ -82,7 +82,7 @@ func (r *RSU) readFromWLANInterface() {
 		packet, err := UnmarshalPacket(data)
 		if err != nil {
 			log.Printf("Failed to unmarshal data: %v\n", err)
-			return
+			continue
 		}
 
 		log.Printf("Received \"%s\" from: [%s] on intf-%d", string(packet.Payload), addr.String(), RSUWLANInterface)
@@ -97,6 +97,8 @@ func (r *RSU) Start() {
 }
 
 func (r *RSU) Close() {
+	log.Printf("Closing RSU....\n")
 	r.ethChannel.Close()
 	r.wlanChannel.Close()
+	log.Printf("RSU closed\n")
 }

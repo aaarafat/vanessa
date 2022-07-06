@@ -106,7 +106,7 @@ func (a *Aodv) SendRREP(destination net.IP, forRSU bool) {
 		if err != nil {
 			log.Fatalf("failed to parse MAC: %v", err)
 		}
-		go a.routingTable.Update(rrep.DestinationIP, mac, rrep.HopCount, rrep.LifeTime, rrep.DestinationSeqNum, 2)
+		a.routingTable.Update(rrep.DestinationIP, mac, rrep.HopCount, rrep.LifeTime, rrep.DestinationSeqNum, 2)
 	}
 	
 	// broadcast the RREP
