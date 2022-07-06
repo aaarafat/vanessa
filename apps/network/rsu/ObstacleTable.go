@@ -28,13 +28,19 @@ func (OTable *ObstacleTable) Set(x uint32, y uint32,clear uint8) {
 	
 }
 
-// Return the table as list of coordinates
-func (OTable *ObstacleTable) GetTable() ([]string,int) {
-	var table []string
-	for k , _ := range OTable.table {
-		table = append(table,k)
+// Return the table as list of coordinates as a pair of x,y
+func (OTable *ObstacleTable) GetTable() ([][]uint32,int) {
+	var table [][]uint32
+	var count int
+	for k , v := range OTable.table {
+		if v==1{
+			count++
+			var x,y uint32
+			fmt.Sscanf(k,"%d,%d",&x,&y)
+			table = append(table,[]uint32{x,y})
+		}
 	}
-	return table , len(table)
+	return table,count
 }
 
 func (OTable *ObstacleTable) Print() {
