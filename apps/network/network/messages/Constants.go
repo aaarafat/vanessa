@@ -24,11 +24,13 @@ type VObstacleMessage struct {
 	PositionX uint32 
 	// The Y cooardinates of the obstacle
 	PositionY uint32
+	// Set obstacle to true if the obstacle is detected
+	Clear uint8
 }
 
 const (
 	VHBeatMessageLen = 13
-	VObstacleMessageLen = 13
+	VObstacleMessageLen = 14
 )
 
 const (
