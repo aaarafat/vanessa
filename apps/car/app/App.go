@@ -60,6 +60,7 @@ func (a *App) Run() {
 	go a.router.Start()
 	go a.startSocketHandlers()
 	go a.sendHeartBeat()
+	go a.listen()
 	log.Printf("App %d started", a.id)
 }
 

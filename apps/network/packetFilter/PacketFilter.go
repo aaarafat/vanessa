@@ -103,7 +103,7 @@ func (pf *PacketFilter) StealPacket() {
 
 				Update(packetBytes)
 
-				log.Printf("Sending packet %s to %s\n", packet.Payload, packet.Header.DestIP)
+				log.Printf("Sending packet %v to %s\n", packet.Payload, packet.Header.DestIP)
 				go pf.networkLayer.SendUnicast(packetBytes, packet.Header.DestIP)
 			}
 		}

@@ -9,10 +9,13 @@ import (
 
 type Router struct {
 	id int
+
+	Data *chan []byte
 }
 
 func NewRouter(id int) *Router {
-	return &Router{id: id}
+	ch := make(chan []byte)
+	return &Router{id: id, Data: &ch}
 }
 
 
@@ -25,6 +28,7 @@ func (r *Router) reader(conn net.Conn) {
 			continue
 		}
 		log.Printf("Received from router: %s", string(data[:n]))
+		*r.Data <- data[:n]
 	}
 }
 
