@@ -40,3 +40,12 @@ Thumbs.db
 *.pid
 *.apconf
 *.staconf
+
+
+# Ignore extensionless files
+*
+!/**/
+!*.*
+node_modules
+*.apconf
+*.pid

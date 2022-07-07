@@ -1,9 +1,10 @@
 import mapboxgl from 'mapbox-gl';
 import { distanceInKm, euclideanDistance } from './distance';
 import { interpolateString } from './string-utils';
-import { Coordinates, ICar, CarProps } from './types';
+import { Coordinates, ICar, CarProps, PartialExcept } from './types';
 import { MS_IN_HOUR, FPS } from './constants';
 import * as turf from '@turf/turf';
+import { Socket } from 'socket.io-client';
 
 const carDefaultProps: CarProps = {
   title: 'Car',
@@ -16,7 +17,7 @@ const carDefaultProps: CarProps = {
 /**
  * Car Class
  */
-export class Car implements ICar {
+export class Car {
   public id: number;
   public lat: number;
   public lng: number;
@@ -25,15 +26,18 @@ export class Car implements ICar {
   public route: Coordinates[];
   public originalDirections: GeoJSON.Feature;
   public sourceId: string;
+  public receivedMessages: any[];
   private routeIndex: number;
   private source: mapboxgl.GeoJSONSource | undefined;
   private layer: mapboxgl.CircleLayer | undefined;
   private directionsSource: mapboxgl.GeoJSONSource | undefined;
   private directionsLayer: mapboxgl.LineLayer | undefined;
+  private communicationRangeSource: mapboxgl.GeoJSONSource | undefined;
+  private communicationRangeLayer: mapboxgl.FillLayer | undefined;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private updateIntervalId: any;
   private prevTime: number;
   private map: mapboxgl.Map;
+  private socket: Socket;
   private popup: mapboxgl.Popup | null;
   private obstacleDetected: boolean;
 
@@ -42,17 +46,20 @@ export class Car implements ICar {
   private wasFlyingToCar: boolean;
   private animationFrame: number;
   private removed = false;
+  private focused: boolean;
 
-  constructor(car: Partial<ICar> & { map: mapboxgl.Map }) {
+  constructor(car: PartialExcept<ICar, 'map' | 'socket'>) {
     this.id = car.id || Date.now();
     this.sourceId = `car-${this.id}`;
     this.lat = car.lat || 0;
     this.lng = car.lng || 0;
     this.prevCoordinates = this.coordinates;
-    this.speed = car.speed || 10;
+    this.speed = car.speed ?? 10;
     this.route = car.route || [];
     this.map = car.map;
+    this.socket = car.socket;
     this.popup = null;
+    this.focused = false;
     this.originalDirections = turf.lineString(
       this.route.map((r: Coordinates) => [r.lng, r.lat])
     );
@@ -60,7 +67,13 @@ export class Car implements ICar {
     this.handlers = {};
     this.wasFlyingToCar = false;
     this.animationFrame = 0;
-    this.obstacleDetected = false;
+    this.obstacleDetected = car.obstacleDetected || false;
+    this.receivedMessages = [];
+
+    this.socket.emit('add-car', {
+      id: this.id,
+      coordinates: this.coordinates,
+    });
 
     this.draw();
     this.attachHandlers();
@@ -137,6 +150,49 @@ export class Car implements ICar {
         'first-layer'
       )
       .getLayer(`car-${this.id}-route`) as mapboxgl.LineLayer;
+
+    this.communicationRangeSource = this.map
+      .addSource(`car-${this.id}-com-range`, {
+        type: 'geojson',
+        data: this.communicationRangeFeature,
+      })
+      .getSource(`car-${this.id}-com-range`) as mapboxgl.GeoJSONSource;
+
+    this.communicationRangeLayer = this.map
+      .addLayer({
+        id: `car-${this.id}-com-range`,
+        type: 'fill',
+        source: `car-${this.id}-com-range`,
+        layout: {
+          visibility: 'none',
+        },
+        paint: {
+          'fill-color': '#f03b20',
+          'fill-opacity': 0.2,
+          'fill-outline-color': '#f03b20',
+        },
+      })
+      .getLayer(`car-${this.id}-com-range`) as mapboxgl.FillLayer;
+  }
+
+  private get communicationRangeFeature() {
+    return turf.buffer(
+      {
+        type: 'FeatureCollection',
+        features: [
+          {
+            type: 'Feature',
+            geometry: {
+              type: 'Point',
+              coordinates: [this.coordinates.lng, this.coordinates.lat],
+            },
+            properties: {},
+          },
+        ],
+      },
+      78,
+      { units: 'meters' }
+    );
   }
 
   private get props(): CarProps {
@@ -188,15 +244,12 @@ export class Car implements ICar {
         break;
       }
       const dist = distanceInKm(this.coordinates, this.route[this.routeIndex]);
-
       if (movementAmount >= dist) {
         movementAmount -= dist;
         this.lat = this.route[this.routeIndex].lat;
         this.lng = this.route[this.routeIndex].lng;
         this.routeIndex++;
-        if (this.routeIndex === this.route.length) {
-          clearInterval(this.updateIntervalId);
-        }
+        this.emit('move');
       } else {
         const vector: Coordinates = {
           lng: (this.route[this.routeIndex].lng - this.coordinates.lng) / dist,
@@ -205,11 +258,16 @@ export class Car implements ICar {
         this.lat += movementAmount * vector.lat;
         this.lng += movementAmount * vector.lng;
         movementAmount = 0;
+        this.emit('move');
       }
     }
     if (this.arrived) {
       this.speed = 0;
       this.emit('props-updated');
+      this.socket.emit('destination-reached', {
+        id: this.id,
+        coordinates: this.coordinates,
+      });
     }
   };
 
@@ -218,7 +276,9 @@ export class Car implements ICar {
       ._data;
     const lineStep = turf.lineString([
       [this.coordinates.lng, this.coordinates.lat],
-      [this.route[this.routeIndex].lng, this.route[this.routeIndex].lat],
+      ...this.route
+        .slice(this.routeIndex, this.routeIndex + 2)
+        .map((c) => [c.lng, c.lat]),
     ]);
     const sensorRangeEndPoint = turf.along(lineStep, 100, {
       units: 'meters',
@@ -230,7 +290,12 @@ export class Car implements ICar {
 
     if (!turf.booleanDisjoint(sensorRange, obstacles)) {
       this.obstacleDetected = true;
-      this.emit('obstacle-detected');
+      this.emit('props-updated');
+      this.socket.emit('obstacle-detected', {
+        id: this.id,
+        coordinates: this.coordinates,
+        obstacle_coordinates: this.coordinates,
+      });
       return true;
     }
     return false;
@@ -249,26 +314,62 @@ export class Car implements ICar {
 
   private attachHandlers = () => {
     this.map.on('click', this.sourceId, this.onClick);
+    this.on('move', () => {
+      this.socket.emit('update-location', {
+        id: this.id,
+        coordinates: this.coordinates,
+      });
+    });
   };
 
   private onClick = () => {
+    if (this.popup) {
+      this.popup.remove();
+      this.popup = null;
+    }
     this.popup = new mapboxgl.Popup()
       .setLngLat(this.coordinates as mapboxgl.LngLatLike)
       .setHTML(this.description)
       .addTo(this.map);
 
+    const el = this.popup
+      .getElement()
+      .querySelector(`#link${this.id}`) as HTMLAnchorElement;
+    if (el)
+      el.onclick = () => {
+        this.emit('focus');
+      };
+
     this.popup.once('close', () => {
       this.popup = null;
       this.map?.setLayoutProperty(`car-${this.id}-route`, 'visibility', 'none');
+      this.map?.setLayoutProperty(
+        `car-${this.id}-com-range`,
+        'visibility',
+        'none'
+      );
       this.emit('popup-closed', this);
     });
 
     this.on('props-updated', () => {
-      this.popup?.setHTML(this.description);
+      if (!this.popup) return;
+      this.popup.setHTML(this.description);
+      const el = this.popup
+        .getElement()
+        .querySelector(`#link${this.id}`) as HTMLAnchorElement;
+      if (el)
+        el.onclick = () => {
+          this.emit('focus');
+        };
     });
 
     this.map?.setLayoutProperty(
       `car-${this.id}-route`,
+      'visibility',
+      'visible'
+    );
+    this.map?.setLayoutProperty(
+      `car-${this.id}-com-range`,
       'visibility',
       'visible'
     );
@@ -292,6 +393,7 @@ export class Car implements ICar {
     }
 
     this.popup.setLngLat(this.coordinates as mapboxgl.LngLatLike);
+    this.communicationRangeSource?.setData(this.communicationRangeFeature);
   }
 
   private smoothlyFlyToCar(now = false) {
@@ -316,6 +418,8 @@ export class Car implements ICar {
     if (this.obstacleDetected) {
       description += '<p>Obstacle detected</p>';
     }
+    if (!this.focused)
+      description += '<a id="link{id}">Go to the car interface</a>';
     return interpolateString(description, this);
   }
 
@@ -323,6 +427,7 @@ export class Car implements ICar {
   public on(
     type:
       | 'click'
+      | 'focus'
       | 'move'
       | 'popup-closed'
       | 'props-updated'
@@ -337,6 +442,7 @@ export class Car implements ICar {
   private subscribe(
     type:
       | 'click'
+      | 'focus'
       | 'move'
       | 'popup-closed'
       | 'props-updated'
@@ -351,6 +457,7 @@ export class Car implements ICar {
   private emit(
     type:
       | 'click'
+      | 'focus'
       | 'move'
       | 'popup-closed'
       | 'props-updated'
@@ -372,6 +479,7 @@ export class Car implements ICar {
       speed: this.speed,
       lng: this.route[0].lng,
       lat: this.route[0].lat,
+      obstacleDetected: this.obstacleDetected,
       type: 'car',
     };
   }
@@ -382,9 +490,36 @@ export class Car implements ICar {
     this.map.removeSource(this.sourceId);
     this.map.removeLayer(`car-${this.id}-route`);
     this.map.removeSource(`car-${this.id}-route`);
+    this.map.removeLayer(`car-${this.id}-com-range`);
+    this.map.removeSource(`car-${this.id}-com-range`);
     cancelAnimationFrame(this.animationFrame);
     this.removed = true;
     this.map.off('click', this.sourceId, this.onClick);
+  }
+
+  public hide() {
+    this.popup?.remove();
+    this.map.setLayoutProperty(this.sourceId, 'visibility', 'none');
+    this.map.setLayoutProperty(`car-${this.id}-route`, 'visibility', 'none');
+    this.map.setLayoutProperty(
+      `car-${this.id}-com-range`,
+      'visibility',
+      'none'
+    );
+    this.focused = false;
+    this.map.off('click', this.sourceId, this.onClick);
+  }
+  public show(focus = false) {
+    this.map.setLayoutProperty(this.sourceId, 'visibility', 'visible');
+    this.map
+      .off('click', this.sourceId, this.onClick)
+      .on('click', this.sourceId, this.onClick);
+    this.focused = false;
+    if (focus) {
+      this.focused = true;
+      this.onClick();
+    }
+    this.emit('props-updated');
   }
 }
 

@@ -38,7 +38,6 @@ export const Map: React.FC<MapProps> = ({
   currentZoom = 15.79,
   currentLat = 30.0246,
   currentLng = 31.211,
-  cars = [],
 }) => {
   const { setOptions, mapRef, map } = useContext(MapContext);
 
@@ -71,10 +70,6 @@ export const Map: React.FC<MapProps> = ({
         type: 'symbol',
         source: 'first-source',
       });
-
-      cars.forEach((car) => new Car({ ...car, map }));
-
-      // todo: update/add event for cars
     });
   }
 
