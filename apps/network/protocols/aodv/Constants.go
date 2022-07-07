@@ -33,15 +33,11 @@ const (
 const (
 	RREPDefaultLifeTimeMS uint32 = 5 * 60 * 1000 // 5 mins
 	ActiveRouteTimeMS uint32 = 60 * 1000 // 1 min
+	RSUActiveRouteTimeMS uint32 = 3000 // 3 seconds
+	PATH_DISCOVERY_TIME_MS uint32 = 500 // 500 ms
 )
 
 // Limits 
 const (
 	HopCountLimit = 20
-)
-
-
-const (
-	BroadcastIP = "255.255.255.255"
-	RsuIP = "224.4.24.4"
 )

@@ -24,6 +24,9 @@ import math
 from http import client
 import glob
 
+from engineio.payload import Payload
+
+Payload.max_decode_packets = 50
 
 HOST = "127.0.0.1"
 IO_PORT = 65432
@@ -164,6 +167,7 @@ def add_car(message):
     print(position)
 
     st.cmd(f"sudo dist/apps/network -id {id} -name car -debug &")
+    st.cmd(f"sudo dist/apps/car -id {id} -debug &")
 
     payload = {
         'type': 'add-car',
@@ -294,6 +298,16 @@ def topology(args):
 
     s0.cmd('sudo apps/scripts/switch &')
 
+    info("\n*** Establishing socket connections\n")
+    for f in glob.glob('/tmp/car*.socket'):
+        try:
+            os.remove(f)
+        except:
+            pass
+    thread = threading.Thread(target=run_socket, daemon=True)
+    running_threads.append(thread)
+    thread.start()
+
     info("*** Running CLI\n")
     CLI(net)
     info("*** Stopping network\n")
@@ -311,13 +325,5 @@ def topology(args):
 
 if __name__ == '__main__':
     setLogLevel('info')
-    shutil.rmtree('/logs', ignore_errors=True)
-    for f in glob.glob('/tmp/car*.socket'):
-        try:
-            os.remove(f)
-        except:
-            pass
-    thread = threading.Thread(target=run_socket, daemon=True)
-    running_threads.append(thread)
-    thread.start()
+    shutil.rmtree('/var/log/vanessa', ignore_errors=True)
     topology(sys.argv)

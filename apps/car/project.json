@@ -1,0 +1,27 @@
+{
+  "root": "apps/car",
+  "projectType": "application",
+  "sourceRoot": "apps/car",
+  "targets": {
+    "build": {
+      "executor": "@nx-go/nx-go:build",
+      "options": {
+        "outputPath": "dist/apps/car",
+        "main": "apps/car/main.go"
+      }
+    },
+    "serve": {
+      "executor": "@nx-go/nx-go:serve",
+      "options": {
+        "main": "apps/car/main.go"
+      }
+    },
+    "test": {
+      "executor": "@nx-go/nx-go:test"
+    },
+    "lint": {
+      "executor": "@nx-go/nx-go:lint"
+    }
+  },
+  "tags": []
+}

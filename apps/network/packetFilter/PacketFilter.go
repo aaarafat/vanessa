@@ -1,7 +1,6 @@
 package packetfilter
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net"
@@ -10,7 +9,6 @@ import (
 	"github.com/AkihiroSuda/go-netfilter-queue"
 	. "github.com/aaarafat/vanessa/apps/network/network"
 	. "github.com/aaarafat/vanessa/apps/network/network/ip"
-	"github.com/aaarafat/vanessa/apps/network/protocols/aodv"
 	"github.com/aaarafat/vanessa/apps/network/unix"
 )
 
@@ -19,8 +17,7 @@ type PacketFilter struct {
 	srcIP net.IP
 	id    int
 	networkLayer *NetworkLayer 
-
-	unix   *unix.UnixSocket
+	routerSocket *unix.RouterSocket
 }
 
 func newPacketFilter(id int, ifi net.Interface) (*PacketFilter, error) {
@@ -57,7 +54,7 @@ func newPacketFilter(id int, ifi net.Interface) (*PacketFilter, error) {
 		srcIP:  ip,
 		id:     id,
 		networkLayer: NewNetworkLayer(ip),
-		unix:   unix.NewUnixSocket(id),
+		routerSocket: unix.NewRouterSocket(id),
 	}
 
 	return pf, nil
@@ -78,20 +75,9 @@ func NewPacketFilterWithInterface(id int, ifi net.Interface) (*PacketFilter, err
 	return newPacketFilter(id, ifi)
 }
 
-func (pf *PacketFilter) DataCallback(dataByte []byte) {
-	packet, err := UnmarshalPacket(dataByte)
-
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	if packet.Header.DestIP.Equal(pf.srcIP) {
-		log.Println("packet is for me")
-	}
-
-	log.Printf("PacketFilter received data: %s\n", packet.Payload)
-	pf.unix.Write(packet.Payload)
+func (pf *PacketFilter) dataCallback(payload []byte) {
+	log.Printf("Received: %s\n", payload)
+	pf.routerSocket.Write(payload)
 }
 
 func (pf *PacketFilter) StealPacket() {
@@ -99,95 +85,27 @@ func (pf *PacketFilter) StealPacket() {
 	for {
 		select {
 		case p := <-packets:
-			packet := p.Packet.Data()
-			log.Printf("PacketFilter received packet: %v\n", packet)
-
-			header, err := UnmarshalIPHeader(packet)
+			packetBytes := p.Packet.Data()
+			packet, err := UnmarshalPacket(packetBytes)
 			if err != nil {
 				log.Printf("Error decoding IP header: %v\n", err)
 				p.SetVerdict(netfilter.NF_DROP)
 				continue
 			}
 
-			log.Printf("PacketFilter received DestIP: %s, SrcIP: %s\n", header.DestIP, header.SrcIP)
-
-			if pf.srcIP.Equal(header.DestIP) {
-				fmt.Println(p.Packet)
+			if pf.srcIP.Equal(packet.Header.DestIP) {
+				pf.dataCallback(packet.Payload)
 				p.SetVerdict(netfilter.NF_ACCEPT)
 
 				// TODO : grpc call to the router to process the packet
 			} else {
 				p.SetVerdict(netfilter.NF_DROP)
 
-				Update(packet)
+				Update(packetBytes)
 
-				go pf.networkLayer.SendUnicast(packet, header.DestIP)
+				log.Printf("Sending packet %s to %s\n", packet.Payload, packet.Header.DestIP)
+				go pf.networkLayer.SendUnicast(packetBytes, packet.Header.DestIP)
 			}
-		}
-	}
-}
-
-func (pf *PacketFilter) ObstacleHandler() {
-	obstacleChannel := make(chan json.RawMessage)
-	obstableSubscriber := &unix.Subscriber{Messages: &obstacleChannel}
-	pf.unix.Subscribe(unix.ObstacleDetectedEvent, obstableSubscriber)
-
-	for {
-		select {
-		case data := <-*obstableSubscriber.Messages:
-			var obstacle unix.ObstacleDetectedData
-			err := json.Unmarshal(data, &obstacle)
-			if err != nil {
-				log.Printf("Error decoding obstacle-detected data: %v", err)
-				return
-			}
-			log.Printf("Packet Filter : Obstacle detected: %v\n", data)
-
-			// TODO: send it with loopback interface to the router to be processed by the AODV
-			go pf.networkLayer.Send(data, pf.srcIP, net.ParseIP(aodv.BroadcastIP))
-			pf.unix.Write(data)
-		}
-	}
-}
-
-func (pf *PacketFilter) DestinationReachedHandler() {
-	destinationReachedChannel := make(chan json.RawMessage)
-	destinationReachedSubscriber := &unix.Subscriber{Messages: &destinationReachedChannel}
-	pf.unix.Subscribe(unix.DestinationReachedEvent, destinationReachedSubscriber)
-
-	for {
-		select {
-		case data := <-*destinationReachedSubscriber.Messages:
-			var destinationReached unix.DestinationReachedData
-			err := json.Unmarshal(data, &destinationReached)
-			if err != nil {
-				log.Printf("Error decoding destination-reached data: %v", err)
-				return
-			}
-			log.Printf("Packet Filter : destination-reached: %v\n", data)
-
-			pf.unix.Write(data)
-		}
-	}
-}
-
-func (pf *PacketFilter) UpdateLocationHandler() {
-	updateLocationChannel := make(chan json.RawMessage)
-	updateLocationSubscriber := &unix.Subscriber{Messages: &updateLocationChannel}
-	pf.unix.Subscribe(unix.UpdateLocationEvent, updateLocationSubscriber)
-
-	for {
-		select {
-		case data := <-*updateLocationSubscriber.Messages:
-			var updateLocation unix.UpdateLocationData
-			err := json.Unmarshal(data, &updateLocation)
-			if err != nil {
-				log.Printf("Error decoding update-location data: %v", err)
-				return
-			}
-			log.Printf("Packet Filter : update-location: %v\n", data)
-
-			pf.unix.Write(data)
 		}
 	}
 }
@@ -196,19 +114,24 @@ func (pf *PacketFilter) SendHelloToRSU() {
 	for {
 		time.Sleep(time.Second * 5)
 		msg := fmt.Sprintf("Hello From IP: %s\n", pf.srcIP)
-		pf.networkLayer.Send([]byte(msg), pf.srcIP, net.ParseIP(aodv.RsuIP))
+		pf.networkLayer.Send([]byte(msg), pf.srcIP, net.ParseIP(RsuIP))
+	}
+}
+
+func (pf *PacketFilter) sendHelloToAppSockets() {
+	for {
+		time.Sleep(time.Second * 5)
+		msg := fmt.Sprintf("Hello From Router\n")
+		pf.routerSocket.Write([]byte(msg))
 	}
 }
 
 func (pf *PacketFilter) Start() {
 	log.Printf("Starting PacketFilter for IP: %s.....\n", pf.srcIP)
-	go pf.unix.Start()
 	go pf.networkLayer.Start()
-	// go pf.ObstacleHandler()
-	// go pf.DestinationReachedHandler()
-	// go pf.UpdateLocationHandler()
 	// TODO: REMOVE THIS (for testing)
 	go pf.SendHelloToRSU()
+	go pf.sendHelloToAppSockets()
 	
 	pf.StealPacket()
 }
@@ -218,6 +141,7 @@ func (pf *PacketFilter) Close() {
 	DeleteIPTablesRule()
 	DeleteDefaultGateway()
 
+	pf.routerSocket.Close()
 	pf.networkLayer.Close()
 
 	log.Printf("PacketFilter for IP: %s closed\n", pf.srcIP)

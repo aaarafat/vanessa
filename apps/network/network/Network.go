@@ -15,13 +15,12 @@ type NetworkLayer struct {
 	channels map[int]*DataLinkLayerChannel
 	forwarders map[int]*Forwarder
 
+	// buffer to store packets until path is found
+	packetBuffer *PacketBuffer
+
 	ipConn *IPConnection
 
 	unicastProtocol Protocol
-}
-
-func callback(packet []byte) {
-	log.Println("Received packet")
 }
 
 func NewNetworkLayer(ip net.IP) *NetworkLayer {
@@ -30,13 +29,17 @@ func NewNetworkLayer(ip net.IP) *NetworkLayer {
 		log.Fatalf("failed to open ip connection: %v", err)
 	}
 
-	return &NetworkLayer{
+	network := &NetworkLayer{
 		ip: ip,
 		channels: make(map[int]*DataLinkLayerChannel),
 		forwarders: make(map[int]*Forwarder),
+		packetBuffer: NewPacketBuffer(),
 		ipConn: ipConn,
-		unicastProtocol: aodv.NewAodv(ip, callback),
 	}
+
+	network.unicastProtocol = aodv.NewAodv(ip, network.onPathDiscovery)
+
+	return network
 }
 
 func (n *NetworkLayer) openChannels()  {

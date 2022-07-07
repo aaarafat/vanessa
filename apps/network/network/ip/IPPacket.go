@@ -9,7 +9,7 @@ type IPPacket struct {
 
 const (
 	DefaultIP4HeaderLen = 20
-	DefaultTTL = 64
+	DefaultTTL = 20
 	DefaultProtocol = 144 //! Not Reserverd
 )
 

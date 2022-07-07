@@ -35,19 +35,19 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr, IfiIndex int) {
 
 	log.Printf("Interface %d: Received: %s\n", IfiIndex, rreq.String())
 	// update the routing table
-	go a.routingTable.Update(rreq.OriginatorIP, from, rreq.HopCount, ActiveRouteTimeMS, rreq.OriginatorSequenceNumber, IfiIndex)
+	a.routingTable.Update(rreq.OriginatorIP, from, rreq.HopCount, ActiveRouteTimeMS, rreq.OriginatorSequenceNumber, IfiIndex)
 
 	// update seq table
-	go a.seqTable.Set(rreq.OriginatorIP, rreq.RREQID)
+	a.seqTable.Set(rreq.OriginatorIP, rreq.RREQID)
 
 	// check if the RREQ is for me
-	if rreq.DestinationIP.Equal(a.srcIP) || (rreq.DestinationIP.Equal(net.ParseIP(RsuIP)) && ConnectedToRSU(2)) {
+	if a.isRREQForMe(rreq) {
 		// update the sequence number if it is not unknown
 		if !rreq.HasFlag(RREQFlagU) {
 			a.updateSeqNum(rreq.DestinationSeqNum)
 		}
 		// send a RREP
-		a.SendRREP(rreq.OriginatorIP, rreq.DestinationIP.Equal(net.ParseIP(RsuIP)))
+		a.SendRREP(rreq.OriginatorIP)
 	} else {
 		// increment hop count
 		rreq.HopCount = rreq.HopCount + 1
@@ -72,61 +72,18 @@ func (a *Aodv) handleRREP(payload []byte, from net.HardwareAddr, IfiIndex int) {
 
 	log.Printf("Inteface %d: Received: %s\n", IfiIndex, rrep.String())
 	// update the routing table
-	go a.routingTable.Update(rrep.DestinationIP, from, rrep.HopCount, rrep.LifeTime, rrep.DestinationSeqNum, IfiIndex)
+	a.routingTable.Update(rrep.DestinationIP, from, rrep.HopCount, rrep.LifeTime, rrep.DestinationSeqNum, IfiIndex)
 
 	// check if the RREP is for me
 	if rrep.OriginatorIP.Equal(a.srcIP) {
 		// Arrived Successfully
-		log.Printf("Path Descovery is successful for ip=%s !!!!", rrep.DestinationIP)
-
-		// handle data in the buffer
-		data, ok := a.dataBuffer.Get(rrep.DestinationIP.String())
-		if ok {
-			// send the data
-			msgs := data.([]DataMessage)
-			for _, msg := range msgs {
-				go a.SendData(msg.Marshal(), msg.DestenationIP)
-			}
-			// remove the data from the buffer
-			a.dataBuffer.Del(rrep.DestinationIP.String())
-		}
+		log.Printf("Path Discovery is successful for ip=%s !!!!", rrep.DestinationIP)
+		a.pathDiscoveryCallback(rrep.DestinationIP)
 	} else {
 		// increment hop count
 		rrep.HopCount = rrep.HopCount + 1
 		// forward the RREP
 		a.Send(rrep.Marshal(), rrep.OriginatorIP)
-	}
-}
-
-func (a *Aodv) handleData(payload []byte, from net.HardwareAddr) {
-	data, err := UnmarshalData(payload)
-	if err != nil {
-		log.Printf("Failed to unmarshal data: %v\n", err)
-		return
-	}
-
-	if data.OriginatorIP.Equal(a.srcIP) || a.dataSeqTable.Exists(data.OriginatorIP, data.SeqNumber) {
-		// drop the packet
-		log.Printf("Dropping %s\n", data.String())
-		return
-	} 
-
-	if data.DestenationIP.Equal(a.srcIP) {
-		log.Printf("Received: %s\n", data.String())
-		go a.callback(data.Data)
-		return
-	}
-	// update seq table
-	go a.dataSeqTable.Set(data.OriginatorIP, data.SeqNumber)
-
-	// forward the data
-	if data.DestenationIP.Equal(net.ParseIP(BroadcastIP)) {
-		log.Printf("Received: %s\n", data.String())
-		go a.callback(data.Data)
-	
-		a.forwarder.ForwardToAllExcept(data.Marshal(), from)
-	} else {
-		a.forwardData(data)
 	}
 }
 
@@ -138,8 +95,6 @@ func (a *Aodv) handleMessage(payload []byte, from net.HardwareAddr, IfiIndex int
 		a.handleRREQ(payload, from, IfiIndex)
 	case RREPType:
 		a.handleRREP(payload, from, IfiIndex)
-	case DataType:
-		a.handleData(payload, from)
 	default:
 		log.Println("Unknown message type: ", msgType)
 	}
