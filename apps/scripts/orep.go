@@ -17,6 +17,11 @@ func main() {
 		{Lat: 325.7, Lng: 69.69},
 		{Lat: 85.7298, Lng: 123.45},
 	}
+	x:= obstacles[0].Marshal()
+	fmt.Println(x)
+	y:= UnmarshalPosition(x)
+	fmt.Println(y)
+
 
 	VOREP := NewVOREPMessage(obstacles)
 
