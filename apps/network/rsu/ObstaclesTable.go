@@ -1,14 +1,11 @@
 package rsu
 
 import (
-	"fmt"
 	"log"
+
+	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 )
 
-type Position struct {
-	Lat float64
-	Lng float64
-}
 
 type ObstaclesTable struct {
 	table map[string] uint8
@@ -20,9 +17,9 @@ func NewObstaclesTable() *ObstaclesTable {
 	}
 }
 
-func (OTable *ObstaclesTable) Set(x float64, y float64,clear uint8) {
+func (OTable *ObstaclesTable) Set(position Position,clear uint8) {
 	
-	key := fmt.Sprintf("%f,%f",x,y)
+	key := string(position.Marshal())
 	if(clear==1){
 		delete(OTable.table,key)
 	}else if(clear==0){
@@ -35,14 +32,10 @@ func (OTable *ObstaclesTable) Set(x float64, y float64,clear uint8) {
 func (OTable *ObstaclesTable) GetTable() ([]Position,int) {
 	var table [] Position
 	var count int
-	for k , v := range OTable.table {
-		if v==1{
+	for k  := range OTable.table {
 			count++
-			var x,y float64
-			fmt.Sscanf(k,"%f,%f",&x,&y)
-			pos := &Position{x,y}
-			table = append(table,*pos)
-		}
+			pos := UnmarshalPosition([]byte(k))
+			table = append(table,pos)
 	}
 	return table,count
 }
@@ -50,7 +43,8 @@ func (OTable *ObstaclesTable) GetTable() ([]Position,int) {
 func (OTable *ObstaclesTable) Print() {
 	log.Println("Printing Obstacle Table")
 	for k , v := range OTable.table {
-		log.Println(k,v)
+		pos := UnmarshalPosition([]byte(k))
+		log.Println(pos.Lat,pos.Lng,v)
 	}
 }
 
