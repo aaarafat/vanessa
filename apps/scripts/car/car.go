@@ -18,6 +18,21 @@ type Logger struct {
 	*log.Logger
 }
 
+type Coordinate struct {
+	Lat float64 `json:"lat"`
+	Lng float64 `json:"lng"`
+}
+
+type State struct {
+	Id               int          `json:"id"`
+	Speed            int          `json:"speed"`
+	Route            []Coordinate `json:"route"`
+	Lat              float64      `json:"lat"`
+	Lng              float64      `json:"lng"`
+	ObstacleDetected bool         `json:"obstacleDetected"`
+	Obstacles        []Coordinate `json:"obstacles"`
+}
+
 var logger Logger
 
 func testWrite(server eventsource.EventSource, id int) {
@@ -51,11 +66,6 @@ func initUnixSocket(addr string) (net.Listener, error) {
 	return listener, nil
 }
 
-// Easier to get running with CORS. Thanks for help @Vindexus and @erkie
-var allowOriginFunc = func(r *http.Request) bool {
-	return true
-}
-
 func main() {
 	var socketAddress string
 	var id int
@@ -75,6 +85,34 @@ func main() {
 		logger.Log("Error: %v", err)
 		os.Exit(1)
 	}
+
+	state := State{
+		Id:    id,
+		Speed: 10,
+		Route: []Coordinate{
+			{
+				Lng: 31.21151,
+				Lat: 30.02163,
+			},
+			{
+				Lng: 31.21145,
+				Lat: 30.02219,
+			},
+			{
+				Lng: 31.21141,
+				Lat: 30.02252,
+			},
+			{
+				Lng: 31.21119,
+				Lat: 30.02377,
+			},
+		},
+		Lat:              30.02163,
+		Lng:              31.21151,
+		ObstacleDetected: false,
+		Obstacles:        []Coordinate{},
+	}
+
 	time.Sleep(time.Millisecond * 100)
 	listener, err := initUnixSocket(socketAddress)
 	defer listener.Close()
@@ -83,7 +121,16 @@ func main() {
 		return [][]byte{[]byte("Access-Control-Allow-Origin: *")}
 	})
 	defer server.Close()
+
 	go testWrite(server, id)
+
+	http.HandleFunc("/state", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			return
+		}
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		json.NewEncoder(w).Encode(state)
+	})
 	http.Handle("/", server)
 
 	log.Fatal(http.Serve(listener, nil))

@@ -2,6 +2,7 @@ import styled from 'styled-components';
 
 import { Route } from 'react-router-dom';
 import { Interface } from './interface';
+import { PortPrompt } from './port-prompt';
 
 const StyledApp = styled.div`
   margin: 0;
@@ -15,7 +16,8 @@ const StyledApp = styled.div`
 export function App() {
   return (
     <StyledApp>
-      <Route path="/:port?" exact render={() => <Interface />} />
+      <Route path="/" exact render={() => <PortPrompt />} />
+      <Route path="/:port" exact render={() => <Interface />} />
       {/* END: routes */}
     </StyledApp>
   );

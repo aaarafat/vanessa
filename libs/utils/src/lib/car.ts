@@ -494,6 +494,7 @@ export class Car {
   }
 
   public remove() {
+    if (this.removed) return;
     this.removed = true;
     this.popup?.remove();
 

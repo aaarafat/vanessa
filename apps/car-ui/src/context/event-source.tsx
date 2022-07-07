@@ -1,6 +1,8 @@
 import React, { createContext, useEffect, useState } from 'react';
 
-export const EventSourceContext = createContext([] as any);
+export const EventSourceContext = createContext<
+  [EventSource | null, React.Dispatch<React.SetStateAction<EventSource | null>>]
+>(null as any);
 export const EventSourceProvider: React.FC<React.ReactNode> = ({
   children,
 }) => {

@@ -28,14 +28,17 @@ const Message = styled.div`
 `;
 
 const MessagesViewer: React.FC = () => {
-  const eventSource: EventSource = useContext(EventSourceContext)[0];
+  const eventSource = useContext(EventSourceContext)[0];
   const [messages, setMessages] = useState<any[]>([]);
 
   useEffect(() => {
-    eventSource?.addEventListener('test', ({ data }) => {
+    function testHandler({ data }: EventSourceEventMap['message']) {
       console.log(JSON.parse(data));
       setMessages((messages) => [...messages, data]);
-    });
+    }
+    eventSource?.addEventListener('test', testHandler);
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    return () => eventSource?.removeEventListener('test', testHandler);
   }, [eventSource]);
   return (
     <Container open={!!messages}>

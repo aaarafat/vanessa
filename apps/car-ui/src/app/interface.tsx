@@ -1,12 +1,15 @@
-import React, { useContext, useEffect, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { Map, MapContext } from '@vanessa/map';
 import styled, { keyframes } from 'styled-components';
-import { Car, Coordinates, ICar, IRSU, RSU } from '@vanessa/utils';
+import { Car, ICar } from '@vanessa/utils';
 import * as turf from '@turf/turf';
 import mapboxgl from 'mapbox-gl';
 import { EventSourceContext } from '../context';
 import { useHistory, useParams } from 'react-router-dom';
 import MessagesViewer from './messages-viewer';
+import { ConnectionErrorAlert } from './connection-error-alert';
+
+type carState = Omit<ICar, 'map'>;
 
 const spin = keyframes`
   0% {
@@ -42,46 +45,67 @@ const LoaderContainer = styled.div`
 `;
 
 let car: Car;
-
 export const Interface: React.FC = () => {
   const { map } = useContext(MapContext);
   const [eventSource, setEventSource] = useContext(EventSourceContext);
+  const [connectionError, setConnectionError] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [obstacles, setObstacles] = useState<turf.FeatureCollection>({
-    type: 'FeatureCollection',
-    features: [],
-  });
+  const [loading, setLoading] = useState(true);
+  const [obstacles, setObstacles] = useState<turf.Feature[]>([]);
   const { port } = useParams<{
     port: string;
   }>();
-
-  console.log(eventSource);
+  const history = useHistory();
 
   useEffect(() => {
-    if (port) {
-      setEventSource(new EventSource(`http://localhost:${port}`));
+    if (!port || !Number.isInteger(+port) || +port < 0 || +port > 65535) {
+      history.replace('/');
+      return;
     }
-  }, [port, setEventSource]);
+  }, [port, history, setEventSource]);
 
   useEffect(() => {
-    if (map && eventSource) {
+    if (map) {
       map.setMaxZoom(18);
       map.on('load', () => {
         setMapLoaded(true);
       });
     }
-  }, [map, eventSource]);
+    return () => car?.remove();
+  }, [map]);
 
-  // useEffect(() => {
-  //   if(eventSource) {
+  const connectCar = useCallback(async () => {
+    setLoading(true);
+    setConnectionError(false);
+    try {
+      if (!map) {
+        setConnectionError(true);
+        return;
+      }
+      const state = await fetch(`http://localhost:${port}/state`);
+      const json: carState = await state.json();
+      car = new Car({ ...json, map }, { displayOnly: true });
+      setEventSource(new EventSource(`http://localhost:${port}`));
+    } catch (e) {
+      setConnectionError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, [map, port, setEventSource]);
 
-  //   }
-  // }, [eventSource])
+  useEffect(() => {
+    if (mapLoaded) {
+      connectCar();
+    }
+  }, [mapLoaded, connectCar]);
 
   useEffect(() => {
     if (mapLoaded && map) {
-      const obstacle = turf.buffer(obstacles, 10, { units: 'meters' });
+      const featureCollection: turf.FeatureCollection = {
+        type: 'FeatureCollection',
+        features: obstacles,
+      };
+      const obstacle = turf.buffer(featureCollection, 10, { units: 'meters' });
       if (!map.getSource('obstacles')) {
         map.addSource('obstacles', {
           type: 'geojson',
@@ -109,6 +133,10 @@ export const Interface: React.FC = () => {
 
   return (
     <>
+      <ConnectionErrorAlert
+        connectCar={connectCar}
+        connectionError={connectionError}
+      />
       {loading && (
         <LoaderContainer>
           <Loader />
