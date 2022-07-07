@@ -30,6 +30,7 @@ func (r* RSU) handleVHBeat(payload []byte, from net.HardwareAddr) {
 		log.Println("Failed to unmarshal VHBeat: ", err)
 		return
 	}
+	log.Println("Recieved HeartBeat from: ", HBeat.OriginatorIP.String())
 	r.RARP.Set(HBeat.OriginatorIP.String(), from)
 
 }
@@ -41,6 +42,7 @@ func (r* RSU)  handleVObstacle(payload []byte , from net.HardwareAddr) {
 		log.Println("Failed to unmarshal VObstacle: ", err)
 		return
 	}
+	log.Println("Recieved Obstacle from: ", obstacle.OriginatorIP.String())
 	r.RARP.Set(obstacle.OriginatorIP.String(), from)
 	r.ethChannel.Broadcast(obstacle.Marshal())
 	r.wlanChannel.Broadcast(obstacle.Marshal())
@@ -55,7 +57,9 @@ func (r* RSU) handleVOREQ(payload []byte, from net.HardwareAddr) {
 		return
 	}
 	r.RARP.Set(VOREQ.OriginatorIP.String(), from)
+	log.Println("Recieved VOREQ from: ", VOREQ.OriginatorIP.String())
 	
 	VOREP := NewVOREPMessage(r.OTable.GetTable())
+	log.Println("Send VOREP to: ", VOREQ.OriginatorIP.String())
 	r.wlanChannel.SendTo(VOREP.Marshal(), from)
 }
