@@ -8,7 +8,6 @@
     "router": "apps/router",
     "rsu-ui": "apps/rsu-ui",
     "simulation-ui": "apps/simulation-ui",
-    "unix": "apps/unix",
     "utils": "libs/utils"
   }
 }
