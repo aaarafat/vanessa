@@ -92,12 +92,16 @@ func (r *RSU) readFromWLANInterface() {
 		}
 
 		log.Printf("Received \"%s\" from: [%s] on intf-%d", string(packet.Payload), addr.String(), RSUWLANInterface)
-		
+
 		r.handleMessage(packet.Payload, addr)
 	}
 }
 
-
+// get MAC from RSUARP using ip then send to wlan interface
+func (r *RSU) sendToWLANInterface(data []byte, ip string) {
+	mac := r.RARP.Get(ip)
+	r.wlanChannel.SendTo(data, mac)
+}
 
 
 func (r *RSU) Start() {
