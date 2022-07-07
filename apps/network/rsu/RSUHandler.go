@@ -4,18 +4,21 @@ import (
 	"log"
 	"net"
 
+	"github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 )
 
 
-func (r* RSU) handleMessage(payload []byte , from net.HardwareAddr) {
+func (r* RSU) handleMessage(packet ip.IPPacket , from net.HardwareAddr) {
+
+	payload := packet.Payload
 	msgType := uint8(payload[0])
 	// handle the message
 	switch msgType {
 	case VHBeatType:
 		r.handleVHBeat(payload,from)
 	case VObstacleType:
-		r.handleVObstacle(payload,from)
+		r.handleVObstacle(packet,from)
 	case VOREQType:
 		r.handleVOREQ(payload,from)
 	default:
@@ -35,17 +38,19 @@ func (r* RSU) handleVHBeat(payload []byte, from net.HardwareAddr) {
 
 }
 
-func (r* RSU)  handleVObstacle(payload []byte , from net.HardwareAddr) {
-
+func (r* RSU)  handleVObstacle(packet ip.IPPacket , from net.HardwareAddr) {
+	payload := packet.Payload
 	obstacle, err := UnmarshalVObstacle(payload)
 	if err != nil {
 		log.Println("Failed to unmarshal VObstacle: ", err)
 		return
 	}
-	log.Println("Recieved Obstacle from: ", obstacle.OriginatorIP.String())
+	log.Println("Recieved Obstacle from: ", obstacle.OriginatorIP.String(), " at: ", obstacle.Position)
 	r.RARP.Set(obstacle.OriginatorIP.String(), from)
-	r.ethChannel.Broadcast(obstacle.Marshal())
-	r.wlanChannel.Broadcast(obstacle.Marshal())
+	bytes := ip.MarshalIPPacket(&packet)
+	ip.Update(bytes)
+	r.ethChannel.Broadcast(bytes)
+	r.sendToALLWLANInterface(bytes, obstacle.OriginatorIP.String())
 	r.OTable.Set(obstacle.Position,0)
 }
 
@@ -61,5 +66,20 @@ func (r* RSU) handleVOREQ(payload []byte, from net.HardwareAddr) {
 	
 	VOREP := NewVOREPMessage(r.OTable.GetTable())
 	log.Println("Send VOREP to: ", VOREQ.OriginatorIP.String())
-	r.wlanChannel.SendTo(VOREP.Marshal(), from)
+
+	packet := ip.NewIPPacket(VOREP.Marshal(), r.ip, net.IPv4(255,255,255,255))
+	bytes := ip.MarshalIPPacket(packet)
+	ip.UpdateChecksum(bytes)
+	r.wlanChannel.SendTo(bytes, from)
+}
+
+
+// Send to all in RSUARP using wlan exept the one that sent the message
+func (r* RSU) sendToALLWLANInterface(data []byte, originatorIP string) {
+	for ip , entry := range r.RARP.table {
+		if originatorIP == ip {
+			continue
+		}
+		r.wlanChannel.SendTo(data, entry.MAC)
+	}
 }
