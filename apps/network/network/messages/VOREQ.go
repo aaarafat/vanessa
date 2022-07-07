@@ -20,7 +20,7 @@ func (VOREQ *VOREQMessage) Marshal() []byte {
 }
 
 //Create a new VOREQ message
-func NewVOREQMessage(OriginatorIP net.IP, PositionX uint32, PositionY uint32, Clear uint8) *VOREQMessage {
+func NewVOREQMessage(OriginatorIP net.IP) *VOREQMessage {
 	return &VOREQMessage{
 		Type: VOREQType,
 		OriginatorIP: OriginatorIP,
