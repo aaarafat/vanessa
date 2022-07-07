@@ -42,7 +42,8 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr, IfiIndex int) {
 	a.seqTable.Set(rreq.OriginatorIP, rreq.RREQID)
 
 	// check if the RREQ is for me
-	if rreq.DestinationIP.Equal(a.srcIP) || (rreq.DestinationIP.Equal(net.ParseIP(ip.RsuIP)) && ConnectedToRSU(2)) {
+	_, exists := a.routingTable.Get(net.IP(ip.RsuIP))
+	if rreq.DestinationIP.Equal(a.srcIP) || (rreq.DestinationIP.Equal(net.ParseIP(ip.RsuIP)) && exists) {
 		// update the sequence number if it is not unknown
 		if !rreq.HasFlag(RREQFlagU) {
 			a.updateSeqNum(rreq.DestinationSeqNum)

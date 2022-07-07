@@ -3,6 +3,7 @@ package aodv
 import (
 	"log"
 	"net"
+	"time"
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
@@ -52,18 +53,11 @@ func (a *Aodv) GetRoute(destIP net.IP) (*VRoute, bool) {
 		return NewVRoute(item.Destination, item.NextHop, item.IfiIndex, int(item.NoOfHops)), true
 	} 
 
-	if destIP.Equal(net.ParseIP(ip.RsuIP)) && ConnectedToRSU(2) {
-		mac, err := net.ParseMAC(GetRSUMac(2))
-		if err != nil {
-			log.Fatalf("failed to parse mac: %v", err)
-		}
-		return NewVRoute(destIP, mac, 2, 0), true
-	}
-
 	return nil, false
 }
 
 func (a *Aodv) BuildRoute(destIP net.IP) {
+	log.Printf("Building route for IP: %s.....\n", destIP)
 	// send a RREQ
 	a.SendRREQ(destIP)
 }
@@ -115,10 +109,27 @@ func (a *Aodv) SendRREP(destination net.IP, forRSU bool) {
 	a.Send(rrep.Marshal(), destination)
 }
 
+func (a *Aodv) updateRSU() {
+	for {
+		if (ConnectedToRSU(2)) {
+			mac, err := net.ParseMAC(GetRSUMac(2))
+			if err != nil {
+				log.Printf("failed to parse MAC: %v", err)
+				continue
+			}
+			a.routingTable.Update(net.ParseIP(ip.RsuIP), mac, 0, RSUActiveRouteTimeMS, 0, 2)
+		} else {
+			a.routingTable.Del(net.ParseIP(ip.RsuIP))
+		}
+		time.Sleep(time.Millisecond * time.Duration(RSUActiveRouteTimeMS))
+	}
+}
+
 func (a *Aodv) Start() {
 	log.Printf("Starting AODV for IP: %s.....\n", a.srcIP)
 	go a.forwarder.Start()
 	go a.listen(a.channel)
+	go a.updateRSU()
 }
 
 func (a *Aodv) Close() {

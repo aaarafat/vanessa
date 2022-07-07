@@ -33,6 +33,7 @@ const (
 const (
 	RREPDefaultLifeTimeMS uint32 = 5 * 60 * 1000 // 5 mins
 	ActiveRouteTimeMS uint32 = 60 * 1000 // 1 min
+	RSUActiveRouteTimeMS uint32 = 1000 // 1 second
 )
 
 // Limits 

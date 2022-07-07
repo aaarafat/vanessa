@@ -82,6 +82,13 @@ func (r* VRoutingTable) Get(destination net.IP) (*VRoutingTableEntry, bool) {
 	return nil, false
 }
 
+func (r* VRoutingTable) Del(ip net.IP) {
+	_, exists := r.table.Get(ip.String())
+	if exists {
+		r.table.Del(ip.String())
+	}
+}
+
 func (r* VRoutingTable) set(entry *VRoutingTableEntry) {
 	r.table.Set(entry.Destination.String(), *entry)
 }

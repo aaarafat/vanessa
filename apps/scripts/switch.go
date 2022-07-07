@@ -53,8 +53,7 @@ func main() {
 			go readFromInterface(c, index)
 		}
 	}
-	for {
 
-	}
+	select {}
 
 }
