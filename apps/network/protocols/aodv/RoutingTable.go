@@ -86,7 +86,7 @@ func (r* VRoutingTable) Del(ip net.IP) {
 	}
 }
 
-func (r* VRoutingTable) Set(destIP net.IP, nextHop net.HardwareAddr, hopCount uint8, lifeTime, seqNum uint32, ifiIndex int) {
+func (r* VRoutingTable) Set(destIP net.IP, nextHop net.HardwareAddr, hopCount uint8, lifeTime, seqNum uint32, ifiIndex int) (new bool) {
 	lifeTimeMS := time.Millisecond * time.Duration(lifeTime)
 		
 	newEntry := &VRoutingTableEntry{
@@ -98,10 +98,10 @@ func (r* VRoutingTable) Set(destIP net.IP, nextHop net.HardwareAddr, hopCount ui
 		IfiIndex: ifiIndex,
 	}
 
-	r.set(newEntry)
+	return r.set(newEntry)
 }
 
-func (r* VRoutingTable) set(entry *VRoutingTableEntry) {
+func (r* VRoutingTable) set(entry *VRoutingTableEntry) (new bool) {
 	item, exists := r.table.Get(entry.Destination.String())
 	if exists {
 		// Stop the timer
@@ -117,6 +117,8 @@ func (r* VRoutingTable) set(entry *VRoutingTableEntry) {
 	entry.timer = timer
 	
 	r.table.Set(entry.Destination.String(), *entry)
+
+	return !exists
 }
 
 func (r* VRoutingTable) Len() int {

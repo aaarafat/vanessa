@@ -107,7 +107,11 @@ func (a *Aodv) updateRSU() {
 				log.Printf("failed to parse MAC: %v", err)
 				continue
 			}
-			a.routingTable.Set(net.ParseIP(ip.RsuIP), mac, 0, RSUActiveRouteTimeMS, 0, 2)
+			new := a.routingTable.Set(net.ParseIP(ip.RsuIP), mac, 0, RSUActiveRouteTimeMS, 0, 2)
+			if new {
+				log.Printf("Path Discovery is successful for ip=%s !!!!", ip.RsuIP)
+				go a.pathDiscoveryCallback(net.ParseIP(ip.RsuIP))
+			}
 		} 
 		time.Sleep(time.Millisecond * time.Duration(RSUActiveRouteTimeMS / 3))
 	}

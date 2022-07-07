@@ -77,7 +77,7 @@ func (a *Aodv) handleRREP(payload []byte, from net.HardwareAddr, IfiIndex int) {
 	// check if the RREP is for me
 	if rrep.OriginatorIP.Equal(a.srcIP) {
 		// Arrived Successfully
-		log.Printf("Path Descovery is successful for ip=%s !!!!", rrep.DestinationIP)
+		log.Printf("Path Discovery is successful for ip=%s !!!!", rrep.DestinationIP)
 		a.pathDiscoveryCallback(rrep.DestinationIP)
 	} else {
 		// increment hop count
