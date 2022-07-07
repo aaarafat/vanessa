@@ -9,6 +9,7 @@ import (
 	"github.com/AkihiroSuda/go-netfilter-queue"
 	. "github.com/aaarafat/vanessa/apps/network/network"
 	. "github.com/aaarafat/vanessa/apps/network/network/ip"
+	"github.com/aaarafat/vanessa/apps/network/unix"
 )
 
 type PacketFilter struct {
@@ -16,6 +17,7 @@ type PacketFilter struct {
 	srcIP net.IP
 	id    int
 	networkLayer *NetworkLayer 
+	routerSocket *unix.RouterSocket
 }
 
 func newPacketFilter(id int, ifi net.Interface) (*PacketFilter, error) {
@@ -52,6 +54,7 @@ func newPacketFilter(id int, ifi net.Interface) (*PacketFilter, error) {
 		srcIP:  ip,
 		id:     id,
 		networkLayer: NewNetworkLayer(ip),
+		routerSocket: unix.NewRouterSocket(id),
 	}
 
 	return pf, nil
@@ -74,6 +77,7 @@ func NewPacketFilterWithInterface(id int, ifi net.Interface) (*PacketFilter, err
 
 func (pf *PacketFilter) dataCallback(payload []byte) {
 	log.Printf("Received: %s\n", payload)
+	pf.routerSocket.Write(payload)
 }
 
 func (pf *PacketFilter) StealPacket() {
@@ -114,11 +118,20 @@ func (pf *PacketFilter) SendHelloToRSU() {
 	}
 }
 
+func (pf *PacketFilter) sendHelloToAppSockets() {
+	for {
+		time.Sleep(time.Second * 5)
+		msg := fmt.Sprintf("Hello From Router\n")
+		pf.routerSocket.Write([]byte(msg))
+	}
+}
+
 func (pf *PacketFilter) Start() {
 	log.Printf("Starting PacketFilter for IP: %s.....\n", pf.srcIP)
 	go pf.networkLayer.Start()
 	// TODO: REMOVE THIS (for testing)
 	go pf.SendHelloToRSU()
+	go pf.sendHelloToAppSockets()
 	
 	pf.StealPacket()
 }
@@ -128,6 +141,7 @@ func (pf *PacketFilter) Close() {
 	DeleteIPTablesRule()
 	DeleteDefaultGateway()
 
+	pf.routerSocket.Close()
 	pf.networkLayer.Close()
 
 	log.Printf("PacketFilter for IP: %s closed\n", pf.srcIP)
