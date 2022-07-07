@@ -16,6 +16,8 @@ func (r* RSU) handleMessage(payload []byte , from net.HardwareAddr) {
 		r.handleVHBeat(payload,from)
 	case VObstacleType:
 		r.handleVObstacle(payload,from)
+	case VOREQType:
+		r.handleVOREQ(payload,from)
 	default:
 		log.Println("Unknown message type: ", msgType)
 	}
@@ -39,8 +41,21 @@ func (r* RSU)  handleVObstacle(payload []byte , from net.HardwareAddr) {
 		log.Println("Failed to unmarshal VObstacle: ", err)
 		return
 	}
+	r.RARP.Set(obstacle.OriginatorIP.String(), from)
 	r.ethChannel.Broadcast(obstacle.Marshal())
 	r.wlanChannel.Broadcast(obstacle.Marshal())
-	//TODO: Add to Obstacle List
 	r.OTable.Set(obstacle.Position,0)
+}
+
+// handle VOREQ request 
+func (r* RSU) handleVOREQ(payload []byte, from net.HardwareAddr) {
+	VOREQ, err := UnmarshalVOREQ(payload)
+	if err != nil {
+		log.Println("Failed to unmarshal VOREQ: ", err)
+		return
+	}
+	r.RARP.Set(VOREQ.OriginatorIP.String(), from)
+	
+	VOREP := NewVOREPMessage(r.OTable.GetTable())
+	r.wlanChannel.SendTo(VOREP.Marshal(), from)
 }
