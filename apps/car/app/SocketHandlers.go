@@ -74,9 +74,6 @@ func (a *App) updateLocationHandler() {
 			}
 
 			a.updatePosition(&updateLocation.Coordinates)
-
-			a.ipConn.Write(data, a.ip, net.ParseIP(ip.RsuIP))
-			a.unix.Write(data)
 		}
 	}
 }

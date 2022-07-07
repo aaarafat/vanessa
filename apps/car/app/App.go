@@ -1,8 +1,10 @@
 package app
 
 import (
+	"encoding/json"
 	"log"
 	"net"
+	"time"
 
 	"github.com/aaarafat/vanessa/apps/car/unix"
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
@@ -39,6 +41,23 @@ func NewApp(id int) *App {
 	return &App{id: id, ip: ip, unix: unix.NewUnixSocket(id), ipConn: ipConn}
 }
 
+func (a *App) sendCarData() {
+	for {
+		if a.position == nil {
+			continue
+		}
+		updateLocation := unix.UpdateLocationData{Coordinates: *a.position}
+		data, err := json.Marshal(updateLocation)
+		if err != nil {
+			log.Printf("Error encoding update-location data: %v", err)
+			continue
+		}
+		a.ipConn.Write(data, a.ip, net.ParseIP(ip.RsuIP))
+		a.unix.Write(data)
+		time.Sleep(time.Millisecond * DATA_SENDING_INTERVAL_MS)
+	}
+}
+
 func (a *App) updatePosition(pos *unix.Position) {
 	a.position = pos
 	log.Printf("Position updated: lng: %f lat: %f", pos.Lng, pos.Lat)
@@ -48,6 +67,7 @@ func (a *App) Run() {
 	log.Printf("App %d starting.....", a.id)
 	go a.unix.Start()
 	go a.startSocketHandlers()
+	go a.sendCarData()
 	log.Printf("App %d started", a.id)
 }
 
