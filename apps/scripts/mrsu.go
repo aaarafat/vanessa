@@ -9,7 +9,6 @@ func main() {
 
 	rsu:= NewRSU()
 	rsu.Start()
-	for {
-		
+	select {
 	}
 }
