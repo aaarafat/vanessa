@@ -61,7 +61,7 @@ export const Simulation: React.FC = () => {
   const { map, mapDirections } = useContext(MapContext);
   const socket = useContext(SocketContext);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [obstacles, setObstacles] = useState<turf.Feature[]>([]);
   const dispatch = useAppDispatch();
   const { cars, rsus, rsusData } = useAppSelector((state) => state.simulation);
@@ -81,6 +81,7 @@ export const Simulation: React.FC = () => {
           dispatch(addRSU(rsu));
           socketEvents.addRSU(rsu);
         });
+        setLoading(false);
       });
     }
   }, [map, socket, dispatch, rsusData, mapLoaded]);
