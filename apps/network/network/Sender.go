@@ -23,22 +23,17 @@ func (n *NetworkLayer) SendUnicast(packet []byte, destIP net.IP) {
 
 
 func (n *NetworkLayer) addToBuffer(packet []byte, destIP net.IP) {
-	buf, ok := n.packetBuffer.Get(destIP.String())
-	if ok {
-		n.packetBuffer.Set(destIP.String(), append(buf.([][]byte), packet))
-	} else {
-		n.packetBuffer.Set(destIP.String(), [][]byte{packet})
-	}
+	n.packetBuffer.Add(packet, destIP)
 	log.Printf("Added to buffer: %s\n", destIP)
 }
 
 func (n *NetworkLayer) onPathDiscovery(destIP net.IP) {
-	buf, ok := n.packetBuffer.Get(destIP.String())
+	data, ok := n.packetBuffer.Get(destIP)
 	if ok {
-		for _, packet := range buf.([][]byte) {
+		for _, packet := range data {
 			go n.SendUnicast(packet, destIP)
 		}
-		n.packetBuffer.Del(destIP.String())
+		n.packetBuffer.Del(destIP)
 		log.Printf("Removed from buffer: %s\n", destIP)
 	}
 }

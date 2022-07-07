@@ -91,19 +91,9 @@ func (a *Aodv) SendRREQ(destination net.IP) {
 	a.forwarder.ForwardToAll(rreq.Marshal())
 }
 
-func (a *Aodv) SendRREP(destination net.IP, forRSU bool) {
+func (a *Aodv) SendRREP(destination net.IP) {
 	rrep := NewRREPMessage(destination, a.srcIP)
 	rrep.DestinationSeqNum = a.seqNum
-	if forRSU {
-		rrep.DestinationIP = net.ParseIP(ip.RsuIP)
-		rrep.HopCount = 1
-		mac, err := net.ParseMAC(GetRSUMac(2))
-		if err != nil {
-			log.Fatalf("failed to parse MAC: %v", err)
-		}
-		a.routingTable.Update(rrep.DestinationIP, mac, rrep.HopCount, rrep.LifeTime, rrep.DestinationSeqNum, 2)
-	}
-	
 	// broadcast the RREP
 	log.Printf("Sending: %s\n", rrep.String())
 	a.Send(rrep.Marshal(), destination)
@@ -117,11 +107,9 @@ func (a *Aodv) updateRSU() {
 				log.Printf("failed to parse MAC: %v", err)
 				continue
 			}
-			a.routingTable.Update(net.ParseIP(ip.RsuIP), mac, 0, RSUActiveRouteTimeMS, 0, 2)
-		} else {
-			a.routingTable.Del(net.ParseIP(ip.RsuIP))
-		}
-		time.Sleep(time.Millisecond * time.Duration(RSUActiveRouteTimeMS))
+			a.routingTable.Set(net.ParseIP(ip.RsuIP), mac, 0, RSUActiveRouteTimeMS, 0, 2)
+		} 
+		time.Sleep(time.Millisecond * time.Duration(RSUActiveRouteTimeMS / 3))
 	}
 }
 

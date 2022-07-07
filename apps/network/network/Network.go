@@ -8,7 +8,6 @@ import (
 	. "github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/apps/network/protocols"
 	"github.com/aaarafat/vanessa/apps/network/protocols/aodv"
-	"github.com/cornelk/hashmap"
 )
 
 type NetworkLayer struct {
@@ -17,7 +16,7 @@ type NetworkLayer struct {
 	forwarders map[int]*Forwarder
 
 	// buffer to store packets until path is found
-	packetBuffer *hashmap.HashMap
+	packetBuffer *PacketBuffer
 
 	ipConn *IPConnection
 
@@ -34,7 +33,7 @@ func NewNetworkLayer(ip net.IP) *NetworkLayer {
 		ip: ip,
 		channels: make(map[int]*DataLinkLayerChannel),
 		forwarders: make(map[int]*Forwarder),
-		packetBuffer: &hashmap.HashMap{},
+		packetBuffer: NewPacketBuffer(),
 		ipConn: ipConn,
 	}
 
