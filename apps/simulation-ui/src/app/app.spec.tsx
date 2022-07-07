@@ -1,8 +1,10 @@
 import { render } from '@testing-library/react';
+import { Provider } from 'react-redux';
 
 import { BrowserRouter } from 'react-router-dom';
 
 import App from './app';
+import { store } from './store';
 
 jest.mock('mapbox-gl/dist/mapbox-gl', () => ({
   GeolocateControl: jest.fn(),
@@ -18,7 +20,9 @@ describe('App', () => {
   it('should render successfully', () => {
     const { baseElement } = render(
       <BrowserRouter>
-        <App />
+        <Provider store={store}>
+          <App />
+        </Provider>
       </BrowserRouter>
     );
 

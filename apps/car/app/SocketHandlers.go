@@ -3,10 +3,8 @@ package app
 import (
 	"encoding/json"
 	"log"
-	"net"
 
 	"github.com/aaarafat/vanessa/apps/car/unix"
-	"github.com/aaarafat/vanessa/apps/network/network/ip"
 )
 
 func (a *App) startSocketHandlers() {
@@ -31,7 +29,7 @@ func (a *App) obstacleHandler() {
 			}
 
 			// TODO: send it with loopback interface to the router to be processed by the AODV
-			a.ipConn.Write(data, a.ip, net.ParseIP(ip.RsuIP))
+			a.sendObstacle(obstacle.ObstacleCoordinates)
 			a.unix.Write(data)
 		}
 	}
@@ -52,7 +50,6 @@ func (a *App) destinationReachedHandler() {
 				return
 			}
 
-			a.ipConn.Write(data, a.ip, net.ParseIP(ip.RsuIP))
 			a.unix.Write(data)
 		}
 	}

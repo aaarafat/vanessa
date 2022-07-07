@@ -110,13 +110,6 @@ func (pf *PacketFilter) StealPacket() {
 	}
 }
 
-func (pf *PacketFilter) SendHelloToRSU() {
-	for {
-		time.Sleep(time.Second * 5)
-		msg := fmt.Sprintf("Hello From IP: %s\n", pf.srcIP)
-		pf.networkLayer.Send([]byte(msg), pf.srcIP, net.ParseIP(RsuIP))
-	}
-}
 
 func (pf *PacketFilter) sendHelloToAppSockets() {
 	for {
@@ -130,7 +123,6 @@ func (pf *PacketFilter) Start() {
 	log.Printf("Starting PacketFilter for IP: %s.....\n", pf.srcIP)
 	go pf.networkLayer.Start()
 	// TODO: REMOVE THIS (for testing)
-	go pf.SendHelloToRSU()
 	go pf.sendHelloToAppSockets()
 	
 	pf.StealPacket()

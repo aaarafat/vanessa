@@ -7,12 +7,9 @@ import (
 	"net"
 	"os"
 	"time"
-)
 
-type Position struct {
-	Lat float64
-	Lng float64
-}
+	. "github.com/aaarafat/vanessa/apps/network/network/messages"
+)
 
 type Event string
 
