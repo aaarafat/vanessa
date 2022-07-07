@@ -6,5 +6,5 @@ const (
 )
 
 const (
-	PacketTimeoutMS = 5000 // 5 seconds
+	PacketTimeoutMS = 1000 // 1 second
 )
