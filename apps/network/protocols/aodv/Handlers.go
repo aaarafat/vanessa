@@ -5,6 +5,7 @@ import (
 	"net"
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
+	"github.com/aaarafat/vanessa/apps/network/network/ip"
 )
 
 
@@ -41,13 +42,13 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr, IfiIndex int) {
 	a.seqTable.Set(rreq.OriginatorIP, rreq.RREQID)
 
 	// check if the RREQ is for me
-	if rreq.DestinationIP.Equal(a.srcIP) || (rreq.DestinationIP.Equal(net.ParseIP(RsuIP)) && ConnectedToRSU(2)) {
+	if rreq.DestinationIP.Equal(a.srcIP) || (rreq.DestinationIP.Equal(net.ParseIP(ip.RsuIP)) && ConnectedToRSU(2)) {
 		// update the sequence number if it is not unknown
 		if !rreq.HasFlag(RREQFlagU) {
 			a.updateSeqNum(rreq.DestinationSeqNum)
 		}
 		// send a RREP
-		a.SendRREP(rreq.OriginatorIP, rreq.DestinationIP.Equal(net.ParseIP(RsuIP)))
+		a.SendRREP(rreq.OriginatorIP, rreq.DestinationIP.Equal(net.ParseIP(ip.RsuIP)))
 	} else {
 		// increment hop count
 		rreq.HopCount = rreq.HopCount + 1

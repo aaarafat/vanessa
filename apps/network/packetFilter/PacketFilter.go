@@ -9,7 +9,6 @@ import (
 	"github.com/AkihiroSuda/go-netfilter-queue"
 	. "github.com/aaarafat/vanessa/apps/network/network"
 	. "github.com/aaarafat/vanessa/apps/network/network/ip"
-	"github.com/aaarafat/vanessa/apps/network/protocols/aodv"
 )
 
 type PacketFilter struct {
@@ -73,15 +72,8 @@ func NewPacketFilterWithInterface(id int, ifi net.Interface) (*PacketFilter, err
 	return newPacketFilter(id, ifi)
 }
 
-func (pf *PacketFilter) dataCallback(dataByte []byte) {
-	packet, err := UnmarshalPacket(dataByte)
-
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	log.Printf("Received: %s\n", packet.Payload)
+func (pf *PacketFilter) dataCallback(payload []byte) {
+	log.Printf("Received: %s\n", payload)
 }
 
 func (pf *PacketFilter) StealPacket() {
@@ -89,25 +81,26 @@ func (pf *PacketFilter) StealPacket() {
 	for {
 		select {
 		case p := <-packets:
-			packet := p.Packet.Data()
-			header, err := UnmarshalIPHeader(packet)
+			packetBytes := p.Packet.Data()
+			packet, err := UnmarshalPacket(packetBytes)
 			if err != nil {
 				log.Printf("Error decoding IP header: %v\n", err)
 				p.SetVerdict(netfilter.NF_DROP)
 				continue
 			}
 
-			if pf.srcIP.Equal(header.DestIP) {
-				pf.dataCallback(packet)
+			if pf.srcIP.Equal(packet.Header.DestIP) {
+				pf.dataCallback(packet.Payload)
 				p.SetVerdict(netfilter.NF_ACCEPT)
 
 				// TODO : grpc call to the router to process the packet
 			} else {
 				p.SetVerdict(netfilter.NF_DROP)
 
-				Update(packet)
+				Update(packetBytes)
 
-				go pf.networkLayer.SendUnicast(packet, header.DestIP)
+				log.Printf("Sending packet %s to %s\n", packet.Payload, packet.Header.DestIP)
+				go pf.networkLayer.SendUnicast(packetBytes, packet.Header.DestIP)
 			}
 		}
 	}
@@ -117,7 +110,7 @@ func (pf *PacketFilter) SendHelloToRSU() {
 	for {
 		time.Sleep(time.Second * 5)
 		msg := fmt.Sprintf("Hello From IP: %s\n", pf.srcIP)
-		pf.networkLayer.Send([]byte(msg), pf.srcIP, net.ParseIP(aodv.RsuIP))
+		pf.networkLayer.Send([]byte(msg), pf.srcIP, net.ParseIP(RsuIP))
 	}
 }
 

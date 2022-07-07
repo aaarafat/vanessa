@@ -16,13 +16,15 @@ func NewIPConnection() (*IPConnection, error) {
 		return nil, err
 	}
 	
+	log.Printf("Opened IP connection with fd: %d\n", fd)
+
 	return &IPConnection{
 		fd:     fd,
 	}, nil
 }
 
 func (c *IPConnection) Write(payload []byte, srcIp, destIp net.IP) error {
-	// 127.0.0.1 for loopback
+	log.Printf("Writing Raw Sockets with payload %s to %s\n", payload, destIp)
 	packet := NewIPPacket(payload, srcIp, destIp)
 	packetBytes := MarshalIPPacket(packet)
 	UpdateChecksum(packetBytes)
@@ -31,6 +33,7 @@ func (c *IPConnection) Write(payload []byte, srcIp, destIp net.IP) error {
 }
 
 func (c *IPConnection) Forward(packet []byte) error {
+	// 127.0.0.1 for loopback
 	err := syscall.Sendto(c.fd, packet, 0, &syscall.SockaddrInet4{Port: 0, Addr: [4]byte{127, 0, 0, 1}})
 	if err != nil {
 		log.Printf("failed to send data: %v", err)

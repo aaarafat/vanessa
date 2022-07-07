@@ -17,6 +17,7 @@ func initLogger(debug bool, id int) {
 		log.SetOutput(os.Stdout)
 		return // don't do anything if debug is false
 	}
+	// delete logs
 	err := os.MkdirAll("/var/log/vanessa", 0777)
 	if err != nil && !os.IsExist(err) {
 		fmt.Printf("Error creating logs directory: %s\n", err)

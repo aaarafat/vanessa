@@ -6,6 +6,7 @@ import (
 	"net"
 
 	"github.com/aaarafat/vanessa/apps/car/unix"
+	"github.com/aaarafat/vanessa/apps/network/network/ip"
 )
 
 func (a *App) startSocketHandlers() {
@@ -28,10 +29,9 @@ func (a *App) obstacleHandler() {
 				log.Printf("Error decoding obstacle-detected data: %v", err)
 				return
 			}
-			log.Printf("Sockets : Obstacle detected: %v\n", data)
 
 			// TODO: send it with loopback interface to the router to be processed by the AODV
-			go a.ipConn.Write(data, a.ip, net.ParseIP(RSUIP))
+			a.ipConn.Write(data, a.ip, net.ParseIP(ip.RsuIP))
 			a.unix.Write(data)
 		}
 	}
@@ -51,9 +51,8 @@ func (a *App) destinationReachedHandler() {
 				log.Printf("Error decoding destination-reached data: %v", err)
 				return
 			}
-			log.Printf("Sockets : destination-reached: %v\n", data)
 
-			go a.ipConn.Write(data, a.ip, net.ParseIP(RSUIP))
+			a.ipConn.Write(data, a.ip, net.ParseIP(ip.RsuIP))
 			a.unix.Write(data)
 		}
 	}
@@ -76,7 +75,7 @@ func (a *App) updateLocationHandler() {
 
 			a.updatePosition(&updateLocation.Coordinates)
 
-			go a.ipConn.Write(data, a.ip, net.ParseIP(RSUIP))
+			a.ipConn.Write(data, a.ip, net.ParseIP(ip.RsuIP))
 			a.unix.Write(data)
 		}
 	}

@@ -47,6 +47,7 @@ func (a *App) updatePosition(pos *unix.Position) {
 func (a *App) Run() {
 	log.Printf("App %d starting.....", a.id)
 	go a.unix.Start()
+	go a.startSocketHandlers()
 	log.Printf("App %d started", a.id)
 }
 

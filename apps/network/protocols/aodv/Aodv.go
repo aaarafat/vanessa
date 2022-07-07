@@ -5,6 +5,7 @@ import (
 	"net"
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
+	"github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/apps/network/protocols"
 )
 
@@ -51,7 +52,7 @@ func (a *Aodv) GetRoute(destIP net.IP) (*VRoute, bool) {
 		return NewVRoute(item.Destination, item.NextHop, item.IfiIndex, int(item.NoOfHops)), true
 	} 
 
-	if destIP.Equal(net.ParseIP(RsuIP)) && ConnectedToRSU(2) {
+	if destIP.Equal(net.ParseIP(ip.RsuIP)) && ConnectedToRSU(2) {
 		mac, err := net.ParseMAC(GetRSUMac(2))
 		if err != nil {
 			log.Fatalf("failed to parse mac: %v", err)
@@ -100,7 +101,7 @@ func (a *Aodv) SendRREP(destination net.IP, forRSU bool) {
 	rrep := NewRREPMessage(destination, a.srcIP)
 	rrep.DestinationSeqNum = a.seqNum
 	if forRSU {
-		rrep.DestinationIP = net.ParseIP(RsuIP)
+		rrep.DestinationIP = net.ParseIP(ip.RsuIP)
 		rrep.HopCount = 1
 		mac, err := net.ParseMAC(GetRSUMac(2))
 		if err != nil {

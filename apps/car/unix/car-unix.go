@@ -58,15 +58,18 @@ func (u *UnixSocket) Subscribe(topic Event, subscriber *Subscriber) {
 		u.topics[topic] = []*Subscriber{}
 	}
 	u.topics[topic] = append(u.topics[topic], subscriber)
+	log.Printf("Subscribed to %s\n", topic)
 }
 
-func (u *UnixSocket) Publish(topic Event, message json.RawMessage) {
+func (u *UnixSocket) publish(topic Event, message json.RawMessage) {
 	if u.topics[topic] == nil {
+		log.Printf("No subscribers for %s\n", topic)
 		return
 	}
 	for _, subscriber := range u.topics[topic] {
 		*subscriber.Messages <- message
 	}
+	log.Printf("Published to %s\n", topic)
 }
 
 func (unix *UnixSocket) reader(d *json.Decoder) {
@@ -95,7 +98,7 @@ func (unix *UnixSocket) reader(d *json.Decoder) {
 				return
 			}
 			log.Printf("Destination reached: %v\n", p)
-			unix.Publish(DestinationReachedEvent, m["data"])
+			unix.publish(DestinationReachedEvent, m["data"])
 
 		case ObstacleDetectedEvent:
 			var p ObstacleDetectedData
@@ -105,7 +108,7 @@ func (unix *UnixSocket) reader(d *json.Decoder) {
 				return
 			}
 			log.Printf("Obstacle detected: %v\n", p)
-			unix.Publish(ObstacleDetectedEvent, m["data"])
+			unix.publish(ObstacleDetectedEvent, m["data"])
 
 		case AddCarEvent:
 			var p AddCarData
@@ -115,7 +118,7 @@ func (unix *UnixSocket) reader(d *json.Decoder) {
 				return
 			}
 			log.Printf("Car added: %v\n", p)
-			unix.Publish(AddCarEvent, m["data"])
+			unix.publish(AddCarEvent, m["data"])
 
 		case UpdateLocationEvent:
 			var p UpdateLocationData
@@ -125,13 +128,13 @@ func (unix *UnixSocket) reader(d *json.Decoder) {
 				return
 			}
 			log.Printf("Updated Location: %v\n", p)
-			unix.Publish(UpdateLocationEvent, m["data"])
+			unix.publish(UpdateLocationEvent, m["data"])
 		}
 	}
 }
 
 func (unix *UnixSocket) Write(message any) {
-	log.Printf("Writing: %v\n", message)
+	log.Printf("Writing to socket...\n")
 	conn, err := unix.initUnixWriteSocket()
 	if err != nil {
 		log.Printf("Error: %v\n", err)

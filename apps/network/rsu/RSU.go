@@ -7,7 +7,6 @@ import (
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
 	. "github.com/aaarafat/vanessa/apps/network/network/ip"
-	"github.com/aaarafat/vanessa/apps/network/protocols/aodv"
 )
 
 type RSU struct {
@@ -41,7 +40,7 @@ func NewRSU() *RSU {
 	ethChannel := createETHChannel()
 	wlanChannel := createWLANChannel()
 	return &RSU{
-		ip: net.ParseIP(aodv.RsuIP),
+		ip: net.ParseIP(RsuIP),
 		ethChannel: ethChannel,
 		wlanChannel: wlanChannel,
 	}
