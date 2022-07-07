@@ -36,7 +36,7 @@ export const socketEvents = {
       id: car.id,
       coordinates: car.coordinates,
     };
-    socket.emit('update-location', message);
+    socket.volatile.emit('update-location', message);
   },
   addRSU: (rsu: RSU) => {
     const message = {
