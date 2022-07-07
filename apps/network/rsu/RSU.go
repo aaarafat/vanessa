@@ -15,6 +15,7 @@ type RSU struct {
 	ethChannel *DataLinkLayerChannel
 	wlanChannel *DataLinkLayerChannel
 	RARP *RSUARP
+	OTable *ObstaclesTable
 }
 
 const (
@@ -42,11 +43,13 @@ func NewRSU() *RSU {
 	ethChannel := createETHChannel()
 	wlanChannel := createWLANChannel()
 	RARP := NewRSUARP()
+	OTable := NewObstaclesTable()
 	return &RSU{
 		ip: net.ParseIP(aodv.RsuIP), // TODO extract RSUIP out from aodv
 		ethChannel: ethChannel,
 		wlanChannel: wlanChannel,
 		RARP: RARP,
+		OTable: OTable,
 	}
 }
 
