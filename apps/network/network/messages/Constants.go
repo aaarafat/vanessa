@@ -7,6 +7,18 @@ type Position struct {
 	Lng float64
 }
 
+// Postion to byte array marashalling
+func (p Position) Marshal() []byte {
+	return append(Float64bytes(p.Lat), Float64bytes(p.Lng)...)
+}
+// Position from byte array unmarshalling
+func UnmarshalPosition(data []byte) Position {
+	return Position{
+		Lat: Float64frombytes(data[:8]),
+		Lng: Float64frombytes(data[8:]),
+	}
+}
+
 // Heart beat message from car to the associated RSU
 type VHBeatMessage struct {
 	// Type

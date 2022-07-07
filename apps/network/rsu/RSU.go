@@ -92,7 +92,7 @@ func (r *RSU) readFromWLANInterface() {
 		}
 
 		log.Printf("Received \"%s\" from: [%s] on intf-%d", string(packet.Payload), addr.String(), RSUWLANInterface)
-		// TODO: Forward up with callback to decide what to do
+		
 		r.handleMessage(packet.Payload, addr)
 	}
 }
