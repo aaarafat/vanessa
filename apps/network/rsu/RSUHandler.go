@@ -42,4 +42,5 @@ func (r* RSU)  handleVObstacle(payload []byte , from net.HardwareAddr) {
 	r.ethChannel.Broadcast(obstacle.Marshal())
 	r.wlanChannel.Broadcast(obstacle.Marshal())
 	//TODO: Add to Obstacle List
+	r.OTable.Set(obstacle.Position,0)
 }
