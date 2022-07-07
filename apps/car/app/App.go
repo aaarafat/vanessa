@@ -22,6 +22,8 @@ type App struct {
 
 	// to connect to the simulator (read sensor data)
 	unix *unix.UnixSocket
+	// to connect to the router 
+	router *unix.Router
 }
 
 func NewApp(id int) *App {
@@ -38,7 +40,13 @@ func NewApp(id int) *App {
 		return nil
 	}
 
-	return &App{id: id, ip: ip, unix: unix.NewUnixSocket(id), ipConn: ipConn}
+	return &App{
+		id: id, 
+		ip: ip, 
+		unix: unix.NewUnixSocket(id), 
+		ipConn: ipConn, 
+		router: unix.NewRouter(id),
+	}
 }
 
 func (a *App) sendCarData() {
@@ -66,6 +74,7 @@ func (a *App) updatePosition(pos *unix.Position) {
 func (a *App) Run() {
 	log.Printf("App %d starting.....", a.id)
 	go a.unix.Start()
+	go a.router.Start()
 	go a.startSocketHandlers()
 	go a.sendCarData()
 	log.Printf("App %d started", a.id)
