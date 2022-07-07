@@ -2,6 +2,11 @@ package messages
 
 import "net"
 
+type Position struct {
+	Lat float64
+	Lng float64
+}
+
 // Heart beat message from car to the associated RSU
 type VHBeatMessage struct {
 	// Type
@@ -39,10 +44,10 @@ type VOREQMessage struct {
 type VOREPMessage struct {
 	// Type
 	Type uint8  
-	// length of the list of obstacles
+	// length of the list of Obstcales
 	Length uint8
-	// content of the list of obstacles
-	Obstacles string
+	// content of the list of Obstcales
+	Obstcales []byte
 
 }
 
