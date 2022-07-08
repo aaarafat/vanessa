@@ -15,8 +15,8 @@ func (p Position) Marshal() []byte {
 // Position from byte array unmarshalling
 func UnmarshalPosition(data []byte) Position {
 	return Position{
-		Lat: Float64frombytes(data[:8]),
-		Lng: Float64frombytes(data[8:]),
+		Lat: Float64FromBytes(data[:8]),
+		Lng: Float64FromBytes(data[8:]),
 	}
 }
 
@@ -55,7 +55,7 @@ type VOREPMessage struct {
 	// length of the list of Obstcales
 	Length uint8
 	// content of the list of Obstcales
-	Obstcales []byte
+	Obstacles []byte
 }
 
 const (

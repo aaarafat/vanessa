@@ -50,3 +50,13 @@ func (a *App) addObstacle(pos Position, fromSensor bool) {
 	a.state.Obstacles = append(a.state.Obstacles, pos)
 	log.Printf("Obstacle added: lng: %f lat: %f", pos.Lng, pos.Lat)
 }
+
+func (a *App) updateObstacles(obstacles []Position) {
+	a.stateLock.Lock()
+	defer a.stateLock.Unlock()
+	if a.state == nil {
+		return
+	}
+	a.state.Obstacles = obstacles
+	log.Printf("Obstacles updated: %v", obstacles)
+}
