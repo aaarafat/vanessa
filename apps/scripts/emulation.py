@@ -169,6 +169,8 @@ def add_car(message):
 
     st.cmd(f"sudo dist/apps/network -id {id} -name car -debug &")
     st.cmd(f"sudo dist/apps/car -id {id} -debug &")
+    os.system(
+        f"socat TCP4-LISTEN:{message['port']},fork,reuseaddr UNIX-CONNECT:/tmp/car{id}.ui.socket &")
 
     payload = {
         'type': 'add-car',

@@ -13,6 +13,7 @@ export const socketEvents = {
     const message = {
       id: car.id,
       coordinates: car.coordinates,
+      port: car.port,
     };
     socket.emit('add-car', message);
   },
@@ -43,6 +44,7 @@ export const socketEvents = {
       id: rsu.id,
       coordinates: rsu.coordinates,
       range: rsu.radius * 1000,
+      port: rsu.port,
     };
     socket.emit('add-rsu', message);
   },

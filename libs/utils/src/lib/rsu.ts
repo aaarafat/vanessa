@@ -28,7 +28,7 @@ export class RSU {
   private handlers: Record<string, ((...arg: any) => void)[]>;
   private wasFlyingToRSU: boolean;
 
-  private port: number;
+  public port: number;
 
   constructor(rsu: PartialExcept<IRSU, 'map'>) {
     this.id = rsu.id || Date.now();

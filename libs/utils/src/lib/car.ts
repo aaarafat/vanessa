@@ -50,7 +50,7 @@ export class Car {
   private focused: boolean;
   private stopped = false;
 
-  private port: number;
+  public port: number;
 
   constructor(car: PartialExcept<ICar, 'map'>, { displayOnly = false } = {}) {
     this.id = car.id || Date.now();
