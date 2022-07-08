@@ -35,8 +35,10 @@ func initLogger(debug bool, id int) {
 func main() {
 	var id int
 	var debug bool
+	var ui string
 	flag.IntVar(&id, "id", 0, "id of the car")
 	flag.BoolVar(&debug, "debug", false, "debug mode")
+	flag.StringVar(&ui, "ui", "", "ui socket file address")
 	flag.Parse()
 
 	initLogger(debug, id)

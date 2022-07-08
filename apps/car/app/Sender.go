@@ -12,10 +12,7 @@ import (
 
 func (a *App) sendHeartBeat() {
 	for {
-		if a.position == nil {
-			continue
-		}
-		data := NewVHBeatMessage(a.ip, *a.position).Marshal()
+		data := NewVHBeatMessage(a.ip, Position{Lng: a.state.Lng, Lat: a.state.Lat}).Marshal()
 		a.ipConn.Write(data, a.ip, net.ParseIP(ip.RsuIP))
 		time.Sleep(time.Millisecond * DATA_SENDING_INTERVAL_MS)
 	}
