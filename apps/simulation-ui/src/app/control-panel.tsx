@@ -1,9 +1,7 @@
 import React, { useContext, useEffect } from 'react';
-import { CLICK_SOURCE_ID } from './constants';
 import { Coordinates, ICar } from '@vanessa/utils';
 import { MapContext } from '@vanessa/map';
 import styled from 'styled-components';
-import { useParams } from 'react-router-dom';
 
 const Container = styled.div<{ open: boolean }>`
   display: flex;
@@ -21,6 +19,7 @@ const Container = styled.div<{ open: boolean }>`
   align-items: stretch;
   transition: left 0.3s ease-in-out;
   flex-direction: column;
+  overflow: auto;
 `;
 
 const Form = styled.form`
@@ -91,9 +90,6 @@ const ControlPanel: React.FC<{
   const [carInputs, setCarInputs] = React.useState<Partial<ICar>>(initialState);
   const [accidentInput, setAccidentInput] = React.useState<Coordinates>();
   const [isOpen, setIsOpen] = React.useState(true);
-  const { id } = useParams<{
-    id: string;
-  }>();
 
   const handleCarInputsChange = (newValue: Partial<ICar>) => {
     setCarInputs((prev) => ({
@@ -107,17 +103,6 @@ const ControlPanel: React.FC<{
       // add directions controller
       map.addControl(mapDirections, 'top-right');
 
-      // add click source on load
-      map.on('load', () => {
-        map.addSource(CLICK_SOURCE_ID, {
-          type: 'geojson',
-          data: {
-            type: 'FeatureCollection',
-            features: [],
-          },
-        });
-      });
-
       mapDirections.on('route', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const directions = (map.getSource('directions') as any)
@@ -128,28 +113,15 @@ const ControlPanel: React.FC<{
           (f: GeoJSON.Feature) => f.properties?.route === 'selected'
         );
 
-        if (feature?.geometry.type === 'LineString') {
-          const [lng, lat] = feature.geometry.coordinates[0] || [];
-          const route = feature?.geometry.coordinates.map(
-            (el: number[]): Coordinates => {
-              return { lng: el[0], lat: el[1] };
-            }
-          );
+        if (feature?.geometry.type !== 'LineString') return;
+        const coordinates = feature.geometry.coordinates;
+        const route: Coordinates[] = coordinates.map(
+          ([lng, lat]: number[]) => ({ lng, lat })
+        );
 
-          handleCarInputsChange({
-            lng,
-            lat,
-            route,
-          });
-
-          // we can create car here
-          (map.getSource(CLICK_SOURCE_ID) as mapboxgl.GeoJSONSource).setData(
-            coordsToFeature({
-              lng,
-              lat,
-            })
-          );
-        }
+        handleCarInputsChange({
+          route,
+        });
       });
 
       mapDirections.on('reset', () => {
@@ -218,27 +190,5 @@ const ControlPanel: React.FC<{
     </>
   );
 };
-
-function coordsToFeature({
-  lng,
-  lat,
-}: {
-  lng: number;
-  lat: number;
-}): GeoJSON.FeatureCollection {
-  return {
-    type: 'FeatureCollection',
-    features: [
-      {
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [+lng, +lat],
-        },
-        properties: {},
-      },
-    ],
-  };
-}
 
 export default ControlPanel;
