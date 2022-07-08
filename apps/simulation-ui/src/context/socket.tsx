@@ -42,7 +42,7 @@ export const socketEvents = {
     const message = {
       id: rsu.id,
       coordinates: rsu.coordinates,
-      range: rsu.radius,
+      range: rsu.radius * 1000,
     };
     socket.emit('add-rsu', message);
   },
