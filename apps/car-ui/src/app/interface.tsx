@@ -4,10 +4,12 @@ import styled, { keyframes } from 'styled-components';
 import { Car, ICar } from '@vanessa/utils';
 import * as turf from '@turf/turf';
 import mapboxgl from 'mapbox-gl';
-import { EventSourceContext } from '../context';
+import { useEventSource } from '../hooks';
 import { useHistory, useParams } from 'react-router-dom';
 import MessagesViewer from './messages-viewer';
 import { ConnectionErrorAlert } from './connection-error-alert';
+import { useAppDispatch, useAppSelector } from '../store';
+import { initCar } from '../store/carSlice';
 
 type carState = Omit<ICar, 'map'>;
 
@@ -44,14 +46,15 @@ const LoaderContainer = styled.div`
   justify-content: center;
 `;
 
-let car: Car;
 export const Interface: React.FC = () => {
   const { map } = useContext(MapContext);
-  const [eventSource, setEventSource] = useContext(EventSourceContext);
+  const [eventSource, setEventSource] = useEventSource();
   const [connectionError, setConnectionError] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [obstacles, setObstacles] = useState<turf.Feature[]>([]);
+  // const [obstacles, setObstacles] = useState<turf.Feature[]>([]);
+  const { car, obstacles } = useAppSelector((state) => state.car);
+  const dispatch = useAppDispatch();
   const { port } = useParams<{
     port: string;
   }>();
@@ -84,11 +87,11 @@ export const Interface: React.FC = () => {
       }
       const state = await fetch(`http://localhost:${port}/state`);
       const json: carState = await state.json();
-      car = new Car({ ...json, map }, { displayOnly: true });
+      dispatch(initCar(new Car({ ...json, map }, { displayOnly: true })));
       setEventSource(new EventSource(`http://localhost:${port}`));
     } catch (e) {
-      console.log(e);
       setConnectionError(true);
+      setEventSource(null);
     } finally {
       setLoading(false);
     }
