@@ -7,6 +7,7 @@ import (
 
 	"github.com/aaarafat/vanessa/apps/car/unix"
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
+	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 )
 
 type App struct {
@@ -55,6 +56,8 @@ func NewApp(id int) *App {
 
 	app.ui = unix.NewUiUnix(id, app.GetState)
 
+	app.initState(0, []Position{}, Position{Lng: 0, Lat: 0})
+
 	return &app
 }
 
@@ -74,5 +77,6 @@ func (a *App) Stop() {
 	log.Printf("App %d stopping", a.id)
 	a.ipConn.Close()
 	a.ui.Close()
+	a.sensor.Close()
 	log.Printf("App %d stopped", a.id)
 }

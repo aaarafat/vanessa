@@ -232,7 +232,7 @@ def recieve_from_car(car_socket):
 
 def send_to_car(car_socket, payload):
     try:
-        client = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         client.connect(car_socket)
         client.send(json.dumps(payload).encode('ASCII'))
     except Exception as e:

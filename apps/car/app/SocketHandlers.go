@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/aaarafat/vanessa/apps/car/unix"
-	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 )
 
 func (a *App) startSocketHandlers() {
@@ -30,9 +29,7 @@ func (a *App) addCarHandler() {
 				return
 			}
 
-			go func() {
-				a.initState(addCar.Speed, []Position{}, addCar.Coordinates)
-			}()
+			a.initState(addCar.Speed, addCar.Route, addCar.Coordinates)
 		}
 	}
 }

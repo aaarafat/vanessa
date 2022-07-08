@@ -44,6 +44,7 @@ type Subscriber struct {
 
 type SensorUnix struct {
 	id     int
+	server *net.UnixListener
 	topics map[Event][]*Subscriber
 }
 
@@ -72,63 +73,58 @@ func (u *SensorUnix) publish(topic Event, message json.RawMessage) {
 
 func (unix *SensorUnix) reader(d *json.Decoder) {
 	var m map[string]json.RawMessage
-	for {
-		b := make([]byte, 1024)
-		d.Buffered().Read(b)
-		log.Printf("Reading from socket %s\n", b)
-		err := d.Decode(&m)
+	err := d.Decode(&m)
+	if err != nil {
+		log.Printf("Error: %v\n", err)
+		return
+	}
+
+	var eventType Event
+	err = json.Unmarshal(m["type"], &eventType)
+	if err != nil {
+		log.Printf("Error: %v\n", err)
+		return
+	}
+
+	switch eventType {
+	case DestinationReachedEvent:
+		var p DestinationReachedData
+		err := json.Unmarshal(m["data"], &p)
 		if err != nil {
-			log.Printf("Error: %v\n", err)
+			log.Printf("Error decoding destination-reached data: %v", err)
 			return
 		}
+		log.Printf("Destination reached: %v\n", p)
+		unix.publish(DestinationReachedEvent, m["data"])
 
-		var eventType Event
-		err = json.Unmarshal(m["type"], &eventType)
+	case ObstacleDetectedEvent:
+		var p ObstacleDetectedData
+		err := json.Unmarshal(m["data"], &p)
 		if err != nil {
-			log.Printf("Error: %v\n", err)
+			log.Printf("Error decoding obstacle-detected data: %v", err)
 			return
 		}
+		log.Printf("Obstacle detected: %v\n", p)
+		unix.publish(ObstacleDetectedEvent, m["data"])
 
-		switch eventType {
-		case DestinationReachedEvent:
-			var p DestinationReachedData
-			err := json.Unmarshal(m["data"], &p)
-			if err != nil {
-				log.Printf("Error decoding destination-reached data: %v", err)
-				return
-			}
-			log.Printf("Destination reached: %v\n", p)
-			unix.publish(DestinationReachedEvent, m["data"])
-
-		case ObstacleDetectedEvent:
-			var p ObstacleDetectedData
-			err := json.Unmarshal(m["data"], &p)
-			if err != nil {
-				log.Printf("Error decoding obstacle-detected data: %v", err)
-				return
-			}
-			log.Printf("Obstacle detected: %v\n", p)
-			unix.publish(ObstacleDetectedEvent, m["data"])
-
-		case AddCarEvent:
-			var p AddCarData
-			err := json.Unmarshal(m["data"], &p)
-			if err != nil {
-				log.Printf("Error decoding add-car data: %v", err)
-				return
-			}
-			log.Printf("Car added: %v\n", p)
-			unix.publish(AddCarEvent, m["data"])
-
-		case UpdateLocationEvent:
-			var p UpdateLocationData
-			err := json.Unmarshal(m["data"], &p)
-			if err != nil {
-				log.Printf("Error: %v", err)
-				return
-			}
-			unix.publish(UpdateLocationEvent, m["data"])
+	case AddCarEvent:
+		var p AddCarData
+		err := json.Unmarshal(m["data"], &p)
+		if err != nil {
+			log.Printf("Error decoding add-car data: %v", err)
+			return
 		}
+		log.Printf("Car added: %v\n", p)
+		unix.publish(AddCarEvent, m["data"])
+
+	case UpdateLocationEvent:
+		var p UpdateLocationData
+		err := json.Unmarshal(m["data"], &p)
+		if err != nil {
+			log.Printf("Error: %v", err)
+			return
+		}
+		unix.publish(UpdateLocationEvent, m["data"])
 	}
 }
 
@@ -154,7 +150,7 @@ func (unix *SensorUnix) Write(message any) {
 func (unix *SensorUnix) initUnixWriteSocket() (net.Conn, error) {
 	addr := fmt.Sprintf("/tmp/car%dwrite.socket", unix.id)
 	log.Printf("Connecting to %s\n", addr)
-	conn, err := net.Dial("unixgram", addr)
+	conn, err := net.Dial("unix", addr)
 	if err != nil {
 		log.Printf("Error: %v\n", err)
 		return nil, err
@@ -171,23 +167,37 @@ func (unix *SensorUnix) Start() {
 		os.Exit(1)
 	}
 
-	addr, err := net.ResolveUnixAddr("unixgram", socketAddress)
+	addr, err := net.ResolveUnixAddr("unix", socketAddress)
 	if err != nil {
 		log.Printf("Failed to resolve: %v\n", err)
 		os.Exit(1)
 	}
 
-	conn, err := net.ListenUnixgram("unixgram", addr)
+	server, err := net.ListenUnix("unix", addr)
 	if err != nil {
 		log.Printf("Failed to resolve: %v\n", err)
 		os.Exit(1)
 	}
-	defer conn.Close()
 
-	d := json.NewDecoder(conn)
+	unix.server = server
+
 	log.Printf("Listening to %s ..\n", socketAddress)
 
-	// go unix.testWrite()
+	go func() {
+		for {
+			conn, err := server.Accept()
+			if err != nil {
+				log.Printf("Error: %v\n", err)
+				continue
+			}
+			d := json.NewDecoder(conn)
+			unix.reader(d)
+			conn.Close()
+		}
+	}()
+}
 
-	unix.reader(d)
+
+func (u *SensorUnix) Close() {
+	u.server.Close()
 }
