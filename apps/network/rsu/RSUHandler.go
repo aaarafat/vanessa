@@ -8,25 +8,45 @@ import (
 	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 )
 
-
-func (r* RSU) handleMessage(packet ip.IPPacket , from net.HardwareAddr) {
+func (r *RSU) handleMessage(packet ip.IPPacket, from net.HardwareAddr) {
 
 	payload := packet.Payload
 	msgType := uint8(payload[0])
 	// handle the message
 	switch msgType {
 	case VHBeatType:
-		r.handleVHBeat(payload,from)
+		r.handleVHBeat(payload, from)
 	case VObstacleType:
-		r.handleVObstacle(packet,from)
+		r.handleVObstacle(packet, from)
 	case VOREQType:
-		r.handleVOREQ(payload,from)
+		r.handleVOREQ(payload, from)
 	default:
 		log.Println("Unknown message type: ", msgType)
 	}
 }
 
-func (r* RSU) handleVHBeat(payload []byte, from net.HardwareAddr) {
+func (r *RSU) handleEthMessages(packet ip.IPPacket, from net.HardwareAddr) {
+	payload := packet.Payload
+	msgType := uint8(payload[0])
+	// handle the message
+	switch msgType {
+	case VObstacleType:
+		obstacle, err := UnmarshalVObstacle(payload)
+		if err != nil {
+			log.Println("Failed to unmarshal VObstacle: ", err)
+			return
+		}
+		log.Println("Recieved Obstacle from: ", obstacle.OriginatorIP.String(), " at: ", obstacle.Position)
+		bytes := ip.MarshalIPPacket(&packet)
+		ip.Update(bytes)
+		r.wlanChannel.Broadcast(bytes)
+		r.OTable.Set(obstacle.Position, 0)
+	default:
+		log.Println("Unknown message type: ", msgType)
+	}
+}
+
+func (r *RSU) handleVHBeat(payload []byte, from net.HardwareAddr) {
 
 	HBeat, err := UnmarshalVHBeat(payload)
 	if err != nil {
@@ -38,7 +58,7 @@ func (r* RSU) handleVHBeat(payload []byte, from net.HardwareAddr) {
 
 }
 
-func (r* RSU)  handleVObstacle(packet ip.IPPacket , from net.HardwareAddr) {
+func (r *RSU) handleVObstacle(packet ip.IPPacket, from net.HardwareAddr) {
 	payload := packet.Payload
 	obstacle, err := UnmarshalVObstacle(payload)
 	if err != nil {
@@ -51,11 +71,11 @@ func (r* RSU)  handleVObstacle(packet ip.IPPacket , from net.HardwareAddr) {
 	ip.Update(bytes)
 	r.ethChannel.Broadcast(bytes)
 	r.sendToALLWLANInterface(bytes, obstacle.OriginatorIP.String())
-	r.OTable.Set(obstacle.Position,0)
+	r.OTable.Set(obstacle.Position, 0)
 }
 
-// handle VOREQ request 
-func (r* RSU) handleVOREQ(payload []byte, from net.HardwareAddr) {
+// handle VOREQ request
+func (r *RSU) handleVOREQ(payload []byte, from net.HardwareAddr) {
 	VOREQ, err := UnmarshalVOREQ(payload)
 	if err != nil {
 		log.Println("Failed to unmarshal VOREQ: ", err)
@@ -63,20 +83,19 @@ func (r* RSU) handleVOREQ(payload []byte, from net.HardwareAddr) {
 	}
 	r.RARP.Set(VOREQ.OriginatorIP.String(), from)
 	log.Println("Recieved VOREQ from: ", VOREQ.OriginatorIP.String())
-	
+
 	VOREP := NewVOREPMessage(r.OTable.GetTable())
 	log.Println("Send VOREP to: ", VOREQ.OriginatorIP.String())
 
-	packet := ip.NewIPPacket(VOREP.Marshal(), r.ip, net.IPv4(255,255,255,255))
+	packet := ip.NewIPPacket(VOREP.Marshal(), r.ip, net.IPv4(255, 255, 255, 255))
 	bytes := ip.MarshalIPPacket(packet)
 	ip.UpdateChecksum(bytes)
 	r.wlanChannel.SendTo(bytes, from)
 }
 
-
 // Send to all in RSUARP using wlan exept the one that sent the message
-func (r* RSU) sendToALLWLANInterface(data []byte, originatorIP string) {
-	for ip , entry := range r.RARP.table {
+func (r *RSU) sendToALLWLANInterface(data []byte, originatorIP string) {
+	for ip, entry := range r.RARP.table {
 		if originatorIP == ip {
 			continue
 		}
