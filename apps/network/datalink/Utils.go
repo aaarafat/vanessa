@@ -7,7 +7,6 @@ import (
 	"strings"
 )
 
-
 func CreateChannel(eth Ethertype, ifiIndex int) (*DataLinkLayerChannel, error) {
 	interfaces, err := net.Interfaces()
 	if err != nil {

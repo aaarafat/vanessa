@@ -6,6 +6,14 @@ import (
 	"sync"
 )
 
+type IForwarder interface {
+	ForwardTo(payload []byte, addr net.HardwareAddr)
+	ForwardToAll(payload []byte)
+	ForwardToAllExcept(payload []byte, addr net.HardwareAddr)
+	Start()
+	Close()
+}
+
 type Forwarder struct {
 	neighborsTable *VNeighborTable
 	channel *DataLinkLayerChannel

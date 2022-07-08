@@ -13,7 +13,7 @@ import (
 
 type Aodv struct {
 	channel *DataLinkLayerChannel
-	forwarder *Forwarder
+	forwarder IForwarder
 	srcIP net.IP
 
 	// Sequence number
@@ -30,8 +30,8 @@ type Aodv struct {
 }
 
 
-func NewAodv(srcIP net.IP, pathDiscoveryCallback func(net.IP)) *Aodv {
-	channel, err := CreateChannel(VAODVEtherType, 1)
+func NewAodv(srcIP net.IP, IfiIndex int, pathDiscoveryCallback func(net.IP)) *Aodv {
+	channel, err := CreateChannel(VAODVEtherType, IfiIndex)
 	if err != nil {
 		log.Fatalf("failed to create channel: %v", err)
 	}
@@ -59,13 +59,14 @@ func (a *Aodv) GetRoute(destIP net.IP) (*VRoute, bool) {
 	return nil, false
 }
 
-func (a *Aodv) BuildRoute(destIP net.IP) {
+func (a *Aodv) BuildRoute(destIP net.IP) (started bool) {
 	if a.inRREQBuffer(destIP) {
-		return
+		return false
 	}
 	
 	log.Printf("Building route for IP: %s.....\n", destIP)
 	a.SendRREQ(destIP)
+	return true
 }
 
 func (a *Aodv) Send(payload []byte, dest net.IP) {

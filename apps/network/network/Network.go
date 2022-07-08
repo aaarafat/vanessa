@@ -10,6 +10,10 @@ import (
 	"github.com/aaarafat/vanessa/apps/network/protocols/aodv"
 )
 
+const (
+	UNICAST_IFI_INDEX = 1
+)
+
 type NetworkLayer struct {
 	ip net.IP
 	channels map[int]*DataLinkLayerChannel
@@ -37,7 +41,7 @@ func NewNetworkLayer(ip net.IP) *NetworkLayer {
 		ipConn: ipConn,
 	}
 
-	network.unicastProtocol = aodv.NewAodv(ip, network.onPathDiscovery)
+	network.unicastProtocol = aodv.NewAodv(ip, UNICAST_IFI_INDEX, network.onPathDiscovery)
 
 	return network
 }

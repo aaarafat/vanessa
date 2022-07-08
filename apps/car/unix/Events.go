@@ -9,8 +9,9 @@ type Event string
 
 const (
 	DestinationReachedEvent Event = "destination-reached"
-	ObstacleDetectedEvent   Event = "obstacle-detected"
-	ObstacleReceivedEvent   Event = "obstacle-received"
+	ObstacleDetectedEvent   Event = "obstacle-detected" // from sensor
+	ObstacleReceivedEvent   Event = "obstacle-received" // from router
+	ObstaclesReceivedEvent  Event = "obstacles-received" // from RSU
 	AddCarEvent             Event = "add-car"
 	UpdateLocationEvent     Event = "update-location"
 )
