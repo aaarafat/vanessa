@@ -84,7 +84,13 @@ export class Car {
     this.attachHandlers();
 
     this.prevTime = Date.now();
-    if (!displayOnly) this.update();
+
+    if (!displayOnly) {
+      this.update();
+    } else {
+      this.focused = true;
+      this.map.panTo([this.lng, this.lat]);
+    }
   }
 
   public get coordinates(): Coordinates {
@@ -229,6 +235,48 @@ export class Car {
   /**
    * Update Car
    */
+
+  public updateLocationFromData = (coordinates: Coordinates) => {
+    this.updateFromData('update-location', coordinates);
+  };
+
+  public updateDestinationFromData = (coordinates: Coordinates) => {
+    this.updateFromData('destination-reached', coordinates);
+  };
+
+  public updateObstacleDetectedFromData = () => {
+    this.updateFromData('obstacle-detected');
+  };
+
+  private updateFromData(
+    type: 'destination-reached' | 'obstacle-detected' | 'update-location',
+    data: Partial<ICar> = {}
+  ) {
+    if (this.removed) return;
+    console.log(data);
+    switch (type) {
+      case 'destination-reached':
+        this.lat = data.lat ?? this.lat;
+        this.lng = data.lng ?? this.lng;
+        this.routeIndex = this.route.length;
+        this.updatePopupProps();
+        break;
+      case 'obstacle-detected':
+        this.obstacleDetected = true;
+        this.speed = 0;
+        this.updatePopupProps();
+        break;
+      case 'update-location':
+        this.lat = data.lat ?? this.lat;
+        this.lng = data.lng ?? this.lng;
+        break;
+      default:
+        break;
+    }
+    this.updateSource();
+    this.updateDetails();
+  }
+
   private update = () => {
     if (this.removed) return;
     this.updateCoordinates();
@@ -456,7 +504,7 @@ export class Car {
     if (!this.focused)
       description += '<a id="link{id}">Go to the car interface</a>';
 
-    if (!this.arrived && !this.obstacleDetected) {
+    if (!this.arrived && !this.obstacleDetected && !this.focused) {
       description += !this.stopped
         ? '<a id="control{id}-stop">Stop</a>'
         : '<a id="control{id}-move">Move</a>';
