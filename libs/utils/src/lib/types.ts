@@ -10,6 +10,7 @@ export interface ICommon {
   lat: number;
   lng: number;
   map: mapboxgl.Map;
+  port: number;
 }
 
 export interface ICar extends ICommon {

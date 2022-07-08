@@ -50,6 +50,8 @@ export class Car {
   private focused: boolean;
   private stopped = false;
 
+  private port: number;
+
   constructor(car: PartialExcept<ICar, 'map'>, { displayOnly = false } = {}) {
     this.id = car.id || Date.now();
     this.sourceId = `car-${this.id}`;
@@ -68,13 +70,15 @@ export class Car {
     this.originalDirections = turf.lineString(
       this.route.map((r: Coordinates) => [r.lng, r.lat])
     );
-    // this.socket = car.socket;
+
     this.popup = null;
     this.focused = false;
 
     this.handlers = {};
     this.wasFlyingToCar = false;
     this.animationFrame = 0;
+
+    this.port = car.port || -1;
 
     this.draw();
     this.attachHandlers();
@@ -441,9 +445,14 @@ export class Car {
   private get description() {
     let description =
       '<h1 class="mapboxgl-popup-title">Car</h1>' + this.props.description;
+
+    if (this.port > 0) {
+      description += `<p>Port: ${this.port}</p>`;
+    }
     if (this.obstacleDetected) {
       description += '<p>Obstacle detected</p>';
     }
+
     if (!this.focused)
       description += '<a id="link{id}">Go to the car interface</a>';
 

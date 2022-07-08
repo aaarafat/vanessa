@@ -57,6 +57,9 @@ const LoaderContainer = styled.div`
   justify-content: center;
 `;
 
+let carPortsCounter = 10000;
+let rsuPortsCounter = 5000;
+
 export const Simulation: React.FC = () => {
   const { map, mapDirections } = useContext(MapContext);
   const socket = useContext(SocketContext);
@@ -77,7 +80,7 @@ export const Simulation: React.FC = () => {
         setMapLoaded(true);
 
         rsusData.forEach((r) => {
-          const rsu = new RSU({ ...r, map });
+          const rsu = new RSU({ ...r, map, port: rsuPortsCounter++ });
           dispatch(addRSU(rsu));
           socketEvents.addRSU(rsu);
         });
@@ -154,6 +157,7 @@ export const Simulation: React.FC = () => {
     const car: Car = new Car({
       ...carInputs,
       map,
+      port: carPortsCounter++,
     });
 
     car.on('click', () => {
