@@ -20,6 +20,7 @@ export class Car {
   public id: number;
   public lat: number;
   public lng: number;
+  public carSpeed: number;
   public speed: number;
   public route: Coordinates[];
   public originalDirections: GeoJSON.Feature;
@@ -47,6 +48,7 @@ export class Car {
   private animationFrame: number;
   private removed = false;
   private focused: boolean;
+  private stopped = false;
 
   constructor(car: PartialExcept<ICar, 'map'>, { displayOnly = false } = {}) {
     this.id = car.id || Date.now();
@@ -58,7 +60,8 @@ export class Car {
     this.lat = car.lat || car.route?.[0].lat || 0;
     this.lng = car.lng || car.route?.[0].lng || 0;
     this.prevCoordinates = this.coordinates;
-    this.speed = car.speed ?? 10;
+    this.carSpeed = car.speed ?? 10;
+    this.speed = this.carSpeed;
     this.obstacleDetected = car.obstacleDetected || false;
     this.route = car.route || [];
     this.routeIndex = 0;
@@ -298,13 +301,6 @@ export class Car {
     if (!turf.booleanDisjoint(sensorRange, obstacles)) {
       this.obstacleDetected = true;
       this.updatePopupProps();
-      // TODO: moving it out
-
-      // this.socket.emit('obstacle-detected', {
-      //   id: this.id,
-      //   coordinates: this.coordinates,
-      //   obstacle_coordinates: this.coordinates,
-      // });
       return true;
     }
     return false;
@@ -323,14 +319,6 @@ export class Car {
 
   private attachHandlers = () => {
     this.map.on('click', this.sourceId, this.onClick);
-    // TODO: outside of class
-
-    // this.on('move', () => {
-    //   this.socket.emit('update-location', {
-    //     id: this.id,
-    //     coordinates: this.coordinates,
-    //   });
-    // });
   };
 
   private onClick = () => {
@@ -343,7 +331,7 @@ export class Car {
       .setLngLat(this.coordinates as mapboxgl.LngLatLike)
       .setHTML(this.description)
       .addTo(this.map);
-    this.bindAnchorElement();
+    this.bindElements();
 
     this.communicationRangeSource?.setData(this.getCommunicationRangeFeature());
 
@@ -370,8 +358,40 @@ export class Car {
   private updatePopupProps = () => {
     if (!this.popup) return;
     this.popup.setHTML(this.description);
-    this.bindAnchorElement();
+    this.bindElements();
   };
+
+  private bindElements() {
+    this.bindAnchorElement();
+    if (!this.stopped) this.bindSpeedControlElementStop();
+    else this.bindSpeedControlElementMove();
+  }
+
+  private bindSpeedControlElementStop() {
+    if (!this.popup) return;
+    const el = this.popup
+      .getElement()
+      .querySelector(`#control${this.id}-stop`) as HTMLAnchorElement;
+    if (el)
+      el.onclick = () => {
+        this.stopped = true;
+        this.speed = 0;
+        this.updatePopupProps();
+      };
+  }
+
+  private bindSpeedControlElementMove() {
+    if (!this.popup) return;
+    const el = this.popup
+      .getElement()
+      .querySelector(`#control${this.id}-move`) as HTMLAnchorElement;
+    if (el)
+      el.onclick = () => {
+        this.stopped = false;
+        this.speed = this.carSpeed;
+        this.updatePopupProps();
+      };
+  }
 
   private bindAnchorElement() {
     if (!this.popup) return;
@@ -426,6 +446,13 @@ export class Car {
     }
     if (!this.focused)
       description += '<a id="link{id}">Go to the car interface</a>';
+
+    if (!this.arrived && !this.obstacleDetected) {
+      description += !this.stopped
+        ? '<a id="control{id}-stop">Stop</a>'
+        : '<a id="control{id}-move">Move</a>';
+    }
+
     return interpolateString(description, this);
   }
 
@@ -436,7 +463,6 @@ export class Car {
       | 'focus'
       | 'move'
       | 'popup:close'
-      | 'props:change'
       | 'obstacle-detected'
       | 'destination-reached',
     handler: any
@@ -452,7 +478,6 @@ export class Car {
       | 'focus'
       | 'move'
       | 'popup:close'
-      | 'props:change'
       | 'obstacle-detected'
       | 'destination-reached',
     handler: (...args: any) => void
@@ -468,7 +493,6 @@ export class Car {
       | 'focus'
       | 'move'
       | 'popup:close'
-      | 'props:change'
       | 'obstacle-detected'
       | 'destination-reached',
     ...args: any[]

@@ -429,6 +429,7 @@ a.mapboxgl-ctrl-logo.mapboxgl-compact {
   text-decoration: underline;
   font-size: 12px;
   cursor: pointer;
+  display: block;
 }
 .mapboxgl-popup-anchor-top,
 .mapboxgl-popup-anchor-top-left,
