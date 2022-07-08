@@ -14,6 +14,8 @@ export const socketEvents = {
       id: car.id,
       coordinates: car.coordinates,
       port: car.port,
+      route: car.route,
+      speed: car.speed,
     };
     socket.emit('add-car', message);
   },

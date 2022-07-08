@@ -87,6 +87,7 @@ export const Interface: React.FC = () => {
       car = new Car({ ...json, map }, { displayOnly: true });
       setEventSource(new EventSource(`http://localhost:${port}`));
     } catch (e) {
+      console.log(e);
       setConnectionError(true);
     } finally {
       setLoading(false);

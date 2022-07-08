@@ -176,6 +176,8 @@ def add_car(message):
         'type': 'add-car',
         'data': {
             'coordinates': coordinates,
+            'speed': message['speed'],
+            'route': message['route'],
         }
     }
     time.sleep(0.01)

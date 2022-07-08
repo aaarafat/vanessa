@@ -13,10 +13,10 @@ import (
 type Event string
 
 const (
-	DestinationReachedEvent Event   = "destination-reached"
-	ObstacleDetectedEvent   Event   = "obstacle-detected"
-	AddCarEvent             Event   = "add-car"
-	UpdateLocationEvent     Event   = "update-location"
+	DestinationReachedEvent Event = "destination-reached"
+	ObstacleDetectedEvent   Event = "obstacle-detected"
+	AddCarEvent             Event = "add-car"
+	UpdateLocationEvent     Event = "update-location"
 )
 
 type DestinationReachedData struct {
@@ -30,7 +30,10 @@ type ObstacleDetectedData struct {
 
 type AddCarData struct {
 	Coordinates Position
+	Route       []Position
+	Speed       int
 }
+
 type UpdateLocationData struct {
 	Coordinates Position
 }
@@ -40,14 +43,13 @@ type Subscriber struct {
 }
 
 type SensorUnix struct {
-	id  int
+	id     int
 	topics map[Event][]*Subscriber
 }
 
 func NewSensorUnix(id int) *SensorUnix {
 	return &SensorUnix{id: id, topics: make(map[Event][]*Subscriber)}
 }
-
 
 func (u *SensorUnix) Subscribe(topic Event, subscriber *Subscriber) {
 	if u.topics[topic] == nil {
