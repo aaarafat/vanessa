@@ -13,17 +13,20 @@ type App struct {
 	id int
 	ip net.IP
 
-	// car data
-	position *Position
+	// state
+	state *unix.State
 
 	// to send messages to the network
 	ipConn *ip.IPConnection
 
 	// to connect to the simulator (read sensor data)
-	unix *unix.UnixSocket
+	sensor *unix.SensorUnix
 
 	// to connect to the router 
 	router *unix.Router
+
+	// to connect to the car ui
+	ui *unix.UiUnix
 }
 
 func NewApp(id int) *App {
@@ -43,21 +46,38 @@ func NewApp(id int) *App {
 	return &App{
 		id: id, 
 		ip: ip, 
-		unix: unix.NewUnixSocket(id), 
 		ipConn: ipConn, 
+		sensor: unix.NewSensorUnix(id), 
 		router: unix.NewRouter(id),
 	}
 }
 
+func (a *App) initState() {
+	log.Printf("Initializing car state......")
+	a.state = &unix.State{
+		Id: a.id,
+		Speed: 0,
+		Route: []unix.Coordinate{},
+		Lat: 0,
+		Lng: 0,
+		ObstacleDetected: false,
+		Obstacles: []unix.Coordinate{},
+	}
+	log.Printf("Car state initialized  state:  %v\n", a.state)
+}
+
 func (a *App) updatePosition(pos *Position) {
-	a.position = pos
+	a.state.Lat = pos.Lat
+	a.state.Lng = pos.Lng
 	log.Printf("Position updated: lng: %f lat: %f", pos.Lng, pos.Lat)
 }
 
 func (a *App) Run() {
 	log.Printf("App %d starting.....", a.id)
-	go a.unix.Start()
+	a.initState()
+	go a.sensor.Start()
 	go a.router.Start()
+	go a.ui.Start()
 	go a.startSocketHandlers()
 	go a.sendHeartBeat()
 	go a.listen()
@@ -68,5 +88,6 @@ func (a *App) Run() {
 func (a *App) Stop() {
 	log.Printf("App %d stopping", a.id)
 	a.ipConn.Close()
+	a.ui.Close()
 	log.Printf("App %d stopped", a.id)
 }

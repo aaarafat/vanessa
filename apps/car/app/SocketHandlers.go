@@ -16,7 +16,7 @@ func (a *App) startSocketHandlers() {
 func (a *App) obstacleHandler() {
 	obstacleChannel := make(chan json.RawMessage)
 	obstableSubscriber := &unix.Subscriber{Messages: &obstacleChannel}
-	a.unix.Subscribe(unix.ObstacleDetectedEvent, obstableSubscriber)
+	a.sensor.Subscribe(unix.ObstacleDetectedEvent, obstableSubscriber)
 
 	for {
 		select {
@@ -30,7 +30,7 @@ func (a *App) obstacleHandler() {
 
 			// TODO: send it with loopback interface to the router to be processed by the AODV
 			a.sendObstacle(obstacle.ObstacleCoordinates)
-			a.unix.Write(data)
+			a.sensor.Write(data)
 		}
 	}
 }
@@ -38,7 +38,7 @@ func (a *App) obstacleHandler() {
 func (a *App) destinationReachedHandler() {
 	destinationReachedChannel := make(chan json.RawMessage)
 	destinationReachedSubscriber := &unix.Subscriber{Messages: &destinationReachedChannel}
-	a.unix.Subscribe(unix.DestinationReachedEvent, destinationReachedSubscriber)
+	a.sensor.Subscribe(unix.DestinationReachedEvent, destinationReachedSubscriber)
 
 	for {
 		select {
@@ -50,7 +50,7 @@ func (a *App) destinationReachedHandler() {
 				return
 			}
 
-			a.unix.Write(data)
+			a.sensor.Write(data)
 		}
 	}
 }
@@ -58,7 +58,7 @@ func (a *App) destinationReachedHandler() {
 func (a *App) updateLocationHandler() {
 	updateLocationChannel := make(chan json.RawMessage)
 	updateLocationSubscriber := &unix.Subscriber{Messages: &updateLocationChannel}
-	a.unix.Subscribe(unix.UpdateLocationEvent, updateLocationSubscriber)
+	a.sensor.Subscribe(unix.UpdateLocationEvent, updateLocationSubscriber)
 
 	for {
 		select {

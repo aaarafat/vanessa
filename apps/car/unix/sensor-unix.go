@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"time"
 
 	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 )
@@ -40,17 +39,17 @@ type Subscriber struct {
 	Messages *chan json.RawMessage
 }
 
-type UnixSocket struct {
+type SensorUnix struct {
 	id  int
 	topics map[Event][]*Subscriber
 }
 
-func NewUnixSocket(id int) *UnixSocket {
-	return &UnixSocket{id: id, topics: make(map[Event][]*Subscriber)}
+func NewSensorUnix(id int) *SensorUnix {
+	return &SensorUnix{id: id, topics: make(map[Event][]*Subscriber)}
 }
 
 
-func (u *UnixSocket) Subscribe(topic Event, subscriber *Subscriber) {
+func (u *SensorUnix) Subscribe(topic Event, subscriber *Subscriber) {
 	if u.topics[topic] == nil {
 		u.topics[topic] = []*Subscriber{}
 	}
@@ -58,7 +57,7 @@ func (u *UnixSocket) Subscribe(topic Event, subscriber *Subscriber) {
 	log.Printf("Subscribed to %s\n", topic)
 }
 
-func (u *UnixSocket) publish(topic Event, message json.RawMessage) {
+func (u *SensorUnix) publish(topic Event, message json.RawMessage) {
 	if u.topics[topic] == nil {
 		log.Printf("No subscribers for %s\n", topic)
 		return
@@ -69,7 +68,7 @@ func (u *UnixSocket) publish(topic Event, message json.RawMessage) {
 	log.Printf("Published to %s\n", topic)
 }
 
-func (unix *UnixSocket) reader(d *json.Decoder) {
+func (unix *SensorUnix) reader(d *json.Decoder) {
 	var m map[string]json.RawMessage
 	for {
 		err := d.Decode(&m)
@@ -128,7 +127,7 @@ func (unix *UnixSocket) reader(d *json.Decoder) {
 	}
 }
 
-func (unix *UnixSocket) Write(message any) {
+func (unix *SensorUnix) Write(message any) {
 	log.Printf("Writing to socket...\n")
 	conn, err := unix.initUnixWriteSocket()
 	if err != nil {
@@ -147,17 +146,7 @@ func (unix *UnixSocket) Write(message any) {
 	}
 }
 
-func (unix *UnixSocket) testWrite() {
-	time.Sleep(time.Millisecond * 100)
-
-	for {
-		// sleep for 5 sec
-		time.Sleep(time.Second * 5)
-		unix.Write("Hello from car")
-	}
-}
-
-func (unix *UnixSocket) initUnixWriteSocket() (net.Conn, error) {
+func (unix *SensorUnix) initUnixWriteSocket() (net.Conn, error) {
 	addr := fmt.Sprintf("/tmp/car%dwrite.socket", unix.id)
 	log.Printf("Connecting to %s\n", addr)
 	conn, err := net.Dial("unixgram", addr)
@@ -169,7 +158,7 @@ func (unix *UnixSocket) initUnixWriteSocket() (net.Conn, error) {
 	return conn, nil
 }
 
-func (unix *UnixSocket) Start() {
+func (unix *SensorUnix) Start() {
 	socketAddress := fmt.Sprintf("/tmp/car%d.socket", unix.id)
 	err := os.RemoveAll(socketAddress)
 	if err != nil {
