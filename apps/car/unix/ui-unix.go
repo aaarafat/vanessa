@@ -9,6 +9,7 @@ import (
 	"os"
 	"time"
 
+	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 	"gopkg.in/antage/eventsource.v1"
 )
 
@@ -25,11 +26,11 @@ type Coordinate struct {
 type State struct {
 	Id               int          `json:"id"`
 	Speed            int          `json:"speed"`
-	Route            []Coordinate `json:"route"`
+	Route            []Position `json:"route"`
 	Lat              float64      `json:"lat"`
 	Lng              float64      `json:"lng"`
 	ObstacleDetected bool         `json:"obstacleDetected"`
-	Obstacles        []Coordinate `json:"obstacles"`
+	Obstacles        []Position `json:"obstacles"`
 }
 
 type UiUnix struct {

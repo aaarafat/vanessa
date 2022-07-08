@@ -5,12 +5,36 @@ import (
 	"log"
 
 	"github.com/aaarafat/vanessa/apps/car/unix"
+	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 )
 
 func (a *App) startSocketHandlers() {
+	go a.addCarHandler()
 	go a.obstacleHandler()
 	go a.destinationReachedHandler()
 	go a.updateLocationHandler()
+}
+
+func (a *App) addCarHandler() {
+	addCarChannel := make(chan json.RawMessage)
+	addCarSubscriber := &unix.Subscriber{Messages: &addCarChannel}
+	a.sensor.Subscribe(unix.AddCarEvent, addCarSubscriber)
+
+	for {
+		select {
+		case data := <-*addCarSubscriber.Messages:
+			var addCar unix.AddCarData
+			err := json.Unmarshal(data, &addCar)
+			if err != nil {
+				log.Printf("Error decoding add-car data: %v", err)
+				return
+			}
+
+			go func() {
+				a.initState(addCar.Speed, []Position{}, addCar.Coordinates)
+			}()
+		}
+	}
 }
 
 func (a *App) obstacleHandler() {

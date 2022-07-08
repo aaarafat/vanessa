@@ -60,7 +60,6 @@ func NewApp(id int) *App {
 
 func (a *App) Run() {
 	log.Printf("App %d starting.....", a.id)
-	a.initState()
 	go a.sensor.Start()
 	go a.router.Start()
 	go a.ui.Start()

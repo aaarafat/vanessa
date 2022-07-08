@@ -14,17 +14,17 @@ func (a *App) GetState() *unix.State {
 	return a.state
 }
 
-func (a *App) initState() {
+func (a *App) initState(speed int, route []Position, pos Position) {
 	log.Printf("Initializing car state......")
 	a.stateLock.Lock()
 	a.state = &unix.State{
 		Id: a.id,
-		Speed: 0,
-		Route: []unix.Coordinate{},
-		Lat: 0,
-		Lng: 0,
+		Speed: speed,
+		Route: route,
+		Lat: pos.Lat,
+		Lng: pos.Lng,
 		ObstacleDetected: false,
-		Obstacles: []unix.Coordinate{},
+		Obstacles: []Position{},
 	}
 	a.stateLock.Unlock()
 	log.Printf("Car state initialized  state:  %v\n", a.state)
@@ -43,7 +43,7 @@ func (a *App) addObstacle(pos Position, fromSensor bool) {
 	if fromSensor {
 		a.state.ObstacleDetected = true
 	}
-	a.state.Obstacles = append(a.state.Obstacles, unix.Coordinate{Lat: pos.Lat, Lng: pos.Lng})
+	a.state.Obstacles = append(a.state.Obstacles, pos)
 	a.stateLock.Unlock()
 	log.Printf("Obstacle added: lng: %f lat: %f", pos.Lng, pos.Lat)
 }

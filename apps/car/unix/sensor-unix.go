@@ -24,14 +24,14 @@ type DestinationReachedData struct {
 }
 
 type ObstacleDetectedData struct {
-	Coordinates         Position
+	Coordinates         Position `json:"coordinates"`
 	ObstacleCoordinates Position `json:"obstacle_coordinates"`
 }
 
 type AddCarData struct {
-	Coordinates Position
-	Route       []Position
-	Speed       int
+	Coordinates Position `json:"coordinates"`
+	Route       []Position `json:"route"`
+	Speed       int 			`json:"speed"`
 }
 
 type UpdateLocationData struct {
@@ -73,6 +73,9 @@ func (u *SensorUnix) publish(topic Event, message json.RawMessage) {
 func (unix *SensorUnix) reader(d *json.Decoder) {
 	var m map[string]json.RawMessage
 	for {
+		b := make([]byte, 1024)
+		d.Buffered().Read(b)
+		log.Printf("Reading from socket %s\n", b)
 		err := d.Decode(&m)
 		if err != nil {
 			log.Printf("Error: %v\n", err)
