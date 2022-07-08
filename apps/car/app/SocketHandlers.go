@@ -52,7 +52,7 @@ func (a *App) obstacleHandler() {
 			go func() {
 				a.addObstacle(obstacle.Coordinates, true)
 				a.sendObstacle(obstacle.ObstacleCoordinates)
-				a.sensor.Write(data)
+				a.ui.Write(data, string(unix.ObstacleDetectedEvent))
 			}()
 		}
 	}
@@ -73,7 +73,9 @@ func (a *App) destinationReachedHandler() {
 				return
 			}
 
-			a.sensor.Write(data)
+			go func() {
+				a.ui.Write(data, string(unix.DestinationReachedEvent))
+			}()
 		}
 	}
 }
@@ -93,7 +95,10 @@ func (a *App) updateLocationHandler() {
 				return
 			}
 
-			go a.updatePosition(updateLocation.Coordinates)
+			go func() {
+				a.updatePosition(updateLocation.Coordinates)
+				a.ui.Write(data, string(unix.UpdateLocationEvent))
+			}()
 		}
 	}
 }
