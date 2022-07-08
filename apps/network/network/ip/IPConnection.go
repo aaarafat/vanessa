@@ -11,7 +11,7 @@ type IPConnection struct {
 }
 
 func NewIPConnection() (*IPConnection, error) {
-	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_RAW, syscall.IPPROTO_RAW)
+	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_RAW, syscall.IPPROTO_RAW | syscall.IP_HDRINCL)
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,6 @@ func (c *IPConnection) Write(payload []byte, srcIp, destIp net.IP) error {
 	log.Printf("Writing Raw Sockets with payload %s to %s\n", payload, destIp)
 	packet := NewIPPacket(payload, srcIp, destIp)
 	packetBytes := MarshalIPPacket(packet)
-	UpdateChecksum(packetBytes)
 
 	return c.Forward(packetBytes)
 }

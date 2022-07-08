@@ -151,6 +151,7 @@ def add_rsu(message):
 
 @sio.on('add-car')
 def add_car(message):
+    print("Received Add Car ...")
     if len(stations_pool) == 0:
         raise Exception("Pool ran out of stations")
 
@@ -296,7 +297,7 @@ def topology(args):
     for i, rsu in enumerate(rsus_pool):
         rsu.start([c1])
 
-    s0.cmd('sudo apps/scripts/switch &')
+    s0.cmd('sudo apps/scripts/switch -debug &')
 
     info("\n*** Establishing socket connections\n")
     for f in glob.glob('/tmp/car*.socket'):

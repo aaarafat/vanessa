@@ -84,7 +84,6 @@ func (unix *UnixSocket) reader(d *json.Decoder) {
 			log.Printf("Error: %v\n", err)
 			return
 		}
-		log.Printf("Event type: %s\n", eventType)
 
 		switch eventType {
 		case DestinationReachedEvent:
@@ -124,7 +123,6 @@ func (unix *UnixSocket) reader(d *json.Decoder) {
 				log.Printf("Error: %v", err)
 				return
 			}
-			log.Printf("Updated Location: %v\n", p)
 			unix.publish(UpdateLocationEvent, m["data"])
 		}
 	}

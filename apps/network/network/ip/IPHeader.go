@@ -30,15 +30,17 @@ func UnmarshalIPHeader(data []byte) (*IPHeader, error) {
 	}
 
 	header := &IPHeader{}
-	header.Version = byte(data[0]) >> 4
+	header.Version = byte(data[0] & 0xf0) / 16
 
 	if header.Version != 4 {
 		return nil, fmt.Errorf("IP Packet is not version 4, it's %d", header.Version)
 	}
 
-	header.Length = ((byte(data[0]) << 4) >> 4) 
+	header.Length = data[0] & 0x0f
 	header.TypeOfService = uint8(data[1])
 	header.TotalLength = binary.LittleEndian.Uint16(data[2:4])
+	bytes := make([]byte, 2)
+	binary.LittleEndian.PutUint16(bytes[:], header.TotalLength)
 	header.IdentifierFlagsOffset = binary.LittleEndian.Uint32(data[4:8])
 	header.TTL = uint8(data[8])
 	header.Protocol = uint8(data[9])
@@ -58,11 +60,11 @@ func MarshalIPHeader(header *IPHeader) []byte {
 
 	data[0] = byte(header.Version << 4) | byte(header.Length)
 	data[1] = byte(header.TypeOfService)
-	binary.LittleEndian.PutUint16(data[2:4], header.TotalLength)
-	binary.LittleEndian.PutUint32(data[4:8], header.IdentifierFlagsOffset)
+	binary.LittleEndian.PutUint16(data[2:], header.TotalLength)
+	binary.LittleEndian.PutUint32(data[4:], header.IdentifierFlagsOffset)
 	data[8] = byte(header.TTL)
 	data[9] = byte(header.Protocol)
-	binary.LittleEndian.PutUint16(data[10:12], header.HeaderChecksum)
+	binary.LittleEndian.PutUint16(data[10:], header.HeaderChecksum)
 	copy(data[12:16], header.SrcIP.To4())
 	copy(data[16:20], header.DestIP.To4())
 
@@ -74,6 +76,7 @@ func (h *IPHeader) LengthInBytes() int {
 }
 
 func HeaderChecksum(data []byte) uint16 {
+	// copy data bytes
 	var sum uint32 = 0
 	for i := 0; i < IPv4HeaderLen; i += 2 {
 		sum += uint32(data[i])<<8 | uint32(data[i+1])

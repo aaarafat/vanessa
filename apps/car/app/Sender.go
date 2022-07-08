@@ -1,6 +1,7 @@
 package app
 
 import (
+	"log"
 	"net"
 	"time"
 
@@ -22,6 +23,7 @@ func (a *App) sendHeartBeat() {
 
 
 func (a *App) sendObstacle(pos Position) {
+	log.Printf("Sending obstacle : %f  %f", pos.Lng, pos.Lat)
 	data := NewVObstacleMessage(a.ip, pos, 0).Marshal()
 	a.ipConn.Write(data, a.ip, net.ParseIP(ip.RsuIP))
 }
