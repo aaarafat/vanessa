@@ -2,6 +2,7 @@ package unix
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
@@ -38,10 +39,12 @@ type UiUnix struct {
 	getState func() *State
 }
 
-func NewUiUnix(addr string, id int, getState func() *State) *UiUnix {
+func NewUiUnix(id int, getState func() *State) *UiUnix {
 	server := eventsource.New(nil, func(req *http.Request) [][]byte {
 		return [][]byte{[]byte("Access-Control-Allow-Origin: *")}
 	})
+
+	addr := fmt.Sprintf("/tmp/car%d.ui.socket", id)
 
 	return &UiUnix{id: id, addr: addr, server: server, getState: getState}
 }

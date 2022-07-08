@@ -30,7 +30,7 @@ type App struct {
 	ui *unix.UiUnix
 }
 
-func NewApp(id int, addr string) *App {
+func NewApp(id int) *App {
 	ipConn, err := ip.NewIPConnection()
 	if err != nil {
 		log.Fatalf("Error creating IP connection: %v", err)
@@ -53,7 +53,7 @@ func NewApp(id int, addr string) *App {
 		stateLock: &sync.RWMutex{},
 	}
 
-	app.ui = unix.NewUiUnix(addr, id, app.GetState)
+	app.ui = unix.NewUiUnix(id, app.GetState)
 
 	return &app
 }
