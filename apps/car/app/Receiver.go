@@ -19,5 +19,13 @@ func (a *App) handleMessage(data []byte) {
 	case VOREPType:
 		msg := UnmarshalVOREP(data)
 		log.Printf("VOREP message received: %s", msg.String())
+	case VObstacleType:
+		msg, err := UnmarshalVObstacle(data)
+		if err != nil {
+			log.Printf("Error decoding VObstacle message: %v", err)
+			return
+		}
+		log.Printf("VObstacle message received: %s", msg.String())
+		a.addObstacle(msg.Position, false)
 	}
 }
