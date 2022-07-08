@@ -43,7 +43,7 @@ func main() {
 
 	initLogger(debug, id)
 
-	app := NewApp(id)
+	app := NewApp(id, ui)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)	

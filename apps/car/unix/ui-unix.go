@@ -35,15 +35,15 @@ type UiUnix struct {
 	id int
 	addr string
 	server eventsource.EventSource
-	state *State
+	getState func() *State
 }
 
-func NewUiUnix(addr string, id int, state *State) *UiUnix {
+func NewUiUnix(addr string, id int, getState func() *State) *UiUnix {
 	server := eventsource.New(nil, func(req *http.Request) [][]byte {
 		return [][]byte{[]byte("Access-Control-Allow-Origin: *")}
 	})
 
-	return &UiUnix{id: id, addr: addr, server: server, state: state}
+	return &UiUnix{id: id, addr: addr, server: server, getState: getState}
 }
 
 
@@ -86,7 +86,7 @@ func (u *UiUnix) Start() {
 			return
 		}
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		json.NewEncoder(w).Encode(*u.state)
+		json.NewEncoder(w).Encode(*u.getState())
 	})
 	http.Handle("/", u.server)
 

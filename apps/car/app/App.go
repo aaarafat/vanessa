@@ -3,10 +3,10 @@ package app
 import (
 	"log"
 	"net"
+	"sync"
 
 	"github.com/aaarafat/vanessa/apps/car/unix"
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
-	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 )
 
 type App struct {
@@ -15,6 +15,7 @@ type App struct {
 
 	// state
 	state *unix.State
+	stateLock *sync.RWMutex
 
 	// to send messages to the network
 	ipConn *ip.IPConnection
@@ -29,7 +30,7 @@ type App struct {
 	ui *unix.UiUnix
 }
 
-func NewApp(id int) *App {
+func NewApp(id int, addr string) *App {
 	ipConn, err := ip.NewIPConnection()
 	if err != nil {
 		log.Fatalf("Error creating IP connection: %v", err)
@@ -43,33 +44,18 @@ func NewApp(id int) *App {
 		return nil
 	}
 
-	return &App{
+	app := App{
 		id: id, 
 		ip: ip, 
 		ipConn: ipConn, 
 		sensor: unix.NewSensorUnix(id), 
 		router: unix.NewRouter(id),
+		stateLock: &sync.RWMutex{},
 	}
-}
 
-func (a *App) initState() {
-	log.Printf("Initializing car state......")
-	a.state = &unix.State{
-		Id: a.id,
-		Speed: 0,
-		Route: []unix.Coordinate{},
-		Lat: 0,
-		Lng: 0,
-		ObstacleDetected: false,
-		Obstacles: []unix.Coordinate{},
-	}
-	log.Printf("Car state initialized  state:  %v\n", a.state)
-}
+	app.ui = unix.NewUiUnix(addr, id, app.GetState)
 
-func (a *App) updatePosition(pos *Position) {
-	a.state.Lat = pos.Lat
-	a.state.Lng = pos.Lng
-	log.Printf("Position updated: lng: %f lat: %f", pos.Lng, pos.Lat)
+	return &app
 }
 
 func (a *App) Run() {

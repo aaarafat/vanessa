@@ -28,9 +28,11 @@ func (a *App) obstacleHandler() {
 				return
 			}
 
-			// TODO: send it with loopback interface to the router to be processed by the AODV
-			a.sendObstacle(obstacle.ObstacleCoordinates)
-			a.sensor.Write(data)
+			go func() {
+				a.addObstacle(obstacle.Coordinates, true)
+				a.sendObstacle(obstacle.ObstacleCoordinates)
+				a.sensor.Write(data)
+			}()
 		}
 	}
 }
@@ -70,7 +72,7 @@ func (a *App) updateLocationHandler() {
 				return
 			}
 
-			a.updatePosition(&updateLocation.Coordinates)
+			go a.updatePosition(updateLocation.Coordinates)
 		}
 	}
 }
