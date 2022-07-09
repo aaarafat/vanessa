@@ -11,6 +11,8 @@ const (
 	ObstacleDetectedEvent   Event = "obstacle-detected" // from sensor
 	ObstacleReceivedEvent   Event = "obstacle-received" // from router
 	ObstaclesReceivedEvent  Event = "obstacles-received" // from RSU
+	RerouteEvent            Event = "reroute" 	
+	ChangeSpeedEvent        Event = "change-speed" 	
 	AddCarEvent             Event = "add-car"
 	UpdateLocationEvent     Event = "update-location"
 )
@@ -40,6 +42,10 @@ type ObstacleReceivedData struct {
 
 type ObstaclesReceivedData struct {
 	ObstacleCoordinates []Position `json:"obstacle_coordinates"`
+}
+
+type SpeedData struct {
+	Speed int `json:"speed"`
 }
 
 func FormatObstacles(pos []Position) ObstaclesReceivedData {

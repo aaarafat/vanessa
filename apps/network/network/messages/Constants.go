@@ -65,11 +65,23 @@ type VPathDiscoveryMessage struct {
 	DestIP net.IP
 }
 
+type VZoneMessage struct {
+	// Type
+	Type uint8
+	// The IP address of the node that originated the Obstcale alert.
+	OriginatorIP net.IP
+	// Position of the obstacle
+	Position Position
+	// Max Distance from the originator
+	MaxDistance float64
+}
+
 const (
 	VHBeatMessageLen    				 = 21
 	VObstacleMessageLen 				 = 22
 	VOREQMessageLen     				 = 5
 	VPathDiscoveryMessageLen     = 5
+	VZoneMessageLen     				 = 29
 )
 
 const (
@@ -78,4 +90,5 @@ const (
 	VOREQType     				uint8 = 3
 	VOREPType     				uint8 = 4
 	VPathDiscoveryType    uint8 = 5
+	VZoneType    					uint8 = 6
 )
