@@ -94,7 +94,7 @@ func (unix *SensorUnix) reader(d *json.Decoder) {
 	}
 }
 
-func (unix *SensorUnix) Write(message any) {
+func (unix *SensorUnix) Write(message any, event Event) {
 	log.Printf("Writing to socket...\n")
 	conn, err := unix.initUnixWriteSocket()
 	if err != nil {
@@ -105,6 +105,7 @@ func (unix *SensorUnix) Write(message any) {
 
 	err = json.NewEncoder(conn).Encode(map[string]interface{}{
 		"id":   unix.id,
+		"type": event,
 		"data": message,
 	})
 	if err != nil {

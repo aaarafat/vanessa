@@ -7,7 +7,6 @@ import (
 	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 )
 
-
 func (a *App) GetState() *unix.State {
 	a.stateLock.RLock()
 	defer a.stateLock.RUnlock()
@@ -19,13 +18,13 @@ func (a *App) initState(speed int, route []Position, pos Position) {
 	a.stateLock.Lock()
 	defer a.stateLock.Unlock()
 	a.state = &unix.State{
-		Id: a.id,
-		Speed: speed,
-		Route: route,
-		Lat: pos.Lat,
-		Lng: pos.Lng,
+		Id:               a.id,
+		Speed:            speed,
+		Route:            route,
+		Lat:              pos.Lat,
+		Lng:              pos.Lng,
 		ObstacleDetected: false,
-		Obstacles: []Position{},
+		Obstacles:        []Position{},
 	}
 	log.Printf("Car state initialized  state:  %v\n", a.state)
 }
@@ -39,6 +38,8 @@ func (a *App) updatePosition(pos Position) {
 	a.state.Lat = pos.Lat
 	a.state.Lng = pos.Lng
 	log.Printf("Position updated: lng: %f lat: %f", pos.Lng, pos.Lat)
+
+	go a.ui.Write(unix.UpdateLocationData{Coordinates: pos}, string(unix.UpdateLocationEvent))
 }
 
 func (a *App) addObstacle(pos Position, fromSensor bool) {
@@ -49,6 +50,17 @@ func (a *App) addObstacle(pos Position, fromSensor bool) {
 	}
 	a.state.Obstacles = append(a.state.Obstacles, pos)
 	log.Printf("Obstacle added: lng: %f lat: %f", pos.Lng, pos.Lat)
+
+	go func() {
+		if fromSensor {
+			a.sendObstacle(pos)
+			a.ui.Write(unix.ObstacleDetectedData{ObstacleCoordinates: pos}, string(unix.ObstacleDetectedEvent))
+		} else {
+			a.ui.Write(unix.ObstacleReceivedData{ObstacleCoordinates: pos}, string(unix.ObstacleReceivedEvent))
+		}
+		data := unix.FormatObstacles(a.GetState().Obstacles)
+		a.sensor.Write(data, unix.RerouteEvent)
+	}()
 }
 
 func (a *App) updateObstacles(obstacles []Position) {
@@ -59,4 +71,10 @@ func (a *App) updateObstacles(obstacles []Position) {
 	}
 	a.state.Obstacles = obstacles
 	log.Printf("Obstacles updated: %v", obstacles)
+
+	go func() {
+		data := unix.FormatObstacles(obstacles)
+		a.ui.Write(data, string(unix.ObstaclesReceivedEvent))
+		a.sensor.Write(data, unix.RerouteEvent)
+	}()
 }

@@ -18,7 +18,6 @@ func NewRouter(id int) *Router {
 	return &Router{id: id, Data: &ch}
 }
 
-
 func (r *Router) reader(conn net.Conn) {
 	for {
 		data := make([]byte, 1024)

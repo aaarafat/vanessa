@@ -9,7 +9,6 @@ import (
 	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 )
 
-
 func (a *App) sendHeartBeat() {
 	for {
 		if a.state != nil {
@@ -17,10 +16,9 @@ func (a *App) sendHeartBeat() {
 			log.Printf("Sending heartbeat : %f  %f", a.state.Lng, a.state.Lat)
 			a.ipConn.Write(data, a.ip, net.ParseIP(ip.RsuIP))
 		}
-		time.Sleep(time.Millisecond * DATA_SENDING_INTERVAL_MS)
+		time.Sleep(time.Millisecond * HEART_BEAT_INTERVAL_MS)
 	}
 }
-
 
 func (a *App) sendObstacle(pos Position) {
 	log.Printf("Sending obstacle : %f  %f", pos.Lng, pos.Lat)

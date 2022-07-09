@@ -24,19 +24,19 @@ type Coordinate struct {
 }
 
 type State struct {
-	Id               int          `json:"id"`
-	Speed            int          `json:"speed"`
+	Id               int        `json:"id"`
+	Speed            int        `json:"speed"`
 	Route            []Position `json:"route"`
-	Lat              float64      `json:"lat"`
-	Lng              float64      `json:"lng"`
-	ObstacleDetected bool         `json:"obstacleDetected"`
+	Lat              float64    `json:"lat"`
+	Lng              float64    `json:"lng"`
+	ObstacleDetected bool       `json:"obstacleDetected"`
 	Obstacles        []Position `json:"obstacles"`
 }
 
 type UiUnix struct {
-	id int
-	addr string
-	server eventsource.EventSource
+	id       int
+	addr     string
+	server   eventsource.EventSource
 	getState func() *State
 }
 
@@ -49,7 +49,6 @@ func NewUiUnix(id int, getState func() *State) *UiUnix {
 
 	return &UiUnix{id: id, addr: addr, server: server, getState: getState}
 }
-
 
 func (u *UiUnix) Write(message any, eventName string) {
 	payload, err := json.Marshal(map[string]interface{}{
@@ -97,7 +96,6 @@ func (u *UiUnix) Start() {
 
 	log.Fatal(http.Serve(listener, nil))
 }
-
 
 func (u *UiUnix) Close() {
 	u.server.Close()

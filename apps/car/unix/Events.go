@@ -8,11 +8,11 @@ type Event string
 
 const (
 	DestinationReachedEvent Event = "destination-reached"
-	ObstacleDetectedEvent   Event = "obstacle-detected" // from sensor
-	ObstacleReceivedEvent   Event = "obstacle-received" // from router
+	ObstacleDetectedEvent   Event = "obstacle-detected"  // from sensor
+	ObstacleReceivedEvent   Event = "obstacle-received"  // from router
 	ObstaclesReceivedEvent  Event = "obstacles-received" // from RSU
-	RerouteEvent            Event = "reroute" 	
-	ChangeSpeedEvent        Event = "change-speed" 	
+	RerouteEvent            Event = "reroute"
+	ChangeSpeedEvent        Event = "change-speed"
 	AddCarEvent             Event = "add-car"
 	UpdateLocationEvent     Event = "update-location"
 )
@@ -52,16 +52,15 @@ func FormatObstacles(pos []Position) ObstaclesReceivedData {
 	return ObstaclesReceivedData{ObstacleCoordinates: pos}
 }
 
-
 func PositionFromBytes(data []byte) Position {
 	return UnmarshalPosition(data)
 }
 
-func ObstaclesFromBytes(data []byte, len int) (ObstaclesReceivedData) {
+func ObstaclesFromBytes(data []byte, len int) ObstaclesReceivedData {
 	var obstacles ObstaclesReceivedData
 	obstacles.ObstacleCoordinates = make([]Position, len)
 	for i := 0; i < len; i++ {
-		obstacles.ObstacleCoordinates[i] = PositionFromBytes(data[i*16:(i+1)*16])
+		obstacles.ObstacleCoordinates[i] = PositionFromBytes(data[i*16 : (i+1)*16])
 	}
 	return obstacles
 }

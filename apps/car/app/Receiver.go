@@ -23,7 +23,6 @@ func (a *App) handleMessage(data []byte) {
 		log.Printf("VOREP message received: %s", msg.String())
 		obstacles := unix.ObstaclesFromBytes(msg.Obstacles, int(msg.Length))
 		a.updateObstacles(obstacles.ObstacleCoordinates)
-		a.ui.Write(data, string(unix.ObstaclesReceivedEvent))
 
 	case VObstacleType:
 		msg, err := UnmarshalVObstacle(data)
@@ -33,6 +32,5 @@ func (a *App) handleMessage(data []byte) {
 		}
 		log.Printf("VObstacle message received: %s", msg.String())
 		a.addObstacle(msg.Position, false)
-		a.ui.Write(unix.ObstacleReceivedData{ObstacleCoordinates: msg.Position}, string(unix.ObstacleReceivedEvent))
 	}
 }

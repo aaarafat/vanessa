@@ -15,7 +15,7 @@ type App struct {
 	ip net.IP
 
 	// state
-	state *unix.State
+	state     *unix.State
 	stateLock *sync.RWMutex
 
 	// to send messages to the network
@@ -24,7 +24,7 @@ type App struct {
 	// to connect to the simulator (read sensor data)
 	sensor *unix.SensorUnix
 
-	// to connect to the router 
+	// to connect to the router
 	router *unix.Router
 
 	// to connect to the car ui
@@ -46,11 +46,11 @@ func NewApp(id int) *App {
 	}
 
 	app := App{
-		id: id, 
-		ip: ip, 
-		ipConn: ipConn, 
-		sensor: unix.NewSensorUnix(id), 
-		router: unix.NewRouter(id),
+		id:        id,
+		ip:        ip,
+		ipConn:    ipConn,
+		sensor:    unix.NewSensorUnix(id),
+		router:    unix.NewRouter(id),
 		stateLock: &sync.RWMutex{},
 	}
 
