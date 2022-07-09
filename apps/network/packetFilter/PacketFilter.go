@@ -98,9 +98,9 @@ func (pf *PacketFilter) StealPacket() {
 					p.SetVerdict(netfilter.NF_ACCEPT)
 	
 					// TODO : grpc call to the router to process the packet
-				} else if pf.srcIP.Equal(net.ParseIP(ip.BroadcastIP)) {
+				} else if packet.Header.DestIP.Equal(net.ParseIP(ip.BroadcastIP)) {
 					pf.dataCallback(packet.Payload)
-					pf.networkLayer.SendBroadcast(packet.Payload)
+					pf.networkLayer.SendBroadcast(packet.Payload, packet.Header.DestIP)
 					p.SetVerdict(netfilter.NF_ACCEPT)
 				} else {
 					p.SetVerdict(netfilter.NF_DROP)
