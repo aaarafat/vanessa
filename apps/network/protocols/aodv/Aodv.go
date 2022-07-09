@@ -97,12 +97,23 @@ func (a *Aodv) SendRREQ(destination net.IP) {
 	a.forwarder.ForwardToAll(rreq.Marshal())
 }
 
-func (a *Aodv) SendRREP(destination net.IP) {
-	rrep := NewRREPMessage(destination, a.srcIP)
-	rrep.DestinationSeqNum = a.seqNum
+func (a *Aodv) SendRREPFor(rreq *RREQMessage) {
+	rrep := NewRREPMessage(rreq.OriginatorIP, rreq.DestinationIP)
+	if a.isRREQForMe(rreq) {
+		if !rreq.HasFlag(RREQFlagU) {
+			a.updateSeqNum(rreq.DestinationSeqNum)
+		}
+		rrep.DestinationSeqNum = a.seqNum
+	} else {
+		route, _ := a.routingTable.Get(rreq.DestinationIP)
+		rrep.DestinationSeqNum = route.SeqNum
+		rrep.HopCount = route.NoOfHops + 1
+		rrep.LifeTime = uint32(route.LifeTime.Sub(time.Now()).Milliseconds())
+		// TODO: Send Gratious RREP to the RREQ originator if the RREQ has the G flag set
+	}
 	// broadcast the RREP
 	log.Printf("Sending: %s\n", rrep.String())
-	a.Send(rrep.Marshal(), destination)
+	a.Send(rrep.Marshal(), rrep.OriginatorIP)
 }
 
 func (a *Aodv) updateRSU() {

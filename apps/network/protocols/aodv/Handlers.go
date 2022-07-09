@@ -40,14 +40,10 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr, IfiIndex int) {
 	// update seq table
 	a.seqTable.Set(rreq.OriginatorIP, rreq.RREQID)
 
-	// check if the RREQ is for me
-	if a.isRREQForMe(rreq) {
-		// update the sequence number if it is not unknown
-		if !rreq.HasFlag(RREQFlagU) {
-			a.updateSeqNum(rreq.DestinationSeqNum)
-		}
+	// check if the RREQ is for me or neighbor
+	if a.isRREQForMe(rreq) || a.isRREQForNeighbor(rreq) {
 		// send a RREP
-		a.SendRREP(rreq.OriginatorIP)
+		a.SendRREPFor(rreq)
 	} else {
 		// increment hop count
 		rreq.HopCount = rreq.HopCount + 1

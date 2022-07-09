@@ -61,6 +61,7 @@ func (u *UiUnix) Write(message any, eventName string) {
 		return
 	}
 	u.server.SendEventMessage(string(payload), eventName, "")
+	log.Printf("Sent event %s to ui\n", eventName)
 }
 
 func (u *UiUnix) initUnixSocket() (net.Listener, error) {

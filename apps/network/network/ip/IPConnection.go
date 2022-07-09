@@ -24,7 +24,6 @@ func NewIPConnection() (*IPConnection, error) {
 }
 
 func (c *IPConnection) Write(payload []byte, srcIp, destIp net.IP) error {
-	log.Printf("Writing Raw Sockets with payload %s to %s\n", payload, destIp)
 	packet := NewIPPacket(payload, srcIp, destIp)
 	packetBytes := MarshalIPPacket(packet)
 
