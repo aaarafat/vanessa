@@ -48,6 +48,7 @@ stations_car = {}
 ap_rsus = {}
 
 running_threads = []
+ports = []
 
 STATIONS_COUNT = 5
 RSU_COUNT = 5
@@ -162,6 +163,9 @@ def add_car(message):
     else:
         st = stations_car[id]
 
+    port = message['port']
+    ports.append(port)
+
     coordinates = message["coordinates"]
     position = to_grid(coordinates)
     st.setPosition(position)
@@ -170,7 +174,7 @@ def add_car(message):
     st.cmd(f"sudo dist/apps/network -id {id} -name car -debug &")
     st.cmd(f"sudo dist/apps/car -id {id} -debug &")
     os.system(
-        f"socat TCP4-LISTEN:{message['port']},fork,reuseaddr UNIX-CONNECT:/tmp/car{id}.ui.socket &")
+        f"socat TCP4-LISTEN:{port},fork,reuseaddr UNIX-CONNECT:/tmp/car{id}.ui.socket &")
 
     payload = {
         'type': 'add-car',
@@ -180,7 +184,7 @@ def add_car(message):
             'route': message['route'],
         }
     }
-    time.sleep(0.01)
+    time.sleep(0.5)
     send_to_car(f"/tmp/car{id}.socket", payload)
 
     # run in a new thread
@@ -203,7 +207,7 @@ def update_locations(message):
     position = to_grid(coordinates)
     stations_car[id].setPosition(position)
 
-    lng, lat = coordinates["lng"], coordinates["lat"]
+    # lng, lat = coordinates["lng"], coordinates["lat"]
     # print(f"car {id} moved to {position}, lng: {lng} lat: {lat}")
 
     payload = {
@@ -241,6 +245,8 @@ def send_to_car(car_socket, payload):
         client.send(json.dumps(payload).encode('ASCII'))
     except Exception as e:
         print(f'send_to_car error: {e}')
+        time.sleep(0.5)
+        send_to_car(car_socket, payload)
         pass
 
 
@@ -323,6 +329,9 @@ def topology(args):
     global running
     running = False
     time.sleep(0.5)
+    for port in ports:
+        # killing all apps listening on port
+        os.system(f"kill $(lsof -t -i:{port})")
     for thread in running_threads:
         thread.join(0.1)
 

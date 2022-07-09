@@ -43,14 +43,20 @@ func testWrite(server eventsource.EventSource, id int) {
 		// send message to all connected users
 		logger.Log("Sent message\n")
 		payload, err := json.Marshal(map[string]interface{}{
-			"id":   id,
-			"data": "Hello from car",
+			"id": id,
+			"data": map[string]interface{}{
+				"obstacle_coordinates": Coordinate{
+					Lng: 31.21141,
+					Lat: 30.02252,
+				},
+			},
 		})
 		if err != nil {
 			logger.Log("Error: %v\n", err)
 			continue
 		}
-		server.SendEventMessage(string(payload), "test", "")
+		fmt.Printf("%s\n", payload)
+		server.SendEventMessage(string(payload), "obstacle-received", "")
 
 	}
 }

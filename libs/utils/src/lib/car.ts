@@ -2,7 +2,12 @@ import mapboxgl from 'mapbox-gl';
 import { distanceInKm, euclideanDistance } from './distance';
 import { interpolateString } from './utils';
 import { Coordinates, ICar, CarProps, PartialExcept } from './types';
-import { MS_IN_HOUR, FPS } from './constants';
+import {
+  MS_IN_HOUR,
+  FPS,
+  directionsAPI,
+  directionsAPIParams,
+} from './constants';
 import * as turf from '@turf/turf';
 
 const carDefaultProps: CarProps = {
@@ -33,6 +38,7 @@ export class Car {
   public communicationRangeSourceId: string;
 
   private source: mapboxgl.GeoJSONSource | undefined;
+  private routeSource: mapboxgl.GeoJSONSource | undefined;
   private communicationRangeSource: mapboxgl.GeoJSONSource | undefined;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -132,7 +138,7 @@ export class Car {
       })
       .getLayer(this.sourceId) as mapboxgl.CircleLayer;
 
-    this.map
+    this.routeSource = this.map
       .addSource(this.routeSourceId, {
         type: 'geojson',
         data: {
@@ -333,6 +339,7 @@ export class Car {
   private isObstacleDetected(): boolean {
     const obstacles: turf.Geometry = (this.map.getSource('obstacles') as any)
       ._data;
+    console.log(obstacles);
 
     const routeSlice = this.route
       .slice(this.routeIndex, this.routeIndex + 2)
@@ -357,6 +364,62 @@ export class Car {
     }
     return false;
   }
+
+  public updateRoute = async (obstacles: turf.Feature<turf.Point>[]) => {
+    if (this.obstacleDetected) return;
+    if (!this.checkObstaclesOnRoute()) return;
+    const result = await this.getRoute(obstacles);
+    console.log(result);
+    if (!result) return;
+    this.originalDirections = turf.lineString(result);
+    this.route = result.map((c) => ({ lat: c[1], lng: c[0] }));
+    this.routeIndex = 0;
+    this.routeSource?.setData(
+      turf.featureCollection([this.originalDirections])
+    );
+  };
+
+  private getRoute = async (
+    obstacles: turf.Feature<turf.Point>[]
+  ): Promise<turf.Position[] | null> => {
+    const dest = this.route[this.route.length - 1];
+    const params = {
+      ...directionsAPIParams,
+      exclude: obstacles
+        .map(
+          (c) =>
+            `point(${c.geometry.coordinates[0]} ${c.geometry.coordinates[1]})`
+        )
+        .join(', '),
+    };
+
+    const response = await fetch(
+      `${directionsAPI}${this.lng},${this.lat};${dest.lng},${
+        dest.lat
+      }.json?${new URLSearchParams(params).toString()}`
+    );
+    const data = await response.json();
+    if (data.code !== 'Ok') return null;
+    return data.routes[0].geometry.coordinates;
+  };
+
+  private checkObstaclesOnRoute = () => {
+    const obstacles: turf.Geometry = (this.map.getSource('obstacles') as any)
+      ._data;
+    const routeSlice = this.route
+      .slice(this.routeIndex)
+      .map((c) => [c.lng, c.lat]);
+
+    const remainingRoute = turf.lineString([
+      [this.lng, this.lat],
+      ...routeSlice,
+    ]);
+
+    if (!turf.booleanDisjoint(remainingRoute, obstacles)) {
+      return true;
+    }
+    return false;
+  };
 
   private updateSource = () => {
     this.source?.setData({

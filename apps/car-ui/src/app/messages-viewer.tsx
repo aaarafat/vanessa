@@ -19,6 +19,7 @@ const Container = styled.div<{ open: boolean }>`
   transition: right 0.3s ease-in-out;
   flex-direction: column;
   overflow-y: auto;
+  overflow-x: visible;
 `;
 
 const Message = styled.div`
@@ -32,7 +33,7 @@ const MessagesViewer: React.FC = () => {
 
   return (
     <Container open={!!messages}>
-      {messages?.map((message: any, index: number) => (
+      {messages?.map((message: string, index: number) => (
         <Message key={index}>{message}</Message>
       ))}
     </Container>
