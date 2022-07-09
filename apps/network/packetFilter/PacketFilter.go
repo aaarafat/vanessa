@@ -93,11 +93,15 @@ func (pf *PacketFilter) StealPacket() {
 					return
 				}
 	
-				if pf.srcIP.Equal(packet.Header.DestIP) || pf.srcIP.Equal(net.ParseIP(ip.BroadcastIP)) {
+				if pf.srcIP.Equal(packet.Header.DestIP) {
 					pf.dataCallback(packet.Payload)
 					p.SetVerdict(netfilter.NF_ACCEPT)
 	
 					// TODO : grpc call to the router to process the packet
+				} else if pf.srcIP.Equal(net.ParseIP(ip.BroadcastIP)) {
+					pf.dataCallback(packet.Payload)
+					pf.networkLayer.SendBroadcast(packet.Payload)
+					p.SetVerdict(netfilter.NF_ACCEPT)
 				} else {
 					p.SetVerdict(netfilter.NF_DROP)
 	
