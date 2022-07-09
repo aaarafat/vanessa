@@ -3,6 +3,9 @@ package network
 import (
 	"log"
 	"net"
+
+	"github.com/aaarafat/vanessa/apps/network/network/ip"
+	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 )
 
 func (n *NetworkLayer) Send(payload []byte, srcIP net.IP, destIP net.IP) {
@@ -28,6 +31,7 @@ func (n *NetworkLayer) addToBuffer(packet []byte, destIP net.IP) {
 }
 
 func (n *NetworkLayer) onPathDiscovery(destIP net.IP) {
+	go n.sendPathDiscoveryMessage(destIP)
 	data, ok := n.packetBuffer.Get(destIP)
 	if ok {
 		for _, packet := range data {
@@ -35,5 +39,13 @@ func (n *NetworkLayer) onPathDiscovery(destIP net.IP) {
 		}
 		n.packetBuffer.Del(destIP)
 		log.Printf("Removed from buffer: %s\n", destIP)
+	}
+}
+
+func (n *NetworkLayer) sendPathDiscoveryMessage(destIP net.IP) {
+	if destIP.Equal(net.ParseIP(ip.RsuIP)) {
+		log.Printf("Sending VOREQ to RSU\n")
+		data := NewVOREQMessage(n.ip).Marshal()
+		n.ipConn.Write(data, n.ip, net.ParseIP(ip.RsuIP))
 	}
 }

@@ -38,7 +38,6 @@ func (u *SensorUnix) publish(topic Event, message json.RawMessage) {
 	for _, subscriber := range u.topics[topic] {
 		*subscriber.Messages <- message
 	}
-	log.Printf("Published to %s\n", topic)
 }
 
 func (unix *SensorUnix) reader(d *json.Decoder) {
@@ -64,7 +63,6 @@ func (unix *SensorUnix) reader(d *json.Decoder) {
 			log.Printf("Error decoding destination-reached data: %v", err)
 			return
 		}
-		log.Printf("Destination reached: %v\n", p)
 		unix.publish(DestinationReachedEvent, m["data"])
 
 	case ObstacleDetectedEvent:
@@ -74,7 +72,6 @@ func (unix *SensorUnix) reader(d *json.Decoder) {
 			log.Printf("Error decoding obstacle-detected data: %v", err)
 			return
 		}
-		log.Printf("Obstacle detected: %v\n", p)
 		unix.publish(ObstacleDetectedEvent, m["data"])
 
 	case AddCarEvent:
@@ -84,7 +81,6 @@ func (unix *SensorUnix) reader(d *json.Decoder) {
 			log.Printf("Error decoding add-car data: %v", err)
 			return
 		}
-		log.Printf("Car added: %v\n", p)
 		unix.publish(AddCarEvent, m["data"])
 
 	case UpdateLocationEvent:

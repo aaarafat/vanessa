@@ -58,15 +58,24 @@ type VOREPMessage struct {
 	Obstacles []byte
 }
 
+type VPathDiscoveryMessage struct {
+	// Type
+	Type uint8
+	// The IP address of the node that is discovered.
+	DestIP net.IP
+}
+
 const (
-	VHBeatMessageLen    = 21
-	VObstacleMessageLen = 22
-	VOREQMessageLen     = 5
+	VHBeatMessageLen    				 = 21
+	VObstacleMessageLen 				 = 22
+	VOREQMessageLen     				 = 5
+	VPathDiscoveryMessageLen     = 5
 )
 
 const (
-	VHBeatType    uint8 = 1
-	VObstacleType uint8 = 2
-	VOREQType     uint8 = 3
-	VOREPType     uint8 = 4
+	VHBeatType    				uint8 = 1
+	VObstacleType 				uint8 = 2
+	VOREQType     				uint8 = 3
+	VOREPType     				uint8 = 4
+	VPathDiscoveryType    uint8 = 5
 )

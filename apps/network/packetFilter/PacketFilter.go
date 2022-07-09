@@ -1,10 +1,8 @@
 package packetfilter
 
 import (
-	"fmt"
 	"log"
 	"net"
-	"time"
 
 	"github.com/AkihiroSuda/go-netfilter-queue"
 	. "github.com/aaarafat/vanessa/apps/network/network"
@@ -85,45 +83,36 @@ func (pf *PacketFilter) StealPacket() {
 	for {
 		select {
 		case p := <-packets:
-			packetBytes := p.Packet.Data()
-			packet, err := UnmarshalPacket(packetBytes)
-			if err != nil {
-				log.Printf("Error decoding IP header: %v\n", err)
-				p.SetVerdict(netfilter.NF_DROP)
-				continue
-			}
-
-			if pf.srcIP.Equal(packet.Header.DestIP) {
-				pf.dataCallback(packet.Payload)
-				p.SetVerdict(netfilter.NF_ACCEPT)
-
-				// TODO : grpc call to the router to process the packet
-			} else {
-				p.SetVerdict(netfilter.NF_DROP)
-
-				Update(packetBytes)
-
-				log.Printf("Sending packet %v to %s\n", packet.Payload, packet.Header.DestIP)
-				go pf.networkLayer.SendUnicast(packetBytes, packet.Header.DestIP)
-			}
+			go func() {
+				packetBytes := p.Packet.Data()
+				packet, err := UnmarshalPacket(packetBytes)
+				if err != nil {
+					log.Printf("Error decoding IP header: %v\n", err)
+					p.SetVerdict(netfilter.NF_DROP)
+					return
+				}
+	
+				if pf.srcIP.Equal(packet.Header.DestIP) {
+					pf.dataCallback(packet.Payload)
+					p.SetVerdict(netfilter.NF_ACCEPT)
+	
+					// TODO : grpc call to the router to process the packet
+				} else {
+					p.SetVerdict(netfilter.NF_DROP)
+	
+					Update(packetBytes)
+	
+					log.Printf("Sending packet %v to %s\n", packet.Payload, packet.Header.DestIP)
+					pf.networkLayer.SendUnicast(packetBytes, packet.Header.DestIP)
+				}
+			}()
 		}
-	}
-}
-
-
-func (pf *PacketFilter) sendHelloToAppSockets() {
-	for {
-		time.Sleep(time.Second * 5)
-		msg := fmt.Sprintf("Hello From Router\n")
-		pf.routerSocket.Write([]byte(msg))
 	}
 }
 
 func (pf *PacketFilter) Start() {
 	log.Printf("Starting PacketFilter for IP: %s.....\n", pf.srcIP)
 	go pf.networkLayer.Start()
-	// TODO: REMOVE THIS (for testing)
-	go pf.sendHelloToAppSockets()
 	
 	pf.StealPacket()
 }
