@@ -18,6 +18,10 @@ interface UpdateLocationData {
 }
 
 interface ObstacleReceivedData {
+  obstacle_coordinates: Coordinates;
+}
+
+interface ObstaclesReceivedData {
   obstacle_coordinates: Coordinates[];
 }
 
@@ -31,14 +35,14 @@ export const useEventSource = () => {
     eventSource.addEventListener('destination-reached', ({ data: message }) => {
       const json: DestinationReachedData = JSON.parse(message).data;
       car?.updateDestinationFromData(json.coordinates);
-      dispatch(addMessage(message));
+      dispatch(addMessage(`Destination reached: ${json.coordinates}`));
     });
 
     eventSource.addEventListener('obstacle-detected', ({ data: message }) => {
       const json: ObstacleDetectedData = JSON.parse(message).data;
       dispatch(addObstacle(createFeaturePoint(json.obstacle_coordinates)));
       car?.updateObstacleDetectedFromData();
-      dispatch(addMessage(message));
+      dispatch(addMessage('Obstacle detected'));
     });
 
     eventSource.addEventListener('update-location', ({ data: message }) => {
@@ -48,11 +52,17 @@ export const useEventSource = () => {
 
     eventSource.addEventListener('obstacle-received', ({ data: message }) => {
       const json: ObstacleReceivedData = JSON.parse(message).data;
+      dispatch(addObstacle(createFeaturePoint(json.obstacle_coordinates)));
+      dispatch(addMessage('Obstacle received'));
+    });
+
+    eventSource.addEventListener('obstacles-received', ({ data: message }) => {
+      const json: ObstaclesReceivedData = JSON.parse(message).data;
       const obstacles = json.obstacle_coordinates.map((coordinates) =>
         createFeaturePoint(coordinates)
       );
       dispatch(addObstacles(obstacles));
-      dispatch(addMessage(message));
+      dispatch(addMessage('Obstacles received'));
     });
 
     return () => eventSource.close();

@@ -1,7 +1,7 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { Map, MapContext } from '@vanessa/map';
 import styled, { keyframes } from 'styled-components';
-import { Car, ICar } from '@vanessa/utils';
+import { Car, Coordinates, createFeaturePoint, ICar } from '@vanessa/utils';
 import * as turf from '@turf/turf';
 import mapboxgl from 'mapbox-gl';
 import { useEventSource } from '../hooks';
@@ -9,9 +9,9 @@ import { useHistory, useParams } from 'react-router-dom';
 import MessagesViewer from './messages-viewer';
 import { ConnectionErrorAlert } from './connection-error-alert';
 import { useAppDispatch, useAppSelector } from '../store';
-import { initCar } from '../store/carSlice';
+import { addObstacles, initCar } from '../store/carSlice';
 
-type carState = Omit<ICar, 'map'>;
+type carState = Omit<ICar, 'map'> & { obstacles: Coordinates[] };
 
 const spin = keyframes`
   0% {
@@ -52,7 +52,6 @@ export const Interface: React.FC = () => {
   const [connectionError, setConnectionError] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
-  // const [obstacles, setObstacles] = useState<turf.Feature[]>([]);
   const { car, obstacles } = useAppSelector((state) => state.car);
   const dispatch = useAppDispatch();
   const { port } = useParams<{
@@ -88,7 +87,9 @@ export const Interface: React.FC = () => {
       const state = await fetch(`http://localhost:${port}/state`);
       const json: carState = await state.json();
       dispatch(initCar(new Car({ ...json, map }, { displayOnly: true })));
+      dispatch(addObstacles(json.obstacles.map((o) => createFeaturePoint(o))));
       setEventSource(new EventSource(`http://localhost:${port}`));
+      document.title = `Car - ${json.id}`;
     } catch (e) {
       setConnectionError(true);
       setEventSource(null);
@@ -101,6 +102,9 @@ export const Interface: React.FC = () => {
     if (mapLoaded) {
       connectCar();
     }
+    return () => {
+      document.title = 'CarUi';
+    };
   }, [mapLoaded, connectCar]);
 
   useEffect(() => {
@@ -132,7 +136,13 @@ export const Interface: React.FC = () => {
           obstacle
         );
       }
+      car?.updateRoute(obstacles);
     }
+    return () => {
+      if (!map || !map.getLayer('obstacles')) return;
+      map.removeLayer('obstacles');
+      map.removeSource('obstacles');
+    };
   }, [obstacles, map, mapLoaded]);
 
   return (

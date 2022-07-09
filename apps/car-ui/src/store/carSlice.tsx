@@ -1,11 +1,10 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { Car, IRSU, RSU } from '@vanessa/utils';
+import { Car } from '@vanessa/utils';
 import * as turf from '@turf/turf';
-import mapboxgl from 'mapbox-gl';
 
 export interface SimulationState {
   car: Car | undefined;
-  obstacles: turf.Feature[];
+  obstacles: turf.Feature<turf.Point>[];
   messages: string[];
 }
 
@@ -23,11 +22,14 @@ export const simulationSlice = createSlice({
       const car = action.payload;
       state.car = car;
     },
-    addObstacle: (state, action: PayloadAction<turf.Feature>) => {
+    addObstacle: (state, action: PayloadAction<turf.Feature<turf.Point>>) => {
       state.obstacles = [...state.obstacles, action.payload];
     },
-    addObstacles: (state, action: PayloadAction<turf.Feature[]>) => {
-      state.obstacles = [...state.obstacles, ...action.payload];
+    addObstacles: (
+      state,
+      action: PayloadAction<turf.Feature<turf.Point>[]>
+    ) => {
+      state.obstacles = action.payload;
     },
     addMessage: (state, action: PayloadAction<string>) => {
       state.messages.unshift(action.payload);
