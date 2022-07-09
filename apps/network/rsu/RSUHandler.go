@@ -87,7 +87,7 @@ func (r *RSU) handleVOREQ(payload []byte, from net.HardwareAddr) {
 	VOREP := NewVOREPMessage(r.OTable.GetTable())
 	log.Println("Send VOREP to: ", VOREQ.OriginatorIP.String())
 
-	packet := ip.NewIPPacket(VOREP.Marshal(), r.ip, net.IPv4(255, 255, 255, 255))
+	packet := ip.NewIPPacket(VOREP.Marshal(), r.ip, VOREQ.OriginatorIP)
 	bytes := ip.MarshalIPPacket(packet)
 	ip.UpdateChecksum(bytes)
 	r.wlanChannel.SendTo(bytes, from)

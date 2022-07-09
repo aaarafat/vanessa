@@ -24,6 +24,10 @@ func (n *NetworkLayer) SendUnicast(packet []byte, destIP net.IP) {
 	n.forwarders[route.Interface].ForwardTo(packet, route.NextHop)
 }
 
+func (n *NetworkLayer) SendBroadcast(packet []byte) {
+	// TODO: Implement this later
+}
+
 
 func (n *NetworkLayer) addToBuffer(packet []byte, destIP net.IP) {
 	n.packetBuffer.Add(packet, destIP)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/AkihiroSuda/go-netfilter-queue"
 	. "github.com/aaarafat/vanessa/apps/network/network"
+	"github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/apps/network/network/ip"
 	"github.com/aaarafat/vanessa/apps/network/unix"
 )
@@ -92,7 +93,7 @@ func (pf *PacketFilter) StealPacket() {
 					return
 				}
 	
-				if pf.srcIP.Equal(packet.Header.DestIP) {
+				if pf.srcIP.Equal(packet.Header.DestIP) || pf.srcIP.Equal(net.ParseIP(ip.BroadcastIP)) {
 					pf.dataCallback(packet.Payload)
 					p.SetVerdict(netfilter.NF_ACCEPT)
 	
