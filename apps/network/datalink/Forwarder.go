@@ -39,6 +39,16 @@ func (f *Forwarder) ForwardToAllExcept(payload []byte, addr net.HardwareAddr) {
 	}
 }
 
+func (f *Forwarder) ForwardToAllExceptIP(payload []byte, ip net.IP) {
+	for item := range f.neighborsTable.Iter() {
+		neighborMac := item.MAC
+		neighborIP := item.IP
+		if !neighborIP.Equal(ip) {
+			f.ForwardTo(payload, neighborMac)
+		}
+	}
+}
+
 func (f *Forwarder) ForwardTo(payload []byte, addr net.HardwareAddr) {
 	f.lock.Lock()
 	defer f.lock.Unlock()
