@@ -23,8 +23,10 @@ import shutil
 import math
 from http import client
 import glob
+import base64
 
 from engineio.payload import Payload
+
 
 Payload.max_decode_packets = 50
 
@@ -69,6 +71,11 @@ car_kwargs = dict(
     s_inverval=5,
     l_interval=10
 )
+
+
+key_bytes = os.urandom(16)
+print(key_bytes)
+os.environ["VANESSA_KEY"] = base64.b64encode(key_bytes).decode('utf-8')
 
 
 @sio.on('connect')
