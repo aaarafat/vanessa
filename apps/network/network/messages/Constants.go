@@ -1,11 +1,30 @@
 package messages
 
-import "net"
+import (
+	"encoding/binary"
+	"math"
+	"net"
+)
 
 type Position struct {
 	Lat float64 `json:"lat"`
 	Lng float64 `json:"lng"`
 }
+
+func Float64FromBytes(bytes []byte) float64 {
+    bits := binary.LittleEndian.Uint64(bytes)
+    float := math.Float64frombits(bits)
+    return float
+}
+
+func Float64bytes(float float64) []byte {
+    bits := math.Float64bits(float)
+    bytes := make([]byte, 8)
+    binary.LittleEndian.PutUint64(bytes, bits)
+    return bytes
+}
+
+
 
 // Postion to byte array marashalling
 func (p Position) Marshal() []byte {
@@ -18,6 +37,19 @@ func UnmarshalPosition(data []byte) Position {
 		Lat: Float64FromBytes(data[:8]),
 		Lng: Float64FromBytes(data[8:]),
 	}
+}
+
+// Unmarshal the payload into a list of positions
+func UnmarshalPositions(payload []byte, len int) []Position {
+	var list [] Position
+	for i := 1; i < len; i += 2 {
+		pos := Position{
+			Lat: Float64FromBytes(payload[i*16:i*16+8]),
+			Lng: Float64FromBytes(payload[i*16+8:i*16+16]),
+		}
+		list = append(list,pos)
+	}
+	return list
 }
 
 // Heart beat message from car to the associated RSU
