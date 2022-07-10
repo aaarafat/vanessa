@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/aaarafat/vanessa/apps/car/unix"
@@ -37,7 +38,7 @@ func (a *App) updatePosition(pos Position) {
 	}
 	a.state.Lat = pos.Lat
 	a.state.Lng = pos.Lng
-	log.Printf("Position updated: lng: %f lat: %f", pos.Lng, pos.Lat)
+	fmt.Printf("Position updated: lng: %f lat: %f", pos.Lng, pos.Lat)
 
 	go a.ui.Write(unix.UpdateLocationData{Coordinates: pos}, string(unix.UpdateLocationEvent))
 }
