@@ -42,7 +42,7 @@ func UnmarshalPosition(data []byte) Position {
 // Unmarshal the payload into a list of positions
 func UnmarshalPositions(payload []byte, len int) []Position {
 	var list [] Position
-	for i := 1; i < len; i += 2 {
+	for i := 0; i < len; i ++ {
 		pos := Position{
 			Lat: Float64FromBytes(payload[i*16:i*16+8]),
 			Lng: Float64FromBytes(payload[i*16+8:i*16+16]),

@@ -49,6 +49,6 @@ func UnmarshalVOREQ(data []byte) *VOREQMessage{
 
 // print the VOREQ message
 func (VOREQ *VOREQMessage) String() string {
-	return fmt.Sprintf("VOREQ: Type: %d, OriginatorIP: %s, Obstacles: %s", VOREQ.Type, VOREQ.OriginatorIP.String(), VOREQ.Obstacles)
+	return fmt.Sprintf("VOREQ: Type: %d, OriginatorIP: %s, Length:%d, Obstacles: %s", VOREQ.Type, VOREQ.OriginatorIP.String(), VOREQ.Length,VOREQ.Obstacles)
 }
 
