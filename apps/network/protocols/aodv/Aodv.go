@@ -30,7 +30,7 @@ type Aodv struct {
 }
 
 func NewAodv(srcIP net.IP, IfiIndex int, pathDiscoveryCallback func(net.IP)) *Aodv {
-	channel, err := NewDataLinkLayerChannelWithInterface(VAODVEtherType, IfiIndex)
+	channel, err := NewDataLinkLayerChannelWithInterfaceName(VAODVEtherType, "wlan0")
 	if err != nil {
 		log.Fatalf("failed to create channel: %v", err)
 	}

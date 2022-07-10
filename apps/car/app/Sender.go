@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"time"
@@ -14,7 +13,7 @@ func (a *App) sendHeartBeat() {
 	for {
 		if a.state != nil {
 			data := NewVHBeatMessage(a.ip, Position{Lng: a.state.Lng, Lat: a.state.Lat}).Marshal()
-			fmt.Printf("Sending heartbeat : %f  %f", a.state.Lng, a.state.Lat)
+			log.Printf("Sending heartbeat : %f  %f", a.state.Lng, a.state.Lat)
 			a.ipConn.Write(data, a.ip, net.ParseIP(ip.RsuIP))
 		}
 		time.Sleep(time.Millisecond * HEART_BEAT_INTERVAL_MS)

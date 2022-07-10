@@ -82,12 +82,12 @@ func (r *RSU) handleVOREQ(payload []byte, from net.HardwareAddr) {
 	VOREQ := UnmarshalVOREQ(payload)
 	r.RARP.Set(VOREQ.OriginatorIP.String(), from)
 	newObstacles := UnmarshalPositions(VOREQ.Obstacles, int(VOREQ.Length))
-	for _,obs := range newObstacles {
+	for _, obs := range newObstacles {
 		if _, ok := r.OTable.table[string(obs.Marshal())]; ok {
 			log.Println("Not Sending as it is not a new obstacle")
-			} else {
-			r.OTable.Set(obs,0)
-			VObstacleMessage := NewVObstacleMessage(VOREQ.OriginatorIP, obs,0)
+		} else {
+			r.OTable.Set(obs, 0)
+			VObstacleMessage := NewVObstacleMessage(VOREQ.OriginatorIP, obs, 0)
 			packet := ip.NewIPPacket(VObstacleMessage.Marshal(), r.ip, net.ParseIP(ip.RsuIP))
 			bytes := ip.MarshalIPPacket(packet)
 			ip.UpdateChecksum(bytes)
@@ -111,6 +111,7 @@ func (r *RSU) sendToALLWLANInterface(data []byte, originatorIP string) {
 		if originatorIP == eip {
 			continue
 		}
+		log.Printf("Sending to: %s", eip)
 		packet := ip.NewIPPacket(data, r.ip, net.ParseIP(eip))
 		bytes := ip.MarshalIPPacket(packet)
 		ip.UpdateChecksum(bytes)

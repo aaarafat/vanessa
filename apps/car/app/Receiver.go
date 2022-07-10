@@ -2,6 +2,7 @@ package app
 
 import (
 	"log"
+	"net"
 
 	"github.com/aaarafat/vanessa/apps/car/unix"
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
@@ -59,6 +60,18 @@ func (a *App) handleMessage(bytes []byte) {
 		if dist <= msg.MaxDistance {
 			log.Printf("Car with ip: %s  in my zone", msg.OriginatorIP)
 			a.ipConn.Forward(bytes)
+		}
+
+	case VPathDiscoveryType:
+		msg, err := UnmarshalVPathDiscovery(data)
+		if err != nil {
+			log.Printf("Error decoding VPathDiscovery message: %v", err)
+			return
+		}
+		if msg.DestIP.Equal(net.ParseIP(ip.RsuIP)) {
+			log.Printf("Sending VOREQ to RSU\n")
+			data := NewVOREQMessage(a.ip, a.GetState().Obstacles).Marshal()
+			a.ipConn.Write(data, a.ip, net.ParseIP(ip.RsuIP))
 		}
 
 	}

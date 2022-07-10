@@ -1,8 +1,10 @@
 package packetfilter
 
 import (
+	"errors"
 	"log"
 	"net"
+	"strings"
 
 	"github.com/AkihiroSuda/go-netfilter-queue"
 	. "github.com/aaarafat/vanessa/apps/network/network"
@@ -72,6 +74,20 @@ func NewPacketFilter(id int) (*PacketFilter, error) {
 
 func NewPacketFilterWithInterface(id int, ifi net.Interface) (*PacketFilter, error) {
 	return newPacketFilter(id, ifi)
+}
+
+func NewPacketFilterWithInterfaceName(id int, ifiName string) (*PacketFilter, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+	for _, iface := range interfaces {
+		if strings.Contains(iface.Name, ifiName) {
+			return newPacketFilter(id, iface)
+		}
+	}
+	return nil, errors.New("interface not found")
 }
 
 func (pf *PacketFilter) dataCallback(packet []byte, from net.IP) {

@@ -1,8 +1,10 @@
 package datalink
 
 import (
+	"errors"
 	"log"
 	"net"
+	"strings"
 
 	"github.com/mdlayher/ethernet"
 	"github.com/mdlayher/packet"
@@ -63,6 +65,20 @@ func NewDataLinkLayerChannelWithInterface(ether Ethertype, index int) (*DataLink
 	}
 	ifi := interfaces[index]
 	return newDataLinkLayerChannel(ether, ifi, index)
+}
+
+func NewDataLinkLayerChannelWithInterfaceName(ether Ethertype, ifiName string) (*DataLinkLayerChannel, error) {
+	interfaces, err := net.Interfaces()
+	if err != nil {
+		log.Fatalf("failed to open interface: %v", err)
+		return nil, err
+	}
+	for i, ifi := range interfaces {
+		if strings.Contains(ifi.Name, ifiName) {
+			return newDataLinkLayerChannel(ether, ifi, i)
+		}
+	}
+	return nil, errors.New("interface not found")
 }
 
 func (d *DataLinkLayerChannel) SendTo(payload []byte, destination net.HardwareAddr) {

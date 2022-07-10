@@ -4,7 +4,6 @@ import (
 	"log"
 	"net"
 
-	"github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 )
 
@@ -47,9 +46,5 @@ func (n *NetworkLayer) onPathDiscovery(destIP net.IP) {
 }
 
 func (n *NetworkLayer) sendPathDiscoveryMessage(destIP net.IP) {
-	if destIP.Equal(net.ParseIP(ip.RsuIP)) {
-		log.Printf("Sending VOREQ to RSU\n")
-		data := NewVOREQMessage(n.ip).Marshal()
-		n.ipConn.Write(data, n.ip, net.ParseIP(ip.RsuIP))
-	}
+	n.ipConn.Write(NewVPathDiscoveryMessage(destIP).Marshal(), n.ip, n.ip)
 }
