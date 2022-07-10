@@ -47,6 +47,10 @@ type VOREQMessage struct {
 	Type uint8
 	// The IP address of the node that originated the Obstcales request.
 	OriginatorIP net.IP
+	// length of the list of Obstcales
+	Length uint8
+	// content of the list of Obstcales
+	Obstacles []byte
 }
 
 type VOREPMessage struct {
@@ -79,8 +83,9 @@ type VZoneMessage struct {
 const (
 	VHBeatMessageLen    				 = 21
 	VObstacleMessageLen 				 = 22
-	VOREQMessageLen     				 = 5
-	VPathDiscoveryMessageLen     = 5
+	VOREQMessageLen     				 = 6
+	VOREPMessageLen     				 = 2
+	VPathDiscoveryMessageLen             = 5
 	VZoneMessageLen     				 = 29
 )
 
@@ -89,6 +94,6 @@ const (
 	VObstacleType 				uint8 = 2
 	VOREQType     				uint8 = 3
 	VOREPType     				uint8 = 4
-	VPathDiscoveryType    uint8 = 5
-	VZoneType    					uint8 = 6
+	VPathDiscoveryType    		uint8 = 5
+	VZoneType    				uint8 = 6
 )
