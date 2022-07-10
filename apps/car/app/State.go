@@ -49,7 +49,7 @@ func (a *App) addObstacle(pos Position, fromSensor bool) {
 	if fromSensor {
 		a.state.ObstacleDetected = true
 	}
-	a.state.Obstacles = append(a.state.Obstacles, pos)
+	a.state.Obstacles = removeDuplicatePositions(append(a.state.Obstacles, pos))
 	log.Printf("Obstacle added: lng: %f lat: %f", pos.Lng, pos.Lat)
 
 	go func() {
