@@ -21,11 +21,12 @@ func Float64bytes(float float64) []byte {
 
 
 func (VOREP *VOREPMessage) Marshal() []byte {
-	bytes := make([]byte,2+16*VOREP.Length)
+	bytes := make([]byte,VOREPMessageLen+16*VOREP.Length)
 
 	bytes[0] = byte(VOREP.Type)
 	bytes[1] = byte(VOREP.Length)
-	copy(bytes[2:2+16*VOREP.Length], VOREP.Obstacles)
+
+	copy(bytes[VOREPMessageLen:VOREPMessageLen+16*VOREP.Length], VOREP.Obstacles)
 
 
 
@@ -54,13 +55,13 @@ func UnmarshalVOREP(data []byte) *VOREPMessage {
 	VOREP := &VOREPMessage{}
 	VOREP.Type = uint8(data[0])
 	VOREP.Length = uint8(data[1])
-	VOREP.Obstacles = data[2:]
+	VOREP.Obstacles = data[VOREPMessageLen:]
 	return VOREP
 }
 
 
 // print the VOREP message
 func (VOREP *VOREPMessage) String() string {
-	return fmt.Sprintf("VOREP: Type: %d, Length: %d Obstcales: %s", VOREP.Type,VOREP.Length ,VOREP.Obstacles)
+	return fmt.Sprintf("VOREP: Type: %d, Length: %d Obstacles: %s", VOREP.Type,VOREP.Length ,VOREP.Obstacles)
 }
 
