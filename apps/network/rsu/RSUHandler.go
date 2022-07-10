@@ -76,14 +76,10 @@ func (r *RSU) handleVObstacle(packet ip.IPPacket, from net.HardwareAddr) {
 
 // handle VOREQ request
 func (r *RSU) handleVOREQ(payload []byte, from net.HardwareAddr) {
-	VOREQ, err := UnmarshalVOREQ(payload)
-	if err != nil {
-		log.Println("Failed to unmarshal VOREQ: ", err)
-		return
-	}
+	VOREQ := UnmarshalVOREQ(payload)
 	r.RARP.Set(VOREQ.OriginatorIP.String(), from)
 	log.Println("Recieved VOREQ from: ", VOREQ.OriginatorIP.String())
-
+	r.OTable.Update(VOREQ.Obstacles,int(VOREQ.Length))
 	VOREP := NewVOREPMessage(r.OTable.GetTable())
 	log.Println("Send VOREP to: ", VOREQ.OriginatorIP.String())
 

@@ -38,6 +38,16 @@ func (OTable *ObstaclesTable) GetTable() []Position {
 	return table
 }
 
+// Update the table with marshalled array of positions
+func (OTable *ObstaclesTable) Update(payload []byte , len int) {
+	table := UnmarshalPositions(payload , len)
+	for _,pos := range table {
+		OTable.Set(pos,0)
+	}
+}
+
+
+
 func (OTable *ObstaclesTable) Print() {
 	log.Println("Printing Obstacle Table")
 	for k , v := range OTable.table {
