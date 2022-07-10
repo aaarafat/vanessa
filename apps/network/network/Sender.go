@@ -26,7 +26,7 @@ func (n *NetworkLayer) SendUnicast(packet []byte, destIP net.IP) {
 
 func (n *NetworkLayer) SendBroadcast(packet []byte, from net.IP) {
 	log.Printf("Sending broadcast from %s\n", from)
-	n.forwarders[1].ForwardToAll(packet)
+	n.forwarders[1].ForwardToAllExceptIP(packet, from)
 }
 
 func (n *NetworkLayer) addToBuffer(packet []byte, destIP net.IP) {
