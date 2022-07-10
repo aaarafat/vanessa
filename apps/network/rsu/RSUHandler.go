@@ -70,7 +70,7 @@ func (r *RSU) handleVObstacle(packet ip.IPPacket, from net.HardwareAddr) {
 	bytes := ip.MarshalIPPacket(&packet)
 	ip.Update(bytes)
 	r.ethChannel.Broadcast(bytes)
-	r.sendToALLWLANInterface(bytes, obstacle.OriginatorIP.String())
+	r.sendToALLWLANInterface(payload, obstacle.OriginatorIP.String())
 	r.OTable.Set(obstacle.Position, 0)
 }
 
@@ -95,10 +95,13 @@ func (r *RSU) handleVOREQ(payload []byte, from net.HardwareAddr) {
 
 // Send to all in RSUARP using wlan exept the one that sent the message
 func (r *RSU) sendToALLWLANInterface(data []byte, originatorIP string) {
-	for ip, entry := range r.RARP.table {
-		if originatorIP == ip {
+	for eip, entry := range r.RARP.table {
+		if originatorIP == eip {
 			continue
 		}
-		r.wlanChannel.SendTo(data, entry.MAC)
+		packet := ip.NewIPPacket(data, r.ip, net.ParseIP(eip))
+		bytes := ip.MarshalIPPacket(packet)
+		ip.UpdateChecksum(bytes)
+		r.wlanChannel.SendTo(bytes, entry.MAC)
 	}
 }
