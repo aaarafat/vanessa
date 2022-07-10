@@ -39,8 +39,8 @@ func (OTable *ObstaclesTable) GetTable() []Position {
 }
 
 // Update the table with marshalled array of positions
-func (OTable *ObstaclesTable) Update(payload []byte , len int) {
-	table := UnmarshalPositions(payload , len)
+func (OTable *ObstaclesTable) Update(payload []byte , length int) {
+	table := UnmarshalPositions(payload , length)
 	for _,pos := range table {
 		OTable.Set(pos,0)
 	}

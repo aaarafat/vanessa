@@ -41,8 +41,8 @@ func read(d *DataLinkLayerChannel, index int) {
 			obstacles2 := make([][2]float64, int(VOREP2.Length))
 			fmt.Println("Check the obstcales")
 			for i := 0; i < len(obstacles2); i++ {
-				obstacles2[i][0] = Float64frombytes(VOREP2.Obstcales[i*16:i*16+8])
-				obstacles2[i][1] = Float64frombytes(VOREP2.Obstcales[i*16+8:i*16+16])
+				obstacles2[i][0] = Float64FromBytes(VOREP2.Obstacles[i*16:i*16+8])
+				obstacles2[i][1] = Float64FromBytes(VOREP2.Obstacles[i*16+8:i*16+16])
 			}
 			fmt.Println(obstacles2)
 		default:
@@ -133,13 +133,43 @@ func main() {
 			ip.UpdateChecksum(bytes)
 			drsu.SendTo([]byte(bytes), mac)
 		case 2:
+			obstacles := []Position{
+				{Lat: 1.5, Lng: 2.8},
+				{Lat: 3.156, Lng: 4.20},
+				{Lat: 5.7, Lng: 6.9},
+			}
 			log.Println("Sending Obstacles REQ")
-			VOREQ := NewVOREQMessage(myip)
+			VOREQ := NewVOREQMessage(myip,obstacles)
+			log.Println(VOREQ.String())
 			packet := ip.NewIPPacket(VOREQ.Marshal(),myip,myip)
 			bytes := ip.MarshalIPPacket(packet)
 			ip.UpdateChecksum(bytes)
 			drsu.SendTo([]byte(bytes), mac)
+		case 3:
+			var obstacles []Position
+			log.Println("Sending Obstacles REQ")
+			VOREQ := NewVOREQMessage(myip,obstacles)
+			log.Println(VOREQ.String())
+			packet := ip.NewIPPacket(VOREQ.Marshal(),myip,myip)
+			bytes := ip.MarshalIPPacket(packet)
+			ip.UpdateChecksum(bytes)
+			drsu.SendTo([]byte(bytes), mac)
+		case 4:
+			obstacles := []Position{
+				{Lat: 1.5, Lng: 2.8},
+				{Lat: 325.7, Lng: 69.69},
+				{Lat: 85.7298, Lng: 123.45},
+			}
+			log.Println("Sending Obstacles REQ")
+			VOREQ := NewVOREQMessage(myip,obstacles)
+			log.Println(VOREQ.String())
+			packet := ip.NewIPPacket(VOREQ.Marshal(),myip,myip)
+			bytes := ip.MarshalIPPacket(packet)
+			ip.UpdateChecksum(bytes)
+			drsu.SendTo([]byte(bytes), mac)
+		
 		}
+	
 		
 	}
 }
