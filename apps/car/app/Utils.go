@@ -10,6 +10,19 @@ import (
 	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 )
 
+func removeDuplicatePositions(positions []Position) []Position {
+	keys := make(map[Position]bool)
+	list := []Position{}
+
+	for _, entry := range positions {
+		if _, value := keys[entry]; !value {
+			keys[entry] = true
+			list = append(list, entry)
+		}
+	}
+	return list
+}
+
 func (a *App) GetPosition() Position {
 	state := a.GetState()
 	return Position{Lng: state.Lng, Lat: state.Lat}
