@@ -63,13 +63,13 @@ func NewApp(id int) *App {
 
 func (a *App) Run() {
 	log.Printf("App %d starting.....", a.id)
-	go a.sensor.Start()
-	go a.router.Start()
-	go a.ui.Start()
-	go a.startSocketHandlers()
+	a.startSocketHandlers()
+	a.sensor.Start()
+	a.router.Start()
+	go a.listen()
 	go a.sendHeartBeat()
 	go a.sendZoneMsg()
-	go a.listen()
+	go a.ui.Start()
 
 	log.Printf("App %d started", a.id)
 }
@@ -77,7 +77,8 @@ func (a *App) Run() {
 func (a *App) Stop() {
 	log.Printf("App %d stopping", a.id)
 	a.ipConn.Close()
-	a.ui.Close()
 	a.sensor.Close()
+	a.router.Close()
+	a.ui.Close()
 	log.Printf("App %d stopped", a.id)
 }

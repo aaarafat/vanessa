@@ -12,9 +12,9 @@ import (
 )
 
 type Aodv struct {
-	channel *DataLinkLayerChannel
+	channel   *DataLinkLayerChannel
 	forwarder IForwarder
-	srcIP net.IP
+	srcIP     net.IP
 
 	// Sequence number
 	seqNum uint32
@@ -22,29 +22,28 @@ type Aodv struct {
 
 	// tables
 	routingTable *VRoutingTable
-	seqTable *VFloodingSeqTable
-	rreqBuffer *hashmap.HashMap
+	seqTable     *VFloodingSeqTable
+	rreqBuffer   *hashmap.HashMap
 
 	// path discovery callback
 	pathDiscoveryCallback func(net.IP)
 }
 
-
 func NewAodv(srcIP net.IP, IfiIndex int, pathDiscoveryCallback func(net.IP)) *Aodv {
-	channel, err := CreateChannel(VAODVEtherType, IfiIndex)
+	channel, err := NewDataLinkLayerChannelWithInterface(VAODVEtherType, IfiIndex)
 	if err != nil {
 		log.Fatalf("failed to create channel: %v", err)
 	}
 
 	return &Aodv{
-		channel: channel,
-		forwarder: NewForwarder(srcIP, channel),
+		channel:      channel,
+		forwarder:    NewForwarder(srcIP, channel),
 		routingTable: NewVRoutingTable(),
-		seqTable: NewVFloodingSeqTable(),
-		rreqBuffer: &hashmap.HashMap{},
-		srcIP: srcIP,
-		seqNum: 0,
-		rreqID: 0,
+		seqTable:     NewVFloodingSeqTable(),
+		rreqBuffer:   &hashmap.HashMap{},
+		srcIP:        srcIP,
+		seqNum:       0,
+		rreqID:       0,
 
 		pathDiscoveryCallback: pathDiscoveryCallback,
 	}
@@ -54,7 +53,7 @@ func (a *Aodv) GetRoute(destIP net.IP) (*VRoute, bool) {
 	item, ok := a.routingTable.Get(destIP)
 	if ok {
 		return NewVRoute(item.Destination, item.NextHop, item.IfiIndex, int(item.NoOfHops)), true
-	} 
+	}
 
 	return nil, false
 }
@@ -63,14 +62,14 @@ func (a *Aodv) BuildRoute(destIP net.IP) (started bool) {
 	if a.inRREQBuffer(destIP) {
 		return false
 	}
-	
+
 	log.Printf("Building route for IP: %s.....\n", destIP)
 	a.SendRREQ(destIP)
 	return true
 }
 
 func (a *Aodv) Send(payload []byte, dest net.IP) {
-	item, ok := a.routingTable.Get(dest);
+	item, ok := a.routingTable.Get(dest)
 	if ok {
 		a.forwarder.ForwardTo(payload, item.NextHop)
 	} else {
@@ -88,7 +87,7 @@ func (a *Aodv) SendRREQ(destination net.IP) {
 	if ok {
 		rreq.DestinationSeqNum = item.SeqNum
 		rreq.ClearFlag(RREQFlagU)
-	}	
+	}
 
 	a.addToRREQBuffer(rreq)
 
@@ -118,7 +117,7 @@ func (a *Aodv) SendRREPFor(rreq *RREQMessage) {
 
 func (a *Aodv) updateRSU() {
 	for {
-		if (ConnectedToRSU(2)) {
+		if ConnectedToRSU(2) {
 			mac, err := net.ParseMAC(GetRSUMac(2))
 			if err != nil {
 				log.Printf("failed to parse MAC: %v", err)
@@ -129,8 +128,8 @@ func (a *Aodv) updateRSU() {
 				log.Printf("Path Discovery is successful for ip=%s !!!!", ip.RsuIP)
 				go a.pathDiscoveryCallback(net.ParseIP(ip.RsuIP))
 			}
-		} 
-		time.Sleep(time.Millisecond * time.Duration(RSUActiveRouteTimeMS / 3))
+		}
+		time.Sleep(time.Millisecond * time.Duration(RSUActiveRouteTimeMS/3))
 	}
 }
 

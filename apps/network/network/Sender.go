@@ -13,6 +13,7 @@ func (n *NetworkLayer) Send(payload []byte, srcIP net.IP, destIP net.IP) {
 }
 
 func (n *NetworkLayer) SendUnicast(packet []byte, destIP net.IP) {
+	log.Printf("Sending unicast to %s\n", destIP)
 	route, found := n.unicastProtocol.GetRoute(destIP)
 	if !found {
 		log.Printf("No route to %s\n", destIP)
@@ -24,7 +25,8 @@ func (n *NetworkLayer) SendUnicast(packet []byte, destIP net.IP) {
 }
 
 func (n *NetworkLayer) SendBroadcast(packet []byte, from net.IP) {
-	n.forwarders[1].ForwardToAllExceptIP(packet, from)
+	log.Printf("Sending broadcast from %s\n", from)
+	n.forwarders[1].ForwardToAll(packet)
 }
 
 func (n *NetworkLayer) addToBuffer(packet []byte, destIP net.IP) {

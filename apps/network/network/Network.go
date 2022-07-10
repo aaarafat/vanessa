@@ -15,8 +15,8 @@ const (
 )
 
 type NetworkLayer struct {
-	ip net.IP
-	channels map[int]*DataLinkLayerChannel
+	ip         net.IP
+	channels   map[int]*DataLinkLayerChannel
 	forwarders map[int]*Forwarder
 
 	// buffer to store packets until path is found
@@ -34,11 +34,11 @@ func NewNetworkLayer(ip net.IP) *NetworkLayer {
 	}
 
 	network := &NetworkLayer{
-		ip: ip,
-		channels: make(map[int]*DataLinkLayerChannel),
-		forwarders: make(map[int]*Forwarder),
+		ip:           ip,
+		channels:     make(map[int]*DataLinkLayerChannel),
+		forwarders:   make(map[int]*Forwarder),
 		packetBuffer: NewPacketBuffer(),
-		ipConn: ipConn,
+		ipConn:       ipConn,
 	}
 
 	network.unicastProtocol = aodv.NewAodv(ip, UNICAST_IFI_INDEX, network.onPathDiscovery)
@@ -46,7 +46,7 @@ func NewNetworkLayer(ip net.IP) *NetworkLayer {
 	return network
 }
 
-func (n *NetworkLayer) openChannels()  {
+func (n *NetworkLayer) openChannels() {
 	channels := make(map[int]*DataLinkLayerChannel)
 	interfaces, err := net.Interfaces()
 	if err != nil {
@@ -69,6 +69,7 @@ func (n *NetworkLayer) openChannels()  {
 func (n *NetworkLayer) openForwarders() {
 	for ifiIndex, channel := range n.channels {
 		n.forwarders[ifiIndex] = NewForwarder(n.ip, channel)
+		n.forwarders[ifiIndex].Start()
 	}
 }
 

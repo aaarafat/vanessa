@@ -4,17 +4,28 @@ import (
 	"log"
 
 	"github.com/aaarafat/vanessa/apps/car/unix"
+	"github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 )
 
 func (a *App) listen() {
-	select {
-	case data := <-*a.router.Data:
+	for {
+		data, err := a.router.Read()
+		if err != nil {
+			continue
+		}
 		go a.handleMessage(data)
 	}
 }
 
-func (a *App) handleMessage(data []byte) {
+func (a *App) handleMessage(bytes []byte) {
+	packet, err := ip.UnmarshalPacket(bytes)
+	if err != nil {
+		log.Printf("Error unmarshalling packet: %v", err)
+		return
+	}
+	data := packet.Payload
+
 	mType := data[0]
 	switch mType {
 	case VOREPType:
@@ -44,9 +55,10 @@ func (a *App) handleMessage(data []byte) {
 		dist := distancePosition(msg.Position, a.GetPosition())
 		// If the distance is less than the max distance, then I am in the zone
 		// and forward it again to router
+		log.Printf("Distance: %f", dist)
 		if dist <= msg.MaxDistance {
 			log.Printf("Car with ip: %s  in my zone", msg.OriginatorIP)
-			a.ipConn.Forward(data)
+			a.ipConn.Forward(bytes)
 		}
 
 	}

@@ -12,10 +12,10 @@ import (
 )
 
 type PacketFilter struct {
-	nfq   *netfilter.NFQueue
-	srcIP net.IP
-	id    int
-	networkLayer *NetworkLayer 
+	nfq          *netfilter.NFQueue
+	srcIP        net.IP
+	id           int
+	networkLayer *NetworkLayer
 	routerSocket *unix.RouterSocket
 }
 
@@ -49,9 +49,9 @@ func newPacketFilter(id int, ifi net.Interface) (*PacketFilter, error) {
 	}
 
 	pf := &PacketFilter{
-		nfq:    nfq,
-		srcIP:  ip,
-		id:     id,
+		nfq:          nfq,
+		srcIP:        ip,
+		id:           id,
 		networkLayer: NewNetworkLayer(ip),
 		routerSocket: unix.NewRouterSocket(id),
 	}
@@ -74,9 +74,9 @@ func NewPacketFilterWithInterface(id int, ifi net.Interface) (*PacketFilter, err
 	return newPacketFilter(id, ifi)
 }
 
-func (pf *PacketFilter) dataCallback(payload []byte) {
-	log.Printf("Received: %s\n", payload)
-	pf.routerSocket.Write(payload)
+func (pf *PacketFilter) dataCallback(packet []byte, from net.IP) {
+	log.Printf("Received packet size %d from %s\n", len(packet), from)
+	pf.routerSocket.Write(packet)
 }
 
 func (pf *PacketFilter) StealPacket() {
@@ -85,29 +85,31 @@ func (pf *PacketFilter) StealPacket() {
 		select {
 		case p := <-packets:
 			go func() {
+				p.SetVerdict(netfilter.NF_DROP)
 				packetBytes := p.Packet.Data()
 				packet, err := UnmarshalPacket(packetBytes)
 				if err != nil {
 					log.Printf("Error decoding IP header: %v\n", err)
-					p.SetVerdict(netfilter.NF_DROP)
 					return
 				}
-	
+
 				if pf.srcIP.Equal(packet.Header.DestIP) {
-					pf.dataCallback(packet.Payload)
-					p.SetVerdict(netfilter.NF_ACCEPT)
-	
+					pf.dataCallback(packetBytes, packet.Header.SrcIP)
+
 					// TODO : grpc call to the router to process the packet
 				} else if packet.Header.DestIP.Equal(net.ParseIP(ip.BroadcastIP)) {
-					pf.dataCallback(packet.Payload)
-					pf.networkLayer.SendBroadcast(packet.Payload, packet.Header.DestIP)
-					p.SetVerdict(netfilter.NF_ACCEPT)
-				} else {
-					p.SetVerdict(netfilter.NF_DROP)
-	
+					if !pf.srcIP.Equal(packet.Header.SrcIP) {
+						pf.dataCallback(packetBytes, packet.Header.SrcIP)
+					}
+
 					Update(packetBytes)
-	
-					log.Printf("Sending packet %v to %s\n", packet.Payload, packet.Header.DestIP)
+
+					log.Printf("Sending packet size %d to %s\n", len(packetBytes), packet.Header.DestIP)
+					pf.networkLayer.SendBroadcast(packetBytes, packet.Header.SrcIP)
+				} else {
+					Update(packetBytes)
+
+					log.Printf("Sending packet size %d to %s\n", len(packetBytes), packet.Header.DestIP)
 					pf.networkLayer.SendUnicast(packetBytes, packet.Header.DestIP)
 				}
 			}()
@@ -118,7 +120,7 @@ func (pf *PacketFilter) StealPacket() {
 func (pf *PacketFilter) Start() {
 	log.Printf("Starting PacketFilter for IP: %s.....\n", pf.srcIP)
 	go pf.networkLayer.Start()
-	
+
 	pf.StealPacket()
 }
 

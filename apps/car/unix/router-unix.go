@@ -10,25 +10,22 @@ import (
 type Router struct {
 	id int
 
-	Data *chan []byte
+	conn *net.UnixConn
 }
 
 func NewRouter(id int) *Router {
-	ch := make(chan []byte)
-	return &Router{id: id, Data: &ch}
+	return &Router{id: id}
 }
 
-func (r *Router) reader(conn net.Conn) {
-	for {
-		data := make([]byte, 1024)
-		n, err := conn.Read(data)
-		if err != nil {
-			log.Printf("Error reading from connection: %v", err)
-			continue
-		}
-		log.Printf("Received from router: %s", string(data[:n]))
-		*r.Data <- data[:n]
+func (r *Router) Read() ([]byte, error) {
+	data := make([]byte, 1500)
+	n, err := r.conn.Read(data)
+	if err != nil {
+		log.Printf("Error reading from connection: %v", err)
+		return nil, err
 	}
+	log.Printf("Received from router data with size %d", n)
+	return data[:n], nil
 }
 
 func (r *Router) Start() {
@@ -50,9 +47,11 @@ func (r *Router) Start() {
 		log.Printf("Failed to resolve: %v\n", err)
 		os.Exit(1)
 	}
-	defer conn.Close()
 
+	r.conn = conn
 	log.Printf("Listening to %s ..\n", socketAddress)
+}
 
-	r.reader(conn)
+func (r *Router) Close() {
+	r.conn.Close()
 }

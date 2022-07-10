@@ -19,6 +19,7 @@ func toRadians(deg float64) float64 {
 	return deg * (math.Pi / 180)
 }
 
+// Distance returns the distance between two points on the Earth in meter.
 func distancePosition(p1 Position, p2 Position) float64 {
 	latRad1 := toRadians(p1.Lat)
 	latRad2 := toRadians(p2.Lat)
@@ -28,11 +29,11 @@ func distancePosition(p1 Position, p2 Position) float64 {
 	dlng := lngRad2 - lngRad1
 	dlat := latRad2 - latRad1
 
-	ans := math.Pow(math.Sin(dlat/2), 2) + math.Cos(latRad1)*math.Cos(latRad2)*math.Pow(math.Cos(dlng/2), 2)
+	ans := math.Pow(math.Sin(dlat/2), 2) + math.Cos(latRad1)*math.Cos(latRad2)*math.Pow(math.Sin(dlng/2), 2)
 
 	ans = 2 * math.Asin(math.Sqrt(ans))
 
-	return ans * 6371
+	return ans * EARTH_RADIUS_METER
 }
 
 func MyInterface() net.Interface {
