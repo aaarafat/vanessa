@@ -17,15 +17,23 @@ func (a *App) initState(speed int, route []Position, pos Position) {
 	log.Printf("Initializing car state......")
 	a.stateLock.Lock()
 	defer a.stateLock.Unlock()
-	a.state = &unix.State{
-		Id:               a.id,
-		Speed:            speed,
-		Route:            route,
-		Lat:              pos.Lat,
-		Lng:              pos.Lng,
-		ObstacleDetected: false,
-		Obstacles:        []Position{},
+	if a.state == nil {
+		a.state = &unix.State{
+			Id:               a.id,
+			Speed:            speed,
+			Route:            route,
+			Lat:              pos.Lat,
+			Lng:              pos.Lng,
+			ObstacleDetected: false,
+			Obstacles:        []Position{},
+		}
+	} else {
+		a.state.Speed = speed
+		a.state.Route = route
+		a.state.Lat = pos.Lat
+		a.state.Lng = pos.Lng
 	}
+
 	log.Printf("Car state initialized  state:  %v\n", a.state)
 }
 
