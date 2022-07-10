@@ -32,5 +32,22 @@ func (a *App) handleMessage(data []byte) {
 		}
 		log.Printf("VObstacle message received: %s", msg.String())
 		a.addObstacle(msg.Position, false)
+
+	case VZoneType:
+		msg, err := UnmarshalVZone(data)
+		if err != nil {
+			log.Printf("Error decoding VZone message: %v", err)
+			return
+		}
+		log.Printf("VZone message received: %s", msg.String())
+		// Calculate distance between my position and the zone
+		dist := distancePosition(msg.Position, a.GetPosition())
+		// If the distance is less than the max distance, then I am in the zone
+		// and forward it again to router
+		if dist <= msg.MaxDistance {
+			log.Printf("Car with ip: %s  in my zone", msg.OriginatorIP)
+			a.ipConn.Forward(data)
+		}
+
 	}
 }

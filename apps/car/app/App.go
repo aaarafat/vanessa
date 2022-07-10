@@ -68,6 +68,7 @@ func (a *App) Run() {
 	go a.ui.Start()
 	go a.startSocketHandlers()
 	go a.sendHeartBeat()
+	go a.sendZoneMsg()
 	go a.listen()
 
 	log.Printf("App %d started", a.id)
