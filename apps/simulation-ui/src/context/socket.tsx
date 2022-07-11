@@ -81,4 +81,7 @@ export const socketEvents = {
     };
     socket.emit('add-rsu', message);
   },
+  clear: () => {
+    socket.emit('clear');
+  },
 };

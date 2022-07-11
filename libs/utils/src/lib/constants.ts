@@ -12,3 +12,6 @@ export const directionsAPIParams = {
   language: 'en',
   steps: 'false',
 };
+
+export const CAR_PORT_INIT = 10000;
+export const RSU_PORT_INIT = 5000;

@@ -24,6 +24,7 @@ import {
 } from './store/simulationSlice';
 import { useHistory, useParams } from 'react-router-dom';
 import MessagesViewer from './messages-viewer';
+import { CAR_PORT_INIT, RSU_PORT_INIT } from 'libs/utils/src/lib/constants';
 
 const spin = keyframes`
   0% {
@@ -58,8 +59,8 @@ const LoaderContainer = styled.div`
   justify-content: center;
 `;
 
-let carPortsCounter = 10000;
-let rsuPortsCounter = 5000;
+let carPortsCounter = CAR_PORT_INIT;
+let rsuPortsCounter = RSU_PORT_INIT;
 
 export const Simulation: React.FC = () => {
   const { map, mapDirections } = useContext(MapContext);
@@ -74,6 +75,7 @@ export const Simulation: React.FC = () => {
     if (map && socket && !mapLoaded) {
       map.setMaxZoom(18);
       map.on('load', () => {
+        socketEvents.clear();
         setMapLoaded(true);
 
         rsusData.forEach((r) => {
@@ -185,14 +187,21 @@ export const Simulation: React.FC = () => {
 
   const clearMap = (removeRSUs = false) => {
     if (!map) return;
-
+    setLoading(true);
     dispatch(
       clearState({
         removeRSUs,
       })
     );
+    socketEvents.clear();
     setObstacles([]);
     mapDirections.reset();
+    if (!removeRSUs) {
+      rsus.forEach((r) => socketEvents.addRSU(r));
+    }
+    carPortsCounter = CAR_PORT_INIT;
+    rsuPortsCounter = RSU_PORT_INIT;
+    setLoading(false);
   };
 
   const handleImport = () => {

@@ -24,11 +24,12 @@ import math
 from http import client
 import glob
 import base64
+import subprocess
 
 from engineio.payload import Payload
 
 
-Payload.max_decode_packets = 50
+Payload.max_decode_packets = 1024
 
 HOST = "127.0.0.1"
 IO_PORT = 65432
@@ -50,16 +51,16 @@ stations_car = {}
 ap_rsus = {}
 
 running_threads = []
-ports = []
+cmds = []
 
-STATIONS_COUNT = 5
+STATIONS_COUNT = 20
 RSU_COUNT = 5
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server_socket.bind((HOST, PORT))
 
 
-sio = SocketIO(APP, cors_allowed_origins="*")
+sio = SocketIO(APP, cors_allowed_origins="*", async_handlers=False)
 "Create a network."
 net = Mininet_wifi(link=wmediumd, wmediumd_mode=interference,
                    controller=Controller, accessPoint=UserAP, autoAssociation=True, ac_method='ssf')  # ssf or llf
@@ -78,6 +79,14 @@ print(key_bytes)
 os.environ["VANESSA_KEY"] = base64.b64encode(key_bytes).decode('utf-8')
 
 
+def cmd(fn, c, bg=True):
+    cmds.append(c)
+    if bg:
+        fn(c + ' &')
+    else:
+        fn(c)
+
+
 @sio.on('connect')
 def connected():
     print('Connected')
@@ -88,174 +97,225 @@ def disconnected():
     print('Disconnected')
 
 
+@sio.on('clear')
+def clear():
+    global cmds
+    global stations_car, stations_pool, rsus_pool, ap_rsus
+
+    print('Begin Clearing... ')
+    for st in stations_car.values():
+        stations_pool.append(st)
+    for rsu in ap_rsus.values():
+        rsus_pool.append(rsu)
+    stations_car = {}
+    ap_rsus = {}
+
+    lines = {
+        l[0]: l[1] for l in (line.split(maxsplit=1)
+                             for c in cmds
+                             for line in subprocess.check_output(f'pgrep -u root -a | grep -w \'{c}\'', shell=True).decode('utf-8').splitlines())
+    }
+    cmds = []
+    for pid, cmd in lines.items():
+        if 'grep' in cmd:
+            continue
+        print(f'killing {pid}:{cmd}')
+        os.system(f'sudo kill -9 {pid} > /dev/null 2>&1')
+    clear_unix_sockets()
+    print('Done Clearing.')
+
+
 @sio.on('destination-reached')
 def destination_reached(message):
-    id = message['id']
-    st = stations_car[id]
+    try:
+        id = message['id']
+        st = stations_car[id]
 
-    coordinates = message['coordinates']
-    position = to_grid(coordinates)
-    st.setPosition(position)
+        coordinates = message['coordinates']
+        position = to_grid(coordinates)
+        st.setPosition(position)
 
-    payload = {
-        'type': 'destination-reached',
-        'data': {
-            'coordinates': coordinates,
+        payload = {
+            'type': 'destination-reached',
+            'data': {
+                'coordinates': coordinates,
+            }
         }
-    }
-    send_to_car(f"/tmp/car{id}.socket", payload)
+        send_to_car(f"/tmp/car{id}.socket", payload)
+    except Exception as e:
+        if running:
+            print(e)
 
 
 @sio.on('obstacle-detected')
 def obstacle_detected(message):
-    id = message['id']
-    st = stations_car[id]
+    try:
+        id = message['id']
+        st = stations_car[id]
 
-    coordinates = message['coordinates']
-    position = to_grid(coordinates)
-    st.setPosition(position)
+        coordinates = message['coordinates']
+        position = to_grid(coordinates)
+        st.setPosition(position)
 
-    obstacle_coordinates = message['obstacle_coordinates']
-    payload = {
-        'type': 'obstacle-detected',
-        'data': {
-            'coordinates': coordinates,
-            'obstacle_coordinates': obstacle_coordinates
+        obstacle_coordinates = message['obstacle_coordinates']
+        payload = {
+            'type': 'obstacle-detected',
+            'data': {
+                'coordinates': coordinates,
+                'obstacle_coordinates': obstacle_coordinates
+            }
         }
-    }
-    send_to_car(f"/tmp/car{id}.socket", payload)
+        send_to_car(f"/tmp/car{id}.socket", payload)
+    except Exception as e:
+        if running:
+            print(e)
 
 
 @sio.on('add-rsu')
 def add_rsu(message):
-    if len(rsus_pool) == 0:
-        raise Exception("Pool ran out of stations")
-
-    id = message['id']
-    if id not in ap_rsus:
-        rsu = rsus_pool.pop(0)
-        ap_rsus[id] = rsu
-    else:
-        rsu = ap_rsus[id]
-
-    coordinates = message["coordinates"]
-    rsu_range = message["range"]
-
-    position = to_grid(coordinates)
     try:
-        rsu.setRange(rsu_range)
-    except:
-        #! IMPORTANT
-        pass
-    try:
-        rsu.setPosition(position)
-    except:
-        #! IMPORTANT
-        pass
-    print(position)
+        if len(rsus_pool) == 0:
+            raise Exception("Pool ran out of stations")
 
-    rsu.cmd(f"sudo dist/apps/network -id {id} -name rsu -debug &")
+        id = message['id']
+        if id not in ap_rsus:
+            rsu = rsus_pool.pop(0)
+            ap_rsus[id] = rsu
+        else:
+            rsu = ap_rsus[id]
+
+        coordinates = message["coordinates"]
+        rsu_range = message["range"]
+
+        position = to_grid(coordinates)
+        try:
+            rsu.setRange(rsu_range)
+        except:
+            #! IMPORTANT
+            pass
+        try:
+            rsu.setPosition(position)
+        except:
+            #! IMPORTANT
+            pass
+        print(position)
+
+        cmd(rsu.cmd, f"sudo dist/apps/network -id {id} -name rsu -debug")
+    except Exception as e:
+        if running:
+            print(e)
 
 
 @sio.on('add-car')
 def add_car(message):
-    print("Received Add Car ...")
-    if len(stations_pool) == 0:
-        raise Exception("Pool ran out of stations")
+    try:
+        print("Received Add Car ...")
+        if len(stations_pool) == 0:
+            raise Exception("Pool ran out of stations")
 
-    id = message['id']
-    if id in stations_car:
-        update_car(message)
-        return
+        id = message['id']
+        if id in stations_car:
+            update_car(message)
+            return
 
-    st = stations_pool.pop(0)
-    stations_car[id] = st
+        st = stations_pool.pop(0)
+        stations_car[id] = st
 
-    port = message['port']
-    ports.append(port)
+        port = message['port']
 
-    coordinates = message["coordinates"]
-    position = to_grid(coordinates)
-    st.setPosition(position)
-    print(position)
+        coordinates = message["coordinates"]
+        position = to_grid(coordinates)
+        st.setPosition(position)
+        print(position)
 
-    st.cmd(f"sudo dist/apps/network -id {id} -name car -debug &")
-    st.cmd(f"sudo dist/apps/car -id {id} -debug &")
-    os.system(
-        f"socat TCP4-LISTEN:{port},fork,reuseaddr UNIX-CONNECT:/tmp/car{id}.ui.socket &")
+        cmd(st.cmd, f"sudo dist/apps/network -id {id} -name car -debug")
+        cmd(st.cmd, f"sudo dist/apps/car -id {id} -debug ")
+        cmd(os.system,
+            f"socat TCP4-LISTEN:{port},fork,reuseaddr UNIX-CONNECT:/tmp/car{id}.ui.socket")
 
-    payload = {
-        'type': 'add-car',
-        'data': {
-            'coordinates': coordinates,
-            'speed': message['speed'],
-            'route': message['route'],
+        payload = {
+            'type': 'add-car',
+            'data': {
+                'coordinates': coordinates,
+                'speed': message['speed'],
+                'route': message['route'],
+            }
         }
-    }
-    time.sleep(0.5)
-    send_to_car(f"/tmp/car{id}.socket", payload)
+        time.sleep(0.5)
+        send_to_car(f"/tmp/car{id}.socket", payload)
 
-    # run in a new thread
-    time.sleep(0.01)
-    thread = threading.Thread(target=recieve_from_car, args=(
-        f"/tmp/car{id}write.socket",), daemon=True)
+        # run in a new thread
+        time.sleep(0.01)
+        thread = threading.Thread(target=recieve_from_car, args=(
+            f"/tmp/car{id}write.socket", id), daemon=True)
 
-    running_threads.append(thread)
+        running_threads.append(thread)
 
-    thread.start()
+        thread.start()
+    except Exception as e:
+        if running:
+            print(e)
 
 
 def update_car(message):
-    id = message['id']
-    st = stations_car[id]
+    try:
+        id = message['id']
+        st = stations_car[id]
 
-    coordinates = message["coordinates"]
-    position = to_grid(coordinates)
-    st.setPosition(position)
-    print(position)
+        coordinates = message["coordinates"]
+        position = to_grid(coordinates)
+        st.setPosition(position)
+        print(position)
 
-    payload = {
-        'type': 'add-car',
-        'data': {
-            'coordinates': coordinates,
-            'speed': message['speed'],
-            'route': message['route'],
+        payload = {
+            'type': 'add-car',
+            'data': {
+                'coordinates': coordinates,
+                'speed': message['speed'],
+                'route': message['route'],
+            }
         }
-    }
-    send_to_car(f"/tmp/car{id}.socket", payload)
+        send_to_car(f"/tmp/car{id}.socket", payload)
+    except Exception as e:
+        if running:
+            print(e)
 
 
 @sio.on('update-location')
 def update_locations(message):
-    id = message['id']
-    if id not in stations_car:
-        raise Exception("Car not found")
+    try:
+        id = message['id']
+        if id not in stations_car:
+            raise Exception("Car not found")
 
-    coordinates = message["coordinates"]
-    position = to_grid(coordinates)
-    stations_car[id].setPosition(position)
+        coordinates = message["coordinates"]
+        position = to_grid(coordinates)
+        stations_car[id].setPosition(position)
 
-    # lng, lat = coordinates["lng"], coordinates["lat"]
-    # print(f"car {id} moved to {position}, lng: {lng} lat: {lat}")
+        # lng, lat = coordinates["lng"], coordinates["lat"]
+        # print(f"car {id} moved to {position}, lng: {lng} lat: {lat}")
 
-    payload = {
-        'type': 'update-location',
-        'data': {
-            'coordinates': coordinates,
+        payload = {
+            'type': 'update-location',
+            'data': {
+                'coordinates': coordinates,
+            }
         }
-    }
-    send_to_car(f"/tmp/car{id}.socket", payload)
+        send_to_car(f"/tmp/car{id}.socket", payload)
+    except Exception as e:
+        if running:
+            print(e)
 
 
-def recieve_from_car(car_socket):
+def recieve_from_car(car_socket, id):
     global running
     try:
         server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         server.bind(car_socket)
         server.listen(1)
+        conn, _ = server.accept()
         print(f"Listening on {car_socket}")
-        while running:
-            conn, _ = server.accept()
+        while running and id in stations_car:
             data = conn.recv(1024)
             if not data:
                 continue
@@ -263,6 +323,8 @@ def recieve_from_car(car_socket):
             sio.emit(data_json['type'], data_json)
 
     except Exception as e:
+        if not running or id not in stations_car:
+            return
         print(f'recieve_from_car error: {e}')
         pass
 
@@ -273,7 +335,9 @@ def send_to_car(car_socket, payload):
         client.connect(car_socket)
         client.send(json.dumps(payload).encode('ASCII'))
     except Exception as e:
-        print(f'send_to_car error: {e}')
+        if not running:
+            return
+        print(f'retrying to send car {car_socket}')
         time.sleep(0.5)
         send_to_car(car_socket, payload)
         pass
@@ -310,7 +374,6 @@ s0 = net.addSwitch("s0", cls=UserSwitch, inNamespace=True)
 
 
 def topology(args):
-
     info("*** Configuring Propagation Model\n")
     net.setPropagationModel(model="logDistance", exp=4)
 
@@ -342,32 +405,41 @@ def topology(args):
 
     s0.cmd('sudo apps/scripts/switch -debug &')
 
+    info("*** Clearing unix sockets\n")
+    clear_unix_sockets()
+
     info("\n*** Establishing socket connections\n")
-    for f in glob.glob('/tmp/car*.socket'):
-        try:
-            os.remove(f)
-        except:
-            pass
     thread = threading.Thread(target=run_socket, daemon=True)
     running_threads.append(thread)
     thread.start()
 
     info("*** Running CLI\n")
     CLI(net)
+
     info("*** Stopping network\n")
     global running
     running = False
     time.sleep(0.5)
-    for port in ports:
-        # killing all apps listening on port
-        os.system(f"kill $(lsof -t -i:{port})")
-    for thread in running_threads:
-        thread.join(0.1)
+    print(f"*** Stopping {len(running_threads)} threads")
+    for thread in running_threads[::-1]:
+        thread.join(1)
+        info('.')
+    info('.\n')
 
     try:
         net.stop()
     except:
         pass
+    clear()
+    os.system(f"kill $(lsof -t -i:{IO_PORT}) > /dev/null 2>&1 &")
+
+
+def clear_unix_sockets():
+    for f in glob.glob('/tmp/car*.socket'):
+        try:
+            os.remove(f)
+        except:
+            pass
 
 
 if __name__ == '__main__':
