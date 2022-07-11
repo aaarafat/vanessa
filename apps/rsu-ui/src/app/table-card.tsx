@@ -3,7 +3,7 @@ import styled from 'styled-components';
 import { Table } from './table';
 
 const SCard = styled.div`
-  width: 80%;
+  width: 90%;
   margin: 1rem auto;
   background-color: rgba(255, 255, 255, 1);
   border-radius: 1px;
