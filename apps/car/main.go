@@ -49,7 +49,7 @@ func main() {
 
 	log.Printf("My key is %s\n", key)
 
-	app := NewApp(id)
+	app := NewApp(id, key)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)

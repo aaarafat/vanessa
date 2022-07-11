@@ -7,8 +7,28 @@ import (
 	"net"
 	"strings"
 
+	"github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/apps/network/network/messages"
+	"github.com/aaarafat/vanessa/libs/crypto"
 )
+
+func (a *App) getDataFromPacket(bytes []byte) ([]byte, error) {
+	packet, err := ip.UnmarshalPacket(bytes)
+	if err != nil {
+		log.Printf("Error unmarshalling packet: %v", err)
+		return nil, err
+	}
+
+	data := packet.Payload
+	if !packet.Header.SrcIP.Equal(a.ip) {
+		// Decrypt data using AES if it is not from self
+		data, err = crypto.DecryptAES(data, a.key)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return data, nil
+}
 
 func removeDuplicatePositions(positions []Position) []Position {
 	keys := make(map[Position]bool)

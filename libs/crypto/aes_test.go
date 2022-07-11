@@ -32,5 +32,5 @@ func TestDecryptAES(t *testing.T) {
 	decrypted, err := DecryptAES(key, ciphertext)
 
 	assert.Nil(t, err)
-	assert.Equal(t, plaintext, decrypted[:len(plaintext)])
+	assert.Equal(t, plaintext, decrypted)
 }
