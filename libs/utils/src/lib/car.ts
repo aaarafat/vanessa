@@ -359,9 +359,6 @@ export class Car {
       [this.coordinates.lng, this.coordinates.lat],
       sensorRangeEndPoint.geometry.coordinates,
     ]);
-    console.log('obstacles', obstacles);
-    console.log('obstacles-points', obstaclesPoints);
-    console.log('intersect', turf.lineIntersect(sensorRange, obstacles));
 
     const intersections = turf.lineIntersect(sensorRange, obstacles).features;
     if (intersections.length) {
@@ -369,7 +366,6 @@ export class Car {
       this.speed = 0;
       const point = turf.nearestPoint(intersections[0], obstaclesPoints)
         .geometry.coordinates;
-      console.log(point);
       this.emit('obstacle-detected', { lng: point[0], lat: point[1] });
       return true;
     }
