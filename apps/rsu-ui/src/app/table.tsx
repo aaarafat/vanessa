@@ -16,8 +16,8 @@ const SHeader = styled.div`
   color: #ffffff;
   justify-content: space-evenly;
   width: 100%;
-  border-bottom: 3px solid #ffffff;
   margin: 0rem auto;
+  margin-bottom: 1px;
 `;
 const SHeaderCell = styled.div`
   display: flex;
@@ -28,11 +28,12 @@ const SHeaderCell = styled.div`
   background-color: #ffc000;
   font-family: 'Bebas Neue', cursive;
   padding: 0.5rem;
-  border-right: 1px solid #ffffff;
+  margin-right: 1px;
   width: 100%;
   &:first-child {
   }
   &:last-child {
+    margin-right: 0;
   }
 `;
 const SRow = styled.div`
@@ -40,18 +41,20 @@ const SRow = styled.div`
   width: 100%;
   justify-content: space-evenly;
   margin: 0rem auto;
-  background-color: #f2f2f2;
-  border-bottom: 1px solid #ffffff;
+
+  margin-bottom: 1px;
   &:last-child {
-    border: 0px;
+    margin-bottom: 0px;
   }
 `;
 const SCell = styled.div`
   width: 100%;
   padding: 1rem 0rem;
-  border-right: 1px solid #ffffff;
   padding-left: 0.75rem;
-  &:first-child {
+  background-color: #f2f2f2;
+  margin-right: 1px;
+  &:last-child {
+    margin-right: 0;
   }
 `;
 type Props = {

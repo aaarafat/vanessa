@@ -5,7 +5,7 @@ import { Table } from './table';
 const SCard = styled.div`
   width: 80%;
   margin: 1rem auto;
-  background-color: #fff;
+  background-color: rgba(255, 255, 255, 1);
   border-radius: 1px;
   box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.01);
   padding: 1rem;
