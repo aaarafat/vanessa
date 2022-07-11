@@ -17,7 +17,7 @@ const SHeader = styled.div`
   justify-content: space-evenly;
   width: 100%;
   margin: 0rem auto;
-  margin-bottom: 1px;
+  margin-bottom: 2px;
 `;
 const SHeaderCell = styled.div`
   display: flex;

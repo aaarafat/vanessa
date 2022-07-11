@@ -22,7 +22,7 @@ export const Interface: React.FC = () => {
     <>
       <SCards>
         <InfoCard
-          title="Received Packets"
+          title="Sent Packets"
           info="9999999"
           color="#ffffff"
           bgc="#ffc000"
