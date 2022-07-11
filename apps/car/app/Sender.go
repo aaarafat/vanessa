@@ -39,7 +39,7 @@ func (a *App) sendObstacle(pos Position) {
 }
 
 func (a *App) sendToRouter(data []byte, destIP net.IP) {
-	cipherData, err := crypto.EncryptAES(data, a.key)
+	cipherData, err := crypto.EncryptAES(a.key, data)
 	if err != nil {
 		return
 	}

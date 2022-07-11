@@ -20,13 +20,15 @@ func (a *App) getDataFromPacket(bytes []byte) ([]byte, error) {
 	}
 
 	data := packet.Payload
+
 	if !packet.Header.SrcIP.Equal(a.ip) {
 		// Decrypt data using AES if it is not from self
-		data, err = crypto.DecryptAES(data, a.key)
+		data, err = crypto.DecryptAES(a.key, packet.Payload)
 		if err != nil {
 			return nil, err
 		}
 	}
+
 	return data, nil
 }
 

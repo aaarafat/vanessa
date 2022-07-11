@@ -11,6 +11,7 @@ import (
 
 type RSU struct {
 	ip          net.IP
+	key         []byte
 	ethChannel  *DataLinkLayerChannel
 	wlanChannel *DataLinkLayerChannel
 	RARP        *RSUARP
@@ -38,13 +39,14 @@ func createWLANChannel() *DataLinkLayerChannel {
 	return c
 }
 
-func NewRSU() *RSU {
+func NewRSU(key []byte) *RSU {
 	ethChannel := createETHChannel()
 	wlanChannel := createWLANChannel()
 	RARP := NewRSUARP()
 	OTable := NewObstaclesTable()
 	return &RSU{
 		ip:          net.ParseIP(RsuIP),
+		key:         key,
 		ethChannel:  ethChannel,
 		wlanChannel: wlanChannel,
 		RARP:        RARP,

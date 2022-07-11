@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"log"
@@ -37,16 +38,26 @@ func main() {
 	var id int
 	var name string
 	var debug bool
+	var keyStr string
 	flag.IntVar(&id, "id", 0, "id of the car")
 	flag.StringVar(&name, "name", "", "name of the unit (rsu or car)")
 	flag.BoolVar(&debug, "debug", false, "debug mode")
+	flag.StringVar(&keyStr, "key", "", "aes key")
 	flag.Parse()
 
 	initLogger(debug, id, name)
 
+	key := make([]byte, 16)
+	n, err := base64.StdEncoding.Decode(key, []byte(keyStr))
+	if err != nil {
+		log.Fatalf("failed to decode AES key: %v", err)
+	}
+
+	log.Printf("My key is %s, from %s written %d  len %d\n", key, keyStr, n, len(key))
+
 	if name == "rsu" {
 		// create a new RSU
-		rsu := NewRSU()
+		rsu := NewRSU(key)
 
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt)
