@@ -1,6 +1,10 @@
 import mapboxgl from 'mapbox-gl';
 import { distanceInKm, euclideanDistance } from './distance';
-import { interpolateString } from './utils';
+import {
+  createFeaturePoint,
+  getObstacleFeatures,
+  interpolateString,
+} from './utils';
 import { Coordinates, ICar, CarProps, PartialExcept } from './types';
 import {
   MS_IN_HOUR,
@@ -324,9 +328,6 @@ export class Car {
       this.emit('destination-reached');
       return false;
     } else if (this.obstacleDetected) {
-      this.speed = 0;
-      this.updatePopupProps();
-      this.emit('obstacle-detected');
       return false;
     }
     return true;
@@ -337,9 +338,11 @@ export class Car {
   }
 
   private isObstacleDetected(): boolean {
-    const obstacles: turf.Geometry = (this.map.getSource('obstacles') as any)
+    const obstacles: turf.Polygon = (this.map.getSource('obstacles') as any)
       ._data;
-    console.log(obstacles);
+    const obstaclesPoints: turf.FeatureCollection<turf.Point> = (
+      this.map.getSource('obstacles-points') as any
+    )._data;
 
     const routeSlice = this.route
       .slice(this.routeIndex, this.routeIndex + 2)
@@ -356,41 +359,51 @@ export class Car {
       [this.coordinates.lng, this.coordinates.lat],
       sensorRangeEndPoint.geometry.coordinates,
     ]);
+    console.log('obstacles', obstacles);
+    console.log('obstacles-points', obstaclesPoints);
+    console.log('intersect', turf.lineIntersect(sensorRange, obstacles));
 
-    if (!turf.booleanDisjoint(sensorRange, obstacles)) {
+    const intersections = turf.lineIntersect(sensorRange, obstacles).features;
+    if (intersections.length) {
       this.obstacleDetected = true;
-      this.updatePopupProps();
+      this.speed = 0;
+      const point = turf.nearestPoint(intersections[0], obstaclesPoints)
+        .geometry.coordinates;
+      console.log(point);
+      this.emit('obstacle-detected', { lng: point[0], lat: point[1] });
       return true;
     }
     return false;
   }
 
-  public updateRoute = async (obstacles: turf.Feature<turf.Point>[]) => {
-    if (this.obstacleDetected) return;
-    if (!this.checkObstaclesOnRoute()) return;
-    const result = await this.getRoute(obstacles);
-    console.log(result);
-    if (!result) return;
+  public updateRoute = async (obstacles: Coordinates[]) => {
+    if (this.obstacleDetected) return false;
+    const o = obstacles.map((c) => createFeaturePoint(c));
+    if (!this.checkObstaclesOnRoute(o)) return false;
+    const result = await this.getRoute(o);
+    if (!result) return false;
     this.originalDirections = turf.lineString(result);
     this.route = result.map((c) => ({ lat: c[1], lng: c[0] }));
     this.routeIndex = 0;
     this.routeSource?.setData(
       turf.featureCollection([this.originalDirections])
     );
+    return true;
   };
 
   private getRoute = async (
     obstacles: turf.Feature<turf.Point>[]
   ): Promise<turf.Position[] | null> => {
     const dest = this.route[this.route.length - 1];
+    const o = obstacles
+      .map(
+        (c) =>
+          `point(${c.geometry.coordinates[0]} ${c.geometry.coordinates[1]})`
+      )
+      .join(', ');
     const params = {
       ...directionsAPIParams,
-      exclude: obstacles
-        .map(
-          (c) =>
-            `point(${c.geometry.coordinates[0]} ${c.geometry.coordinates[1]})`
-        )
-        .join(', '),
+      exclude: o,
     };
 
     const response = await fetch(
@@ -403,9 +416,9 @@ export class Car {
     return data.routes[0].geometry.coordinates;
   };
 
-  private checkObstaclesOnRoute = () => {
-    const obstacles: turf.Geometry = (this.map.getSource('obstacles') as any)
-      ._data;
+  private checkObstaclesOnRoute = (obstacles: turf.Feature<turf.Point>[]) => {
+    const obstaclesFeatures = getObstacleFeatures(obstacles);
+
     const routeSlice = this.route
       .slice(this.routeIndex)
       .map((c) => [c.lng, c.lat]);
@@ -415,7 +428,7 @@ export class Car {
       ...routeSlice,
     ]);
 
-    if (!turf.booleanDisjoint(remainingRoute, obstacles)) {
+    if (!turf.booleanDisjoint(remainingRoute, obstaclesFeatures as any)) {
       return true;
     }
     return false;
