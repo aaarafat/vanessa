@@ -12,19 +12,17 @@ type Position struct {
 }
 
 func Float64FromBytes(bytes []byte) float64 {
-    bits := binary.LittleEndian.Uint64(bytes)
-    float := math.Float64frombits(bits)
-    return float
+	bits := binary.LittleEndian.Uint64(bytes)
+	float := math.Float64frombits(bits)
+	return float
 }
 
 func Float64bytes(float float64) []byte {
-    bits := math.Float64bits(float)
-    bytes := make([]byte, 8)
-    binary.LittleEndian.PutUint64(bytes, bits)
-    return bytes
+	bits := math.Float64bits(float)
+	bytes := make([]byte, 8)
+	binary.LittleEndian.PutUint64(bytes, bits)
+	return bytes
 }
-
-
 
 // Postion to byte array marashalling
 func (p Position) Marshal() []byte {
@@ -41,13 +39,13 @@ func UnmarshalPosition(data []byte) Position {
 
 // Unmarshal the payload into a list of positions
 func UnmarshalPositions(payload []byte, len int) []Position {
-	var list [] Position
-	for i := 0; i < len; i ++ {
+	var list []Position
+	for i := 0; i < len; i++ {
 		pos := Position{
-			Lat: Float64FromBytes(payload[i*16:i*16+8]),
-			Lng: Float64FromBytes(payload[i*16+8:i*16+16]),
+			Lat: Float64FromBytes(payload[i*16 : i*16+8]),
+			Lng: Float64FromBytes(payload[i*16+8 : i*16+16]),
 		}
-		list = append(list,pos)
+		list = append(list, pos)
 	}
 	return list
 }
@@ -113,19 +111,19 @@ type VZoneMessage struct {
 }
 
 const (
-	VHBeatMessageLen    				 = 21
-	VObstacleMessageLen 				 = 22
-	VOREQMessageLen     				 = 6
-	VOREPMessageLen     				 = 2
-	VPathDiscoveryMessageLen             = 5
-	VZoneMessageLen     				 = 29
+	VHBeatMessageLen         = 21
+	VObstacleMessageLen      = 22
+	VOREQMessageLen          = 6
+	VOREPMessageLen          = 2
+	VPathDiscoveryMessageLen = 5
+	VZoneMessageLen          = 29
 )
 
 const (
-	VHBeatType    				uint8 = 1
-	VObstacleType 				uint8 = 2
-	VOREQType     				uint8 = 3
-	VOREPType     				uint8 = 4
-	VPathDiscoveryType    		uint8 = 5
-	VZoneType    				uint8 = 6
+	VHBeatType         uint8 = 1
+	VObstacleType      uint8 = 2
+	VOREQType          uint8 = 3
+	VOREPType          uint8 = 4
+	VPathDiscoveryType uint8 = 5
+	VZoneType          uint8 = 6
 )

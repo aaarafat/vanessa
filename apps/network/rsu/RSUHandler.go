@@ -6,11 +6,15 @@ import (
 
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/apps/network/network/messages"
+	"github.com/aaarafat/vanessa/libs/crypto"
 )
 
 func (r *RSU) handleMessage(packet ip.IPPacket, from net.HardwareAddr) {
 
-	payload := packet.Payload
+	payload, err := crypto.DecryptAES(r.key, packet.Payload)
+	if err != nil {
+		return
+	}
 	msgType := uint8(payload[0])
 	// handle the message
 	switch msgType {
@@ -26,7 +30,10 @@ func (r *RSU) handleMessage(packet ip.IPPacket, from net.HardwareAddr) {
 }
 
 func (r *RSU) handleEthMessages(packet ip.IPPacket, from net.HardwareAddr) {
-	payload := packet.Payload
+	payload, err := crypto.DecryptAES(r.key, packet.Payload)
+	if err != nil {
+		return
+	}
 	msgType := uint8(payload[0])
 	// handle the message
 	switch msgType {
@@ -57,7 +64,10 @@ func (r *RSU) handleVHBeat(payload []byte, from net.HardwareAddr) {
 }
 
 func (r *RSU) handleVObstacle(packet ip.IPPacket, from net.HardwareAddr) {
-	payload := packet.Payload
+	payload, err := crypto.DecryptAES(r.key, packet.Payload)
+	if err != nil {
+		return
+	}
 	obstacle, err := UnmarshalVObstacle(payload)
 	if err != nil {
 		log.Println("Failed to unmarshal VObstacle: ", err)
@@ -72,6 +82,7 @@ func (r *RSU) handleVObstacle(packet ip.IPPacket, from net.HardwareAddr) {
 		bytes := ip.MarshalIPPacket(&packet)
 		ip.Update(bytes)
 		r.ethChannel.Broadcast(bytes)
+		r.SentPackets[0]++
 		r.sendToALLWLANInterface(payload, obstacle.OriginatorIP.String())
 		r.OTable.Set(obstacle.Position, 0)
 	}
@@ -88,20 +99,29 @@ func (r *RSU) handleVOREQ(payload []byte, from net.HardwareAddr) {
 		} else {
 			r.OTable.Set(obs, 0)
 			VObstacleMessage := NewVObstacleMessage(VOREQ.OriginatorIP, obs, 0)
-			packet := ip.NewIPPacket(VObstacleMessage.Marshal(), r.ip, net.ParseIP(ip.RsuIP))
+			cipherData, err := crypto.EncryptAES(r.key, VObstacleMessage.Marshal())
+			if err != nil {
+				continue
+			}
+			packet := ip.NewIPPacket(cipherData, r.ip, net.ParseIP(ip.RsuIP))
 			bytes := ip.MarshalIPPacket(packet)
 			ip.UpdateChecksum(bytes)
 			r.ethChannel.Broadcast(bytes)
+			r.SentPackets[0]++
 			log.Println("Sending as it is a new obstacle")
 
 		}
 	}
 	VOREP := NewVOREPMessage(r.OTable.GetTable())
 	log.Println("Send VOREP to: ", VOREQ.OriginatorIP.String())
-
-	packet := ip.NewIPPacket(VOREP.Marshal(), r.ip, VOREQ.OriginatorIP)
+	cipherData, err := crypto.EncryptAES(r.key, VOREP.Marshal())
+	if err != nil {
+		return
+	}
+	packet := ip.NewIPPacket(cipherData, r.ip, VOREQ.OriginatorIP)
 	bytes := ip.MarshalIPPacket(packet)
 	ip.UpdateChecksum(bytes)
+	r.SentPackets[1]++	
 	r.wlanChannel.SendTo(bytes, from)
 }
 
@@ -112,9 +132,14 @@ func (r *RSU) sendToALLWLANInterface(data []byte, originatorIP string) {
 			continue
 		}
 		log.Printf("Sending to: %s", eip)
-		packet := ip.NewIPPacket(data, r.ip, net.ParseIP(eip))
+		cipherData, err := crypto.EncryptAES(r.key, data)
+		if err != nil {
+			continue
+		}
+		packet := ip.NewIPPacket(cipherData, r.ip, net.ParseIP(eip))
 		bytes := ip.MarshalIPPacket(packet)
 		ip.UpdateChecksum(bytes)
 		r.wlanChannel.SendTo(bytes, entry.MAC)
+		r.SentPackets[1]++	
 	}
 }

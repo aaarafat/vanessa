@@ -6,7 +6,3 @@ const (
 	MAX_DIST_METER         = 100  // 100 meters
 	EARTH_RADIUS_METER     = 6371000
 )
-
-const (
-	AES_KEY_PATH = "VANESSA_KEY"
-)

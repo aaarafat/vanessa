@@ -76,7 +76,7 @@ car_kwargs = dict(
 
 key_bytes = os.urandom(16)
 print(key_bytes)
-os.environ["VANESSA_KEY"] = base64.b64encode(key_bytes).decode('utf-8')
+key = base64.b64encode(key_bytes).decode('utf-8')
 
 
 def cmd(fn, c, bg=True):
@@ -200,7 +200,8 @@ def add_rsu(message):
             pass
         print(position)
 
-        cmd(rsu.cmd, f"sudo dist/apps/network -id {id} -name rsu -debug")
+        cmd(rsu.cmd,
+            f"sudo dist/apps/network -id {id} -name rsu -key {key} -debug")
     except Exception as e:
         if running:
             print(e)
@@ -229,7 +230,7 @@ def add_car(message):
         print(position)
 
         cmd(st.cmd, f"sudo dist/apps/network -id {id} -name car -debug")
-        cmd(st.cmd, f"sudo dist/apps/car -id {id} -debug ")
+        cmd(st.cmd, f"sudo dist/apps/car -id {id} -key {key} -debug ")
         cmd(os.system,
             f"socat TCP4-LISTEN:{port},fork,reuseaddr UNIX-CONNECT:/tmp/car{id}.ui.socket")
 

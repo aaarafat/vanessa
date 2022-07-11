@@ -36,20 +36,23 @@ func initLogger(debug bool, id int) {
 func main() {
 	var id int
 	var debug bool
+	var keyStr string
 	flag.IntVar(&id, "id", 0, "id of the car")
 	flag.BoolVar(&debug, "debug", false, "debug mode")
+	flag.StringVar(&keyStr, "key", "", "aes key")
 	flag.Parse()
 
 	initLogger(debug, id)
 
-	key, err := base64.StdEncoding.DecodeString(os.Getenv(AES_KEY_PATH))
+	key := make([]byte, 16)
+	n, err := base64.StdEncoding.Decode(key, []byte(keyStr))
 	if err != nil {
 		log.Fatalf("failed to decode AES key: %v", err)
 	}
 
-	log.Printf("My key is %s\n", key)
+	log.Printf("My key is %s, from %s written %d  len %d\n", key, keyStr, n, len(key))
 
-	app := NewApp(id)
+	app := NewApp(id, key)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)

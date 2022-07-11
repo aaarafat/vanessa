@@ -20,12 +20,10 @@ func (a *App) listen() {
 }
 
 func (a *App) handleMessage(bytes []byte) {
-	packet, err := ip.UnmarshalPacket(bytes)
+	data, err := a.getDataFromPacket(bytes)
 	if err != nil {
-		log.Printf("Error unmarshalling packet: %v", err)
 		return
 	}
-	data := packet.Payload
 
 	mType := data[0]
 	switch mType {
@@ -71,8 +69,7 @@ func (a *App) handleMessage(bytes []byte) {
 		if msg.DestIP.Equal(net.ParseIP(ip.RsuIP)) {
 			log.Printf("Sending VOREQ to RSU\n")
 			data := NewVOREQMessage(a.ip, a.GetState().Obstacles).Marshal()
-			a.ipConn.Write(data, a.ip, net.ParseIP(ip.RsuIP))
+			a.sendToRouter(data, net.ParseIP(ip.RsuIP))
 		}
-
 	}
 }

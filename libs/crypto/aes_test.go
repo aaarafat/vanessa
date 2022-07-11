@@ -1,36 +1,60 @@
 package crypto
 
 import (
-	"crypto/rand"
+	"crypto/aes"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func createKey() []byte {
-	key := make([]byte, 16)
-	rand.Read(key)
+	key := []byte("WnZr4u7x!A%D*G-K")
 	return key
 }
 
 func TestEncryptAES(t *testing.T) {
 	key := createKey()
+	testCases := []struct {
+		plaintext string
+	}{
+		{"Hello, world!"},
+		{"Hello"},
+		{"He"},
+		{"h"},
+		{"heeeeeeeeeeeeeeeeeeeeeeeee, worlddddddddddddddddd!"},
+		{string([]byte{0, 4})},
+		{string([]byte{4, 0})},
+	}
 
-	plaintext := []byte("Hello, world!")
-	ciphertext, err := EncryptAES(key, plaintext)
-
-	assert.Nil(t, err)
-	assert.NotEqual(t, plaintext, ciphertext)
+	for _, testCase := range testCases {
+		plaintext := []byte(testCase.plaintext)
+		ciphertext, err := EncryptAES(key, plaintext)
+		assert.NoError(t, err)
+		assert.NotEqual(t, plaintext, ciphertext)
+		assert.Equal(t, len(ciphertext)%aes.BlockSize, 0)
+	}
 }
 
 func TestDecryptAES(t *testing.T) {
 	key := createKey()
 
-	plaintext := []byte("Hello, world!")
-	ciphertext, _ := EncryptAES(key, plaintext)
+	testCases := []struct {
+		plaintext string
+	}{
+		{"Hello, world!"},
+		{"Hello"},
+		{"He"},
+		{"h"},
+		{"heeeeeeeeeeeeeeeeeeeeeeeee, worlddddddddddddddddd!"},
+		{string([]byte{0, 4})},
+		{string([]byte{4, 0})},
+	}
 
-	decrypted, err := DecryptAES(key, ciphertext)
-
-	assert.Nil(t, err)
-	assert.Equal(t, plaintext, decrypted[:len(plaintext)])
+	for _, testCase := range testCases {
+		ciphertext, err := EncryptAES(key, []byte(testCase.plaintext))
+		assert.Nil(t, err)
+		decrypted, err := DecryptAES(key, ciphertext)
+		assert.Nil(t, err)
+		assert.Equal(t, []byte(testCase.plaintext), decrypted)
+	}
 }

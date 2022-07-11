@@ -11,8 +11,9 @@ import (
 )
 
 type App struct {
-	id int
-	ip net.IP
+	id  int
+	ip  net.IP
+	key []byte
 
 	// state
 	state     *unix.State
@@ -31,7 +32,7 @@ type App struct {
 	ui *unix.UiUnix
 }
 
-func NewApp(id int) *App {
+func NewApp(id int, key []byte) *App {
 	ipConn, err := ip.NewIPConnection()
 	if err != nil {
 		log.Fatalf("Error creating IP connection: %v", err)
@@ -48,6 +49,7 @@ func NewApp(id int) *App {
 	app := App{
 		id:        id,
 		ip:        ip,
+		key:       key,
 		ipConn:    ipConn,
 		sensor:    unix.NewSensorUnix(id),
 		router:    unix.NewRouter(id),

@@ -7,21 +7,21 @@ import (
 )
 
 const (
-	IPv4HeaderLen  = 20
+	IPv4HeaderLen = 20
 )
 
 // https://www.techtarget.com/searchnetworking/tutorial/Routing-First-Step-IP-header-format
 type IPHeader struct {
-	Version uint8
-	Length uint8
-	TypeOfService uint8
-	TotalLength uint16
+	Version               uint8
+	Length                uint8
+	TypeOfService         uint8
+	TotalLength           uint16
 	IdentifierFlagsOffset uint32
-	TTL uint8
-	Protocol uint8
-	HeaderChecksum uint16
-	SrcIP net.IP
-	DestIP net.IP
+	TTL                   uint8
+	Protocol              uint8
+	HeaderChecksum        uint16
+	SrcIP                 net.IP
+	DestIP                net.IP
 }
 
 func UnmarshalIPHeader(data []byte) (*IPHeader, error) {
@@ -30,7 +30,7 @@ func UnmarshalIPHeader(data []byte) (*IPHeader, error) {
 	}
 
 	header := &IPHeader{}
-	header.Version = byte(data[0] & 0xf0) / 16
+	header.Version = byte(data[0]&0xf0) / 16
 
 	if header.Version != 4 {
 		return nil, fmt.Errorf("IP Packet is not version 4, it's %d", header.Version)
@@ -58,7 +58,7 @@ func UnmarshalIPHeader(data []byte) (*IPHeader, error) {
 func MarshalIPHeader(header *IPHeader) []byte {
 	data := make([]byte, IPv4HeaderLen)
 
-	data[0] = byte(header.Version << 4) | byte(header.Length)
+	data[0] = byte(header.Version<<4) | byte(header.Length)
 	data[1] = byte(header.TypeOfService)
 	binary.LittleEndian.PutUint16(data[2:], header.TotalLength)
 	binary.LittleEndian.PutUint32(data[4:], header.IdentifierFlagsOffset)
@@ -100,4 +100,8 @@ func UpdateTTL(data []byte) {
 func Update(data []byte) {
 	UpdateTTL(data)
 	UpdateChecksum(data)
+}
+
+func (h *IPHeader) String() string {
+	return fmt.Sprintf("IPv4 Header: %s -> %s", h.SrcIP, h.DestIP)
 }

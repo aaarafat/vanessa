@@ -1,23 +1,24 @@
 package crypto
 
 import (
-	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
 	"log"
+
+	"github.com/zenazn/pkcs7pad"
 )
 
 func EncryptAES(key []byte, plaintext []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		log.Printf("Error in EncryptionAES: %v\n", err)
-		return nil, err
+		return handleEncryptionError(err)
 	}
 
-	pPlaintext := PKCS5Padding(plaintext, block.BlockSize(), len(plaintext))
+	pPlaintext := pkcs7pad.Pad(plaintext, block.BlockSize())
 
 	ciphertext := make([]byte, aes.BlockSize+len(pPlaintext))
 	iv := ciphertext[:aes.BlockSize]
+
 	cipher.NewCBCEncrypter(block, iv).CryptBlocks(ciphertext[aes.BlockSize:], pPlaintext)
 
 	return ciphertext, nil
@@ -26,18 +27,28 @@ func EncryptAES(key []byte, plaintext []byte) ([]byte, error) {
 func DecryptAES(key []byte, ciphertext []byte) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
-		log.Printf("Error in DecryptionAES: %v\n", err)
-		return nil, err
+		return handleDecryptionError(err)
 	}
-	plaintext := make([]byte, len(ciphertext))
+
+	pPlaintext := make([]byte, len(ciphertext))
 	iv := ciphertext[:aes.BlockSize]
 
-	cipher.NewCBCDecrypter(block, iv).CryptBlocks(plaintext, ciphertext[aes.BlockSize:])
+	cipher.NewCBCDecrypter(block, iv).CryptBlocks(pPlaintext[aes.BlockSize:], ciphertext[aes.BlockSize:])
+
+	plaintext, err := pkcs7pad.Unpad(pPlaintext[aes.BlockSize:])
+	if err != nil {
+		return handleDecryptionError(err)
+	}
+
 	return plaintext, nil
 }
 
-func PKCS5Padding(ciphertext []byte, blockSize int, after int) []byte {
-	padding := (blockSize - len(ciphertext)%blockSize)
-	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
-	return append(ciphertext, padtext...)
+func handleEncryptionError(err error) ([]byte, error) {
+	log.Printf("Error in EncryptionAES: %v\n", err)
+	return nil, err
+}
+
+func handleDecryptionError(err error) ([]byte, error) {
+	log.Printf("Error in DecryptionAES: %v\n", err)
+	return nil, err
 }
