@@ -72,6 +72,7 @@ func (r *RSU) handleVObstacle(packet ip.IPPacket, from net.HardwareAddr) {
 		bytes := ip.MarshalIPPacket(&packet)
 		ip.Update(bytes)
 		r.ethChannel.Broadcast(bytes)
+		r.SentPackets[0]++
 		r.sendToALLWLANInterface(payload, obstacle.OriginatorIP.String())
 		r.OTable.Set(obstacle.Position, 0)
 	}
@@ -92,6 +93,7 @@ func (r *RSU) handleVOREQ(payload []byte, from net.HardwareAddr) {
 			bytes := ip.MarshalIPPacket(packet)
 			ip.UpdateChecksum(bytes)
 			r.ethChannel.Broadcast(bytes)
+			r.SentPackets[0]++
 			log.Println("Sending as it is a new obstacle")
 
 		}
@@ -102,6 +104,7 @@ func (r *RSU) handleVOREQ(payload []byte, from net.HardwareAddr) {
 	packet := ip.NewIPPacket(VOREP.Marshal(), r.ip, VOREQ.OriginatorIP)
 	bytes := ip.MarshalIPPacket(packet)
 	ip.UpdateChecksum(bytes)
+	r.SentPackets[1]++	
 	r.wlanChannel.SendTo(bytes, from)
 }
 
@@ -115,5 +118,6 @@ func (r *RSU) sendToALLWLANInterface(data []byte, originatorIP string) {
 		bytes := ip.MarshalIPPacket(packet)
 		ip.UpdateChecksum(bytes)
 		r.wlanChannel.SendTo(bytes, entry.MAC)
+		r.SentPackets[1]++	
 	}
 }
