@@ -1,7 +1,11 @@
 import React from 'react';
+import { ObstaclesTable } from './obstacles-table';
 
-type Props = {};
-
-export const Interface: React.FC = (props: Props) => {
-  return <div>RSU interface</div>;
+export const Interface: React.FC = () => {
+  return (
+    <div>
+      RSU interface
+      <ObstaclesTable />
+    </div>
+  );
 };
