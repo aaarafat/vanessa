@@ -1,12 +1,38 @@
 import { Car, Coordinates, RSU } from '@vanessa/utils';
-import React, { createContext } from 'react';
+import React, { createContext, useEffect } from 'react';
 import io, { Socket } from 'socket.io-client';
+import { useAppSelector } from '../app/store';
+
+type rerouteEvent = {
+  type: 'reroute';
+  id: number;
+  data: {
+    obstacle_coordinates: Coordinates[];
+  };
+};
 
 export const socket = io('http://127.0.0.1:65432');
 export const SocketContext = createContext<Socket | null>(null);
-export const SocketProvider: React.FC<React.ReactNode> = ({ children }) => (
-  <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>
-);
+export const SocketProvider: React.FC<React.ReactNode> = ({ children }) => {
+  const cars = useAppSelector((state) => state.simulation.cars);
+
+  useEffect(() => {
+    socket.on('reroute', (message: rerouteEvent) => {
+      socket.receiveBuffer = socket.receiveBuffer.filter(
+        ({ data: [type, data] }: any) =>
+          !(data.id === message.id && type === 'reroute')
+      );
+      const car = cars.find((c) => c.id === message.id);
+      car
+        ?.updateRoute(message.data.obstacle_coordinates)
+        .then((res: boolean) => res && socketEvents.addCar(car));
+    });
+  }, [cars]);
+
+  return (
+    <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>
+  );
+};
 
 export const socketEvents = {
   addCar: (car: Car) => {
@@ -26,11 +52,12 @@ export const socketEvents = {
     };
     socket.emit('destination-reached', message);
   },
-  obstacleDetected: (car: Car) => {
+  obstacleDetected: (car: Car, obstacle: Coordinates) => {
+    console.log(obstacle);
     const message = {
       id: car.id,
       coordinates: car.coordinates,
-      obstacle_coordinates: car.coordinates,
+      obstacle_coordinates: obstacle,
     };
     socket.emit('obstacle-detected', message);
   },

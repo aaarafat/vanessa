@@ -52,7 +52,7 @@ func (a *App) obstacleHandler() {
 					return
 				}
 
-				go a.addObstacle(obstacle.Coordinates, true)
+				go a.addObstacle(obstacle.ObstacleCoordinates, true)
 			}
 		}
 	}()

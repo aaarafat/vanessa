@@ -16,6 +16,8 @@ type RSU struct {
 	wlanChannel *DataLinkLayerChannel
 	RARP        *RSUARP
 	OTable      *ObstaclesTable
+	SentPackets [2]int  // [0] for eth, [1] for wlan
+	RecievedPackets [2]int // [0] for eth, [1] for wlan
 }
 
 const (
@@ -51,6 +53,8 @@ func NewRSU(key []byte) *RSU {
 		wlanChannel: wlanChannel,
 		RARP:        RARP,
 		OTable:      OTable,
+		SentPackets: [2]int{0, 0},
+		RecievedPackets: [2]int{0, 0},
 	}
 }
 
@@ -68,6 +72,8 @@ func (r *RSU) readFromETHInterface() {
 			log.Printf("Failed to unmarshal data: %v\n", err)
 			continue
 		}
+
+		r.RecievedPackets[0]++
 
 		log.Printf("Received \"%s\" from: [%s] on intf-%d", string(packet.Payload), addr.String(), RSUETHInterface)
 
@@ -90,7 +96,7 @@ func (r *RSU) readFromWLANInterface() {
 			log.Printf("Failed to unmarshal data: %v\n", err)
 			continue
 		}
-
+		r.RecievedPackets[1]++
 		log.Printf("Received \"%s\" from: [%s] on intf-%d", string(packet.Payload), addr.String(), RSUWLANInterface)
 
 		r.handleMessage(*packet, addr)
@@ -101,6 +107,7 @@ func (r *RSU) readFromWLANInterface() {
 func (r *RSU) sendToWLANInterface(data []byte, ip string) {
 	mac := r.RARP.Get(ip)
 	r.wlanChannel.SendTo(data, mac)
+	r.SentPackets[1]++
 }
 
 func (r *RSU) Start() {
