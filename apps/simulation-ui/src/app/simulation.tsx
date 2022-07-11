@@ -5,6 +5,7 @@ import {
   Car,
   Coordinates,
   createFeaturePoint,
+  getObstacleFeatures,
   ICar,
   IRSU,
   RSU,
@@ -65,13 +66,9 @@ export const Simulation: React.FC = () => {
   const socket = useContext(SocketContext);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [obstacles, setObstacles] = useState<turf.Feature[]>([]);
+  const [obstacles, setObstacles] = useState<turf.Feature<turf.Point>[]>([]);
   const dispatch = useAppDispatch();
   const { cars, rsus, rsusData } = useAppSelector((state) => state.simulation);
-  const history = useHistory();
-  const { id } = useParams<{
-    id: string;
-  }>();
 
   useEffect(() => {
     if (map && socket && !mapLoaded) {
@@ -91,15 +88,20 @@ export const Simulation: React.FC = () => {
 
   useEffect(() => {
     if (mapLoaded && map) {
-      const featureCollection: turf.FeatureCollection = {
-        type: 'FeatureCollection',
-        features: obstacles,
-      };
-      const obstacle = turf.buffer(featureCollection, 10, { units: 'meters' });
+      const obstacle = getObstacleFeatures(obstacles);
+      const obstaclePoints = turf.featureCollection(
+        obstacles.map((o) => createFeaturePoint(o.geometry.coordinates))
+      );
+
       if (!map.getSource('obstacles')) {
         map.addSource('obstacles', {
           type: 'geojson',
           data: obstacle,
+        });
+
+        map.addSource('obstacles-points', {
+          type: 'geojson',
+          data: obstaclePoints,
         });
 
         map.addLayer({
@@ -117,32 +119,12 @@ export const Simulation: React.FC = () => {
         (map.getSource('obstacles') as mapboxgl.GeoJSONSource).setData(
           obstacle
         );
+        (map.getSource('obstacles-points') as mapboxgl.GeoJSONSource).setData(
+          obstaclePoints
+        );
       }
     }
   }, [obstacles, map, mapLoaded]);
-
-  useEffect(() => {
-    if (id && isNaN(Number(id))) {
-      history.replace('/');
-      return;
-    }
-    if (mapLoaded) {
-      if (!id) {
-        dispatch(unfocusCar());
-        map?.setLayoutProperty('obstacles', 'visibility', 'visible');
-        mapDirections.options.interactive = true;
-        return;
-      }
-      const index = cars.findIndex((c) => c.id === +id);
-      if (index === -1) {
-        history.replace('/');
-        return;
-      }
-      dispatch(focusCar(index));
-      map?.setLayoutProperty('obstacles', 'visibility', 'none');
-      mapDirections.options.interactive = false;
-    }
-  }, [id, mapLoaded]);
 
   const handleAddObstacle = (coordinates: Coordinates | null) => {
     if (!coordinates) return;
@@ -164,15 +146,14 @@ export const Simulation: React.FC = () => {
       mapDirections.reset();
       mapDirections.freeze();
     });
-    car.on('focus', () => {
-      history.push(`/${car.id}`);
-    });
     car.on('popup:close', () => {
       mapDirections.unfreeze();
     });
 
     car.on('move', () => socketEvents.sendCarLocation(car));
-    car.on('obstacle-detected', () => socketEvents.obstacleDetected(car));
+    car.on('obstacle-detected', (obstacle: Coordinates) =>
+      socketEvents.obstacleDetected(car, obstacle)
+    );
     car.on('destination-reached', () => socketEvents.destinationReached(car));
 
     dispatch(addCar(car));

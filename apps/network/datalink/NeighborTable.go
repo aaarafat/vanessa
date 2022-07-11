@@ -10,35 +10,35 @@ import (
 )
 
 type VNeighborTable struct {
-	table *hashmap.HashMap
+	table   *hashmap.HashMap
 	channel *DataLinkLayerChannel
-	SrcIP net.IP
+	SrcIP   net.IP
 }
 
 type VNeighborEntry struct {
-	MAC  net.HardwareAddr
-	IP net.IP
+	MAC net.HardwareAddr
+	IP  net.IP
 }
 
 const (
 	VNeighborTable_UPDATE_INTERVAL = 5
 )
 
-func NewNeighborTable(srcIP  net.IP) *VNeighborTable {
+func NewNeighborTable(srcIP net.IP) *VNeighborTable {
 	d, err := NewDataLinkLayerChannel(VNDEtherType)
 	if err != nil {
 		log.Fatalf("failed to create channel: %v", err)
 	}
 
 	return &VNeighborTable{
-		table: &hashmap.HashMap{},
+		table:   &hashmap.HashMap{},
 		channel: d,
-		SrcIP: srcIP,
+		SrcIP:   srcIP,
 	}
 }
 func NewNeighborEntry(ip net.IP, mac net.HardwareAddr) *VNeighborEntry {
 	return &VNeighborEntry{
-		IP: ip,
+		IP:  ip,
 		MAC: mac,
 	}
 }
@@ -85,7 +85,7 @@ func (nt *VNeighborTable) Set(MAC string, neighbor *VNeighborEntry) {
 	if neighbor == nil {
 		log.Panic("You are trying to add null neighbor")
 	}
-	
+
 	nt.table.Set(MAC, neighbor)
 }
 
@@ -103,7 +103,7 @@ func (nt *VNeighborTable) Len() int {
 }
 
 func (nt *VNeighborTable) Print() {
-	
+
 	for item := range nt.table.Iter() {
 		itemMAC := item.Key.(string)
 		itemIP := item.Value.(*VNeighborEntry)
@@ -126,7 +126,7 @@ func (nt *VNeighborTable) Update() {
 	for {
 		payload, addr, err := nt.channel.Read()
 		entry := NewNeighborEntry(net.IP(payload), addr)
-		nt.Set(addr.String() ,entry)
+		nt.Set(addr.String(), entry)
 		if err != nil {
 			return
 		}

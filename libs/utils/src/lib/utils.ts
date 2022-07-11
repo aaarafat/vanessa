@@ -21,3 +21,12 @@ export function createFeaturePoint(
     properties: {},
   };
 }
+
+export function getObstacleFeatures(obstacles: turf.Feature<turf.Point>[]) {
+  const featureCollection: turf.FeatureCollection = {
+    type: 'FeatureCollection',
+    features: obstacles,
+  };
+  const obstacle = turf.buffer(featureCollection, 2, { units: 'meters' });
+  return obstacle;
+}

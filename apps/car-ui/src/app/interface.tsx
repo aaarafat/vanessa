@@ -1,7 +1,13 @@
 import React, { useCallback, useContext, useEffect, useState } from 'react';
 import { Map, MapContext } from '@vanessa/map';
 import styled, { keyframes } from 'styled-components';
-import { Car, Coordinates, createFeaturePoint, ICar } from '@vanessa/utils';
+import {
+  Car,
+  Coordinates,
+  createFeaturePoint,
+  getObstacleFeatures,
+  ICar,
+} from '@vanessa/utils';
 import * as turf from '@turf/turf';
 import mapboxgl from 'mapbox-gl';
 import { useEventSource } from '../hooks';
@@ -109,11 +115,8 @@ export const Interface: React.FC = () => {
 
   useEffect(() => {
     if (mapLoaded && map) {
-      const featureCollection: turf.FeatureCollection = {
-        type: 'FeatureCollection',
-        features: obstacles,
-      };
-      const obstacle = turf.buffer(featureCollection, 10, { units: 'meters' });
+      const obstacle = getObstacleFeatures(obstacles);
+
       if (!map.getSource('obstacles')) {
         map.addSource('obstacles', {
           type: 'geojson',
@@ -136,7 +139,6 @@ export const Interface: React.FC = () => {
           obstacle
         );
       }
-      car?.updateRoute(obstacles);
     }
     return () => {
       if (!map || !map.getLayer('obstacles')) return;

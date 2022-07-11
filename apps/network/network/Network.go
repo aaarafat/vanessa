@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	UNICAST_IFI_INDEX = 1
+	UNICAST_IFI = "wlan0"
 )
 
 type NetworkLayer struct {
@@ -41,7 +41,7 @@ func NewNetworkLayer(ip net.IP) *NetworkLayer {
 		ipConn:       ipConn,
 	}
 
-	network.unicastProtocol = aodv.NewAodv(ip, UNICAST_IFI_INDEX, network.onPathDiscovery)
+	network.unicastProtocol = aodv.NewAodv(ip, UNICAST_IFI, network.onPathDiscovery)
 
 	return network
 }

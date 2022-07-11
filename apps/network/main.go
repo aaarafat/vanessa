@@ -49,28 +49,28 @@ func main() {
 		rsu := NewRSU()
 
 		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt)	
-		go func(){
-				<- c
-				rsu.Close()
-				os.Exit(1)
+		signal.Notify(c, os.Interrupt)
+		go func() {
+			<-c
+			rsu.Close()
+			os.Exit(1)
 		}()
 
 		// start the RSU
 		go rsu.Start()
 		defer rsu.Close()
-		
+
 	} else if name == "car" {
-		packetfilter, err := NewPacketFilter(id)
+		packetfilter, err := NewPacketFilterWithInterfaceName(id, "wlan0")
 
 		if err != nil {
 			log.Panicf("failed to create packet filter: %v", err)
 		}
 
 		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt)	
-		go func(){
-			<- c
+		signal.Notify(c, os.Interrupt)
+		go func() {
+			<-c
 			packetfilter.Close()
 			os.Exit(1)
 		}()
@@ -80,7 +80,6 @@ func main() {
 	} else {
 		log.Panicf("invalid name: %s, Please Enter car or rsu\n", name)
 	}
-	
 
 	// wait for the program to exit
 	select {}

@@ -23,8 +23,10 @@ import shutil
 import math
 from http import client
 import glob
+import base64
 
 from engineio.payload import Payload
+
 
 Payload.max_decode_packets = 50
 
@@ -69,6 +71,11 @@ car_kwargs = dict(
     s_inverval=5,
     l_interval=10
 )
+
+
+key_bytes = os.urandom(16)
+print(key_bytes)
+os.environ["VANESSA_KEY"] = base64.b64encode(key_bytes).decode('utf-8')
 
 
 @sio.on('connect')
@@ -157,11 +164,12 @@ def add_car(message):
         raise Exception("Pool ran out of stations")
 
     id = message['id']
-    if id not in stations_car:
-        st = stations_pool.pop(0)
-        stations_car[id] = st
-    else:
-        st = stations_car[id]
+    if id in stations_car:
+        update_car(message)
+        return
+
+    st = stations_pool.pop(0)
+    stations_car[id] = st
 
     port = message['port']
     ports.append(port)
@@ -195,6 +203,26 @@ def add_car(message):
     running_threads.append(thread)
 
     thread.start()
+
+
+def update_car(message):
+    id = message['id']
+    st = stations_car[id]
+
+    coordinates = message["coordinates"]
+    position = to_grid(coordinates)
+    st.setPosition(position)
+    print(position)
+
+    payload = {
+        'type': 'add-car',
+        'data': {
+            'coordinates': coordinates,
+            'speed': message['speed'],
+            'route': message['route'],
+        }
+    }
+    send_to_car(f"/tmp/car{id}.socket", payload)
 
 
 @sio.on('update-location')
@@ -231,7 +259,8 @@ def recieve_from_car(car_socket):
             data = conn.recv(1024)
             if not data:
                 continue
-            sio.emit('change', data)
+            data_json = json.loads(data)
+            sio.emit(data_json['type'], data_json)
 
     except Exception as e:
         print(f'recieve_from_car error: {e}')
