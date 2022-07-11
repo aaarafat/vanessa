@@ -29,12 +29,6 @@ const SHeaderCell = styled.div`
   padding: 0.5rem;
   border-right: 1px solid #ffffff;
   width: 100%;
-  &:hover {
-    background-color: #e5e5e5;
-  }
-  &:active {
-    background-color: #d5d5d5;
-  }
   &:first-child {
   }
   &:last-child {
@@ -61,14 +55,14 @@ const SCell = styled.div`
 `;
 type Props = {
   table: { [key: string]: string }[];
-  header: string[];
+  headers: string[];
 };
 
 export const Table = (props: Props) => {
   return (
     <STable>
       <SHeader>
-        {props.header.map((header, index) => {
+        {props.headers.map((header, index) => {
           return <SHeaderCell key={index}>{header}</SHeaderCell>;
         })}
       </SHeader>
