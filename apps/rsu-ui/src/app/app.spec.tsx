@@ -21,7 +21,5 @@ describe('App', () => {
         <App />
       </BrowserRouter>
     );
-
-    expect(getByText(/Welcome rsu-ui/gi)).toBeTruthy();
   });
 });
