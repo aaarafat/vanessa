@@ -1,19 +1,19 @@
 {
-  "root": "apps/router",
+  "root": "apps/rsu",
   "projectType": "application",
-  "sourceRoot": "apps/router",
+  "sourceRoot": "apps/rsu",
   "targets": {
     "build": {
       "executor": "@nx-go/nx-go:build",
       "options": {
-        "outputPath": "dist/apps/router",
-        "main": "apps/router/main.go"
+        "outputPath": "dist/apps/rsu",
+        "main": "apps/rsu/main.go"
       }
     },
     "serve": {
       "executor": "@nx-go/nx-go:serve",
       "options": {
-        "main": "apps/router/main.go"
+        "main": "apps/rsu/main.go"
       }
     },
     "test": {
