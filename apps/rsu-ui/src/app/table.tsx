@@ -16,6 +16,7 @@ const SHeader = styled.div`
   color: #ffffff;
   justify-content: space-evenly;
   width: 100%;
+  border-bottom: 3px solid #ffffff;
   margin: 0rem auto;
 `;
 const SHeaderCell = styled.div`
