@@ -11,9 +11,18 @@ interface ICard {
 const SCard = styled.div<ICard>`
   background-color: ${(p) => p.bgc};
   color: ${(p) => p.color};
+  padding: 1rem;
+  padding-right: 4rem;
+  margin: 1rem;
 `;
-const STitle = styled.div``;
-const SInfo = styled.div``;
+const STitle = styled.div`
+  font-family: 'Lato', sans-serif;
+  margin-bottom: 1rem;
+`;
+const SInfo = styled.div`
+  font-family: 'Bebas Neue', cursive;
+  font-size: 2.5rem;
+`;
 
 export const InfoCard = (props: Props) => {
   return (
