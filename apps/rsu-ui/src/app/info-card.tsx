@@ -12,7 +12,7 @@ const SCard = styled.div<ICard>`
   background-color: ${(p) => p.bgc};
   color: ${(p) => p.color};
   padding: 1rem;
-  padding-right: 4rem;
+  width: 200px;
   margin: 1rem;
 `;
 const STitle = styled.div`

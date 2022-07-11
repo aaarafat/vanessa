@@ -25,8 +25,8 @@ const SHeading = styled.h1`
 `;
 const SDiscription = styled.h3`
   font-size: 2.5rem;
-  font-family: 'Lato', sans-serif;
-  margin: 1rem;
+  font-family: 'Bebas Neue', cursive;
+  margin: 0 1rem;
   color: #ffc000;
 `;
 export const Interface: React.FC = () => {
@@ -36,19 +36,30 @@ export const Interface: React.FC = () => {
       <SDiscription>Total packets</SDiscription>
       <SCards>
         <InfoCard
-          title="Sent Packets"
+          title="Sent to RSUs"
           info="9999999"
           color="#ffffff"
           bgc="#0d0d0d"
         />
         <InfoCard
-          title="Received Packets"
+          title="Recieved from RSUs"
           info="9999999"
           color="#ffffff"
-          bgc="#3d3d3d"
+          bgc="#ffc000"
+        />
+        <InfoCard
+          title="Sent to cars"
+          info="9999999"
+          color="#ffffff"
+          bgc="#2d2d2d"
+        />
+        <InfoCard
+          title="Recieved from cars"
+          info="9999999"
+          color="#ffffff"
+          bgc="#ffcf33"
         />
       </SCards>
-      <SDiscription>Current State</SDiscription>
 
       <STables>
         <OTable>
