@@ -55,7 +55,7 @@ func (a *App) handleWLANMessgaes() {
 		case VHBeatType:
 			a.handleVHBeat(data, from)
 		case VOREQType:
-			// handle oreq
+			a.handleVOREQ(data, from)
 		default:
 			log.Println("Unknown message type: ", msgType)
 		}
