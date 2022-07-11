@@ -6,7 +6,7 @@
     "crypto": "libs/crypto",
     "map": "libs/map",
     "network": "apps/network",
-    "router": "apps/router",
+    "rsu": "apps/rsu",
     "rsu-ui": "apps/rsu-ui",
     "simulation-ui": "apps/simulation-ui",
     "utils": "libs/utils"

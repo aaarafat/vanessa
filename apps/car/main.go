@@ -25,7 +25,7 @@ func initLogger(debug bool, id int) {
 		os.Exit(1)
 	}
 
-	file, err := os.OpenFile(fmt.Sprintf("/var/log/vanessa/car%d-app.log", id), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(fmt.Sprintf("/var/log/vanessa/car%d.log", id), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Printf("Error opening log file: %s\n", err)
 		os.Exit(1)

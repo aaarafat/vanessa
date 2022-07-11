@@ -201,7 +201,7 @@ def add_rsu(message):
         print(position)
 
         cmd(rsu.cmd,
-            f"sudo dist/apps/network -id {id} -name rsu -key {key} -debug")
+            f"sudo dist/apps/rsu -id {id} -key {key} -debug")
     except Exception as e:
         if running:
             print(e)
@@ -229,7 +229,7 @@ def add_car(message):
         st.setPosition(position)
         print(position)
 
-        cmd(st.cmd, f"sudo dist/apps/network -id {id} -name car -debug")
+        cmd(st.cmd, f"sudo dist/apps/network -id {id} -debug")
         cmd(st.cmd, f"sudo dist/apps/car -id {id} -key {key} -debug ")
         cmd(os.system,
             f"socat TCP4-LISTEN:{port},fork,reuseaddr UNIX-CONNECT:/tmp/car{id}.ui.socket")

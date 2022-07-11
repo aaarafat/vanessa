@@ -8,7 +8,7 @@ import (
 	"os"
 	"os/signal"
 
-	. "github.com/aaarafat/vanessa/apps/rsu/router"
+	. "github.com/aaarafat/vanessa/apps/rsu/app"
 )
 
 func initLogger(debug bool, id int) {
@@ -25,7 +25,7 @@ func initLogger(debug bool, id int) {
 		os.Exit(1)
 	}
 
-	file, err := os.OpenFile(fmt.Sprintf("/var/log/vanessa/car%d-app.log", id), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(fmt.Sprintf("/var/log/vanessa/rsu%d.log", id), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Printf("Error opening log file: %s\n", err)
 		os.Exit(1)
@@ -53,7 +53,7 @@ func main() {
 	log.Printf("My key is %s, from %s written %d  len %d\n", key, keyStr, n, len(key))
 
 	// create a new RSU
-	rsu := NewRSU(key)
+	rsu := NewApp(key)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)

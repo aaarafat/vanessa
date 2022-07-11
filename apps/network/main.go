@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"flag"
 	"fmt"
 	"log"
@@ -9,10 +8,9 @@ import (
 	"os/signal"
 
 	. "github.com/aaarafat/vanessa/apps/network/packetFilter"
-	. "github.com/aaarafat/vanessa/apps/network/rsu"
 )
 
-func initLogger(debug bool, id int, name string) {
+func initLogger(debug bool, id int) {
 	log.SetPrefix("[vanessa]")
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	if !debug {
@@ -26,7 +24,7 @@ func initLogger(debug bool, id int, name string) {
 		os.Exit(1)
 	}
 
-	file, err := os.OpenFile(fmt.Sprintf("/var/log/vanessa/%s%d.log", name, id), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(fmt.Sprintf("/var/log/vanessa/router%d.log", id), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Printf("Error opening log file: %s\n", err)
 		os.Exit(1)
@@ -36,61 +34,29 @@ func initLogger(debug bool, id int, name string) {
 
 func main() {
 	var id int
-	var name string
 	var debug bool
-	var keyStr string
 	flag.IntVar(&id, "id", 0, "id of the car")
-	flag.StringVar(&name, "name", "", "name of the unit (rsu or car)")
 	flag.BoolVar(&debug, "debug", false, "debug mode")
-	flag.StringVar(&keyStr, "key", "", "aes key")
 	flag.Parse()
 
-	initLogger(debug, id, name)
+	initLogger(debug, id)
 
-	key := make([]byte, 16)
-	n, err := base64.StdEncoding.Decode(key, []byte(keyStr))
+	packetfilter, err := NewPacketFilterWithInterfaceName(id, "wlan0")
+
 	if err != nil {
-		log.Fatalf("failed to decode AES key: %v", err)
+		log.Panicf("failed to create packet filter: %v", err)
 	}
 
-	log.Printf("My key is %s, from %s written %d  len %d\n", key, keyStr, n, len(key))
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		<-c
+		packetfilter.Close()
+		os.Exit(1)
+	}()
 
-	if name == "rsu" {
-		// create a new RSU
-		rsu := NewRSU(key)
-
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt)
-		go func() {
-			<-c
-			rsu.Close()
-			os.Exit(1)
-		}()
-
-		// start the RSU
-		go rsu.Start()
-		defer rsu.Close()
-
-	} else if name == "car" {
-		packetfilter, err := NewPacketFilterWithInterfaceName(id, "wlan0")
-
-		if err != nil {
-			log.Panicf("failed to create packet filter: %v", err)
-		}
-
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt)
-		go func() {
-			<-c
-			packetfilter.Close()
-			os.Exit(1)
-		}()
-
-		defer packetfilter.Close()
-		go packetfilter.Start()
-	} else {
-		log.Panicf("invalid name: %s, Please Enter car or rsu\n", name)
-	}
+	defer packetfilter.Close()
+	go packetfilter.Start()
 
 	// wait for the program to exit
 	select {}
