@@ -53,7 +53,7 @@ ap_rsus = {}
 running_threads = []
 cmds = []
 
-STATIONS_COUNT = 20
+STATIONS_COUNT = 5
 RSU_COUNT = 5
 
 server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
