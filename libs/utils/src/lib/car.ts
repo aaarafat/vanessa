@@ -1,10 +1,18 @@
 import mapboxgl from 'mapbox-gl';
 import { distanceInKm, euclideanDistance } from './distance';
-import { interpolateString } from './string-utils';
+import {
+  createFeaturePoint,
+  getObstacleFeatures,
+  interpolateString,
+} from './utils';
 import { Coordinates, ICar, CarProps, PartialExcept } from './types';
-import { MS_IN_HOUR, FPS } from './constants';
+import {
+  MS_IN_HOUR,
+  FPS,
+  directionsAPI,
+  directionsAPIParams,
+} from './constants';
 import * as turf from '@turf/turf';
-import { Socket } from 'socket.io-client';
 
 const carDefaultProps: CarProps = {
   title: 'Car',
@@ -21,23 +29,26 @@ export class Car {
   public id: number;
   public lat: number;
   public lng: number;
-  private prevCoordinates: Coordinates;
+  public carSpeed: number;
   public speed: number;
   public route: Coordinates[];
   public originalDirections: GeoJSON.Feature;
-  public sourceId: string;
-  public receivedMessages: any[];
+
+  private prevCoordinates: Coordinates;
   private routeIndex: number;
+
+  public sourceId: string;
+  public routeSourceId: string;
+  public communicationRangeSourceId: string;
+
   private source: mapboxgl.GeoJSONSource | undefined;
-  private layer: mapboxgl.CircleLayer | undefined;
-  private directionsSource: mapboxgl.GeoJSONSource | undefined;
-  private directionsLayer: mapboxgl.LineLayer | undefined;
+  private routeSource: mapboxgl.GeoJSONSource | undefined;
   private communicationRangeSource: mapboxgl.GeoJSONSource | undefined;
-  private communicationRangeLayer: mapboxgl.FillLayer | undefined;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private prevTime: number;
   private map: mapboxgl.Map;
-  private socket: Socket;
+  // private socket: Socket;
   private popup: mapboxgl.Popup | null;
   private obstacleDetected: boolean;
 
@@ -47,39 +58,49 @@ export class Car {
   private animationFrame: number;
   private removed = false;
   private focused: boolean;
+  private stopped = false;
 
-  constructor(car: PartialExcept<ICar, 'map' | 'socket'>) {
+  public port: number;
+
+  constructor(car: PartialExcept<ICar, 'map'>, { displayOnly = false } = {}) {
     this.id = car.id || Date.now();
     this.sourceId = `car-${this.id}`;
-    this.lat = car.lat || 0;
-    this.lng = car.lng || 0;
-    this.prevCoordinates = this.coordinates;
-    this.speed = car.speed ?? 10;
-    this.route = car.route || [];
+    this.routeSourceId = `car-${this.id}-route`;
+    this.communicationRangeSourceId = `car-${this.id}-communication-range`;
     this.map = car.map;
-    this.socket = car.socket;
-    this.popup = null;
-    this.focused = false;
+
+    this.lat = car.lat || car.route?.[0].lat || 0;
+    this.lng = car.lng || car.route?.[0].lng || 0;
+    this.prevCoordinates = this.coordinates;
+    this.carSpeed = car.speed ?? 10;
+    this.speed = this.carSpeed;
+    this.obstacleDetected = car.obstacleDetected || false;
+    this.route = car.route || [];
+    this.routeIndex = 0;
     this.originalDirections = turf.lineString(
       this.route.map((r: Coordinates) => [r.lng, r.lat])
     );
-    this.routeIndex = 0;
+
+    this.popup = null;
+    this.focused = false;
+
     this.handlers = {};
     this.wasFlyingToCar = false;
     this.animationFrame = 0;
-    this.obstacleDetected = car.obstacleDetected || false;
-    this.receivedMessages = [];
 
-    this.socket.emit('add-car', {
-      id: this.id,
-      coordinates: this.coordinates,
-    });
+    this.port = car.port || -1;
 
     this.draw();
     this.attachHandlers();
 
     this.prevTime = Date.now();
-    this.update();
+
+    if (!displayOnly) {
+      this.update();
+    } else {
+      this.focused = true;
+      this.map.panTo([this.lng, this.lat]);
+    }
   }
 
   public get coordinates(): Coordinates {
@@ -109,7 +130,7 @@ export class Car {
       .addSource(this.sourceId, geojson)
       .getSource(this.sourceId) as mapboxgl.GeoJSONSource;
 
-    this.layer = this.map
+    this.map
       .addLayer({
         id: this.sourceId,
         source: this.sourceId,
@@ -121,22 +142,22 @@ export class Car {
       })
       .getLayer(this.sourceId) as mapboxgl.CircleLayer;
 
-    this.directionsSource = this.map
-      .addSource(`car-${this.id}-route`, {
+    this.routeSource = this.map
+      .addSource(this.routeSourceId, {
         type: 'geojson',
         data: {
           type: 'FeatureCollection',
           features: [this.originalDirections],
         },
       })
-      .getSource(`car-${this.id}-route`) as mapboxgl.GeoJSONSource;
+      .getSource(this.routeSourceId) as mapboxgl.GeoJSONSource;
 
-    this.directionsLayer = this.map
+    this.map
       .addLayer(
         {
-          id: `car-${this.id}-route`,
+          id: this.routeSourceId,
+          source: this.routeSourceId,
           type: 'line',
-          source: `car-${this.id}-route`,
           layout: {
             'line-cap': 'round',
             'line-join': 'round',
@@ -149,20 +170,20 @@ export class Car {
         },
         'first-layer'
       )
-      .getLayer(`car-${this.id}-route`) as mapboxgl.LineLayer;
+      .getLayer(this.routeSourceId) as mapboxgl.LineLayer;
 
     this.communicationRangeSource = this.map
-      .addSource(`car-${this.id}-com-range`, {
+      .addSource(this.communicationRangeSourceId, {
         type: 'geojson',
-        data: this.communicationRangeFeature,
+        data: this.getCommunicationRangeFeature(),
       })
-      .getSource(`car-${this.id}-com-range`) as mapboxgl.GeoJSONSource;
+      .getSource(this.communicationRangeSourceId) as mapboxgl.GeoJSONSource;
 
-    this.communicationRangeLayer = this.map
+    this.map
       .addLayer({
-        id: `car-${this.id}-com-range`,
+        id: this.communicationRangeSourceId,
+        source: this.communicationRangeSourceId,
         type: 'fill',
-        source: `car-${this.id}-com-range`,
         layout: {
           visibility: 'none',
         },
@@ -172,10 +193,10 @@ export class Car {
           'fill-outline-color': '#f03b20',
         },
       })
-      .getLayer(`car-${this.id}-com-range`) as mapboxgl.FillLayer;
+      .getLayer(this.communicationRangeSourceId) as mapboxgl.FillLayer;
   }
 
-  private get communicationRangeFeature() {
+  private getCommunicationRangeFeature() {
     return turf.buffer(
       {
         type: 'FeatureCollection',
@@ -224,12 +245,55 @@ export class Car {
   /**
    * Update Car
    */
+
+  public updateLocationFromData = (coordinates: Coordinates) => {
+    this.updateFromData('update-location', coordinates);
+  };
+
+  public updateDestinationFromData = (coordinates: Coordinates) => {
+    this.updateFromData('destination-reached', coordinates);
+  };
+
+  public updateObstacleDetectedFromData = () => {
+    this.updateFromData('obstacle-detected');
+  };
+
+  private updateFromData(
+    type: 'destination-reached' | 'obstacle-detected' | 'update-location',
+    data: Partial<ICar> = {}
+  ) {
+    if (this.removed) return;
+    console.log(data);
+    switch (type) {
+      case 'destination-reached':
+        this.lat = data.lat ?? this.lat;
+        this.lng = data.lng ?? this.lng;
+        this.routeIndex = this.route.length;
+        this.updatePopupProps();
+        break;
+      case 'obstacle-detected':
+        this.obstacleDetected = true;
+        this.speed = 0;
+        this.updatePopupProps();
+        break;
+      case 'update-location':
+        this.lat = data.lat ?? this.lat;
+        this.lng = data.lng ?? this.lng;
+        break;
+      default:
+        break;
+    }
+    this.updateSource();
+    this.updateDetails();
+  }
+
   private update = () => {
     if (this.removed) return;
     this.updateCoordinates();
     this.updateSource();
-    this.updatePopup();
-    if (!this.arrived) this.updateNextFrame();
+    this.updateDetails();
+    if (!this.willUpdate()) return;
+    this.updateNextFrame();
   };
 
   private updateCoordinates = () => {
@@ -237,19 +301,13 @@ export class Car {
     let movementAmount =
       this.speed * (((now - this.prevTime) * 1.0) / MS_IN_HOUR);
     this.prevTime = now;
-    while (movementAmount && !this.arrived && !this.obstacleDetected) {
-      if (this.checkObstacles()) {
-        this.speed = 0;
-        this.emit('props-updated');
-        break;
-      }
+    while (this.canMove(movementAmount)) {
       const dist = distanceInKm(this.coordinates, this.route[this.routeIndex]);
       if (movementAmount >= dist) {
         movementAmount -= dist;
         this.lat = this.route[this.routeIndex].lat;
         this.lng = this.route[this.routeIndex].lng;
         this.routeIndex++;
-        this.emit('move');
       } else {
         const vector: Coordinates = {
           lng: (this.route[this.routeIndex].lng - this.coordinates.lng) / dist,
@@ -258,28 +316,42 @@ export class Car {
         this.lat += movementAmount * vector.lat;
         this.lng += movementAmount * vector.lng;
         movementAmount = 0;
-        this.emit('move');
       }
-    }
-    if (this.arrived) {
-      this.speed = 0;
-      this.emit('props-updated');
-      this.socket.emit('destination-reached', {
-        id: this.id,
-        coordinates: this.coordinates,
-      });
+      this.emit('move');
     }
   };
 
-  private checkObstacles(): boolean {
-    const obstacles: turf.Geometry = (this.map.getSource('obstacles') as any)
+  private willUpdate() {
+    if (this.arrived) {
+      this.speed = 0;
+      this.updatePopupProps();
+      this.emit('destination-reached');
+      return false;
+    } else if (this.obstacleDetected) {
+      return false;
+    }
+    return true;
+  }
+
+  private canMove(movementAmount: number) {
+    return movementAmount && !this.arrived && !this.isObstacleDetected();
+  }
+
+  private isObstacleDetected(): boolean {
+    const obstacles: turf.Polygon = (this.map.getSource('obstacles') as any)
       ._data;
+    const obstaclesPoints: turf.FeatureCollection<turf.Point> = (
+      this.map.getSource('obstacles-points') as any
+    )._data;
+
+    const routeSlice = this.route
+      .slice(this.routeIndex, this.routeIndex + 2)
+      .map((c) => [c.lng, c.lat]);
     const lineStep = turf.lineString([
       [this.coordinates.lng, this.coordinates.lat],
-      ...this.route
-        .slice(this.routeIndex, this.routeIndex + 2)
-        .map((c) => [c.lng, c.lat]),
+      ...routeSlice,
     ]);
+
     const sensorRangeEndPoint = turf.along(lineStep, 100, {
       units: 'meters',
     });
@@ -288,18 +360,75 @@ export class Car {
       sensorRangeEndPoint.geometry.coordinates,
     ]);
 
-    if (!turf.booleanDisjoint(sensorRange, obstacles)) {
+    const intersections = turf.lineIntersect(sensorRange, obstacles).features;
+    if (intersections.length) {
       this.obstacleDetected = true;
-      this.emit('props-updated');
-      this.socket.emit('obstacle-detected', {
-        id: this.id,
-        coordinates: this.coordinates,
-        obstacle_coordinates: this.coordinates,
-      });
+      this.speed = 0;
+      const point = turf.nearestPoint(intersections[0], obstaclesPoints)
+        .geometry.coordinates;
+      this.emit('obstacle-detected', { lng: point[0], lat: point[1] });
       return true;
     }
     return false;
   }
+
+  public updateRoute = async (obstacles: Coordinates[]) => {
+    if (this.obstacleDetected) return false;
+    const o = obstacles.map((c) => createFeaturePoint(c));
+    if (!this.checkObstaclesOnRoute(o)) return false;
+    const result = await this.getRoute(o);
+    if (!result) return false;
+    this.originalDirections = turf.lineString(result);
+    this.route = result.map((c) => ({ lat: c[1], lng: c[0] }));
+    this.routeIndex = 0;
+    this.routeSource?.setData(
+      turf.featureCollection([this.originalDirections])
+    );
+    return true;
+  };
+
+  private getRoute = async (
+    obstacles: turf.Feature<turf.Point>[]
+  ): Promise<turf.Position[] | null> => {
+    const dest = this.route[this.route.length - 1];
+    const o = obstacles
+      .map(
+        (c) =>
+          `point(${c.geometry.coordinates[0]} ${c.geometry.coordinates[1]})`
+      )
+      .join(', ');
+    const params = {
+      ...directionsAPIParams,
+      exclude: o,
+    };
+
+    const response = await fetch(
+      `${directionsAPI}${this.lng},${this.lat};${dest.lng},${
+        dest.lat
+      }.json?${new URLSearchParams(params).toString()}`
+    );
+    const data = await response.json();
+    if (data.code !== 'Ok') return null;
+    return data.routes[0].geometry.coordinates;
+  };
+
+  private checkObstaclesOnRoute = (obstacles: turf.Feature<turf.Point>[]) => {
+    const obstaclesFeatures = getObstacleFeatures(obstacles);
+
+    const routeSlice = this.route
+      .slice(this.routeIndex)
+      .map((c) => [c.lng, c.lat]);
+
+    const remainingRoute = turf.lineString([
+      [this.lng, this.lat],
+      ...routeSlice,
+    ]);
+
+    if (!turf.booleanDisjoint(remainingRoute, obstaclesFeatures as any)) {
+      return true;
+    }
+    return false;
+  };
 
   private updateSource = () => {
     this.source?.setData({
@@ -314,12 +443,6 @@ export class Car {
 
   private attachHandlers = () => {
     this.map.on('click', this.sourceId, this.onClick);
-    this.on('move', () => {
-      this.socket.emit('update-location', {
-        id: this.id,
-        coordinates: this.coordinates,
-      });
-    });
   };
 
   private onClick = () => {
@@ -327,11 +450,75 @@ export class Car {
       this.popup.remove();
       this.popup = null;
     }
+
     this.popup = new mapboxgl.Popup()
       .setLngLat(this.coordinates as mapboxgl.LngLatLike)
       .setHTML(this.description)
       .addTo(this.map);
+    this.bindElements();
 
+    this.communicationRangeSource?.setData(this.getCommunicationRangeFeature());
+
+    this.popup.once('close', () => {
+      this.popup = null;
+      this.setDetailsLayersVisibility('none');
+      this.emit('popup:close', this);
+    });
+
+    this.setDetailsLayersVisibility('visible');
+    this.smoothlyFlyToCar(true);
+    this.emit('click', this);
+  };
+
+  private setDetailsLayersVisibility(visibility: 'visible' | 'none' = 'none') {
+    this.map?.setLayoutProperty(this.routeSourceId, 'visibility', visibility);
+    this.map?.setLayoutProperty(
+      this.communicationRangeSourceId,
+      'visibility',
+      visibility
+    );
+  }
+
+  private updatePopupProps = () => {
+    if (!this.popup) return;
+    this.popup.setHTML(this.description);
+    this.bindElements();
+  };
+
+  private bindElements() {
+    this.bindAnchorElement();
+    if (!this.stopped) this.bindSpeedControlElementStop();
+    else this.bindSpeedControlElementMove();
+  }
+
+  private bindSpeedControlElementStop() {
+    if (!this.popup) return;
+    const el = this.popup
+      .getElement()
+      .querySelector(`#control${this.id}-stop`) as HTMLAnchorElement;
+    if (el)
+      el.onclick = () => {
+        this.stopped = true;
+        this.speed = 0;
+        this.updatePopupProps();
+      };
+  }
+
+  private bindSpeedControlElementMove() {
+    if (!this.popup) return;
+    const el = this.popup
+      .getElement()
+      .querySelector(`#control${this.id}-move`) as HTMLAnchorElement;
+    if (el)
+      el.onclick = () => {
+        this.stopped = false;
+        this.speed = this.carSpeed;
+        this.updatePopupProps();
+      };
+  }
+
+  private bindAnchorElement() {
+    if (!this.popup) return;
     const el = this.popup
       .getElement()
       .querySelector(`#link${this.id}`) as HTMLAnchorElement;
@@ -339,46 +526,9 @@ export class Car {
       el.onclick = () => {
         this.emit('focus');
       };
+  }
 
-    this.popup.once('close', () => {
-      this.popup = null;
-      this.map?.setLayoutProperty(`car-${this.id}-route`, 'visibility', 'none');
-      this.map?.setLayoutProperty(
-        `car-${this.id}-com-range`,
-        'visibility',
-        'none'
-      );
-      this.emit('popup-closed', this);
-    });
-
-    this.on('props-updated', () => {
-      if (!this.popup) return;
-      this.popup.setHTML(this.description);
-      const el = this.popup
-        .getElement()
-        .querySelector(`#link${this.id}`) as HTMLAnchorElement;
-      if (el)
-        el.onclick = () => {
-          this.emit('focus');
-        };
-    });
-
-    this.map?.setLayoutProperty(
-      `car-${this.id}-route`,
-      'visibility',
-      'visible'
-    );
-    this.map?.setLayoutProperty(
-      `car-${this.id}-com-range`,
-      'visibility',
-      'visible'
-    );
-
-    this.smoothlyFlyToCar(true);
-    this.emit('click', this);
-  };
-
-  private updatePopup() {
+  private updateDetails() {
     if (!this.popup) return;
 
     if (!this.map.isMoving()) {
@@ -393,7 +543,7 @@ export class Car {
     }
 
     this.popup.setLngLat(this.coordinates as mapboxgl.LngLatLike);
-    this.communicationRangeSource?.setData(this.communicationRangeFeature);
+    this.communicationRangeSource?.setData(this.getCommunicationRangeFeature());
   }
 
   private smoothlyFlyToCar(now = false) {
@@ -415,11 +565,23 @@ export class Car {
   private get description() {
     let description =
       '<h1 class="mapboxgl-popup-title">Car</h1>' + this.props.description;
+
+    if (this.port > 0) {
+      description += `<p>Port: ${this.port}</p>`;
+    }
     if (this.obstacleDetected) {
       description += '<p>Obstacle detected</p>';
     }
+
     if (!this.focused)
       description += '<a id="link{id}">Go to the car interface</a>';
+
+    if (!this.arrived && !this.obstacleDetected && !this.focused) {
+      description += !this.stopped
+        ? '<a id="control{id}-stop">Stop</a>'
+        : '<a id="control{id}-move">Move</a>';
+    }
+
     return interpolateString(description, this);
   }
 
@@ -429,9 +591,9 @@ export class Car {
       | 'click'
       | 'focus'
       | 'move'
-      | 'popup-closed'
-      | 'props-updated'
-      | 'obstacle-detected',
+      | 'popup:close'
+      | 'obstacle-detected'
+      | 'destination-reached',
     handler: any
   ) {
     this.subscribe(type, handler);
@@ -444,9 +606,9 @@ export class Car {
       | 'click'
       | 'focus'
       | 'move'
-      | 'popup-closed'
-      | 'props-updated'
-      | 'obstacle-detected',
+      | 'popup:close'
+      | 'obstacle-detected'
+      | 'destination-reached',
     handler: (...args: any) => void
   ) {
     if (!this.handlers[type]) this.handlers[type] = [];
@@ -459,9 +621,9 @@ export class Car {
       | 'click'
       | 'focus'
       | 'move'
-      | 'popup-closed'
-      | 'props-updated'
-      | 'obstacle-detected',
+      | 'popup:close'
+      | 'obstacle-detected'
+      | 'destination-reached',
     ...args: any[]
   ) {
     if (!this.handlers[type]) return;
@@ -485,28 +647,35 @@ export class Car {
   }
 
   public remove() {
+    if (this.removed) return;
+    this.removed = true;
     this.popup?.remove();
+
     this.map.removeLayer(this.sourceId);
     this.map.removeSource(this.sourceId);
-    this.map.removeLayer(`car-${this.id}-route`);
-    this.map.removeSource(`car-${this.id}-route`);
-    this.map.removeLayer(`car-${this.id}-com-range`);
-    this.map.removeSource(`car-${this.id}-com-range`);
+
+    this.map.removeLayer(this.routeSourceId);
+    this.map.removeSource(this.routeSourceId);
+
+    this.map.removeLayer(this.communicationRangeSourceId);
+    this.map.removeSource(this.communicationRangeSourceId);
+
     cancelAnimationFrame(this.animationFrame);
-    this.removed = true;
     this.map.off('click', this.sourceId, this.onClick);
   }
 
   public hide() {
+    this.focused = false;
     this.popup?.remove();
+
     this.map.setLayoutProperty(this.sourceId, 'visibility', 'none');
-    this.map.setLayoutProperty(`car-${this.id}-route`, 'visibility', 'none');
+    this.map.setLayoutProperty(this.routeSourceId, 'visibility', 'none');
     this.map.setLayoutProperty(
-      `car-${this.id}-com-range`,
+      this.communicationRangeSourceId,
       'visibility',
       'none'
     );
-    this.focused = false;
+
     this.map.off('click', this.sourceId, this.onClick);
   }
   public show(focus = false) {
@@ -515,11 +684,12 @@ export class Car {
       .off('click', this.sourceId, this.onClick)
       .on('click', this.sourceId, this.onClick);
     this.focused = false;
+
     if (focus) {
       this.focused = true;
       this.onClick();
     }
-    this.emit('props-updated');
+    this.updatePopupProps();
   }
 }
 

@@ -6,6 +6,14 @@ import (
 	"sync"
 )
 
+type IForwarder interface {
+	ForwardTo(payload []byte, addr net.HardwareAddr)
+	ForwardToAll(payload []byte)
+	ForwardToAllExcept(payload []byte, addr net.HardwareAddr)
+	Start()
+	Close()
+}
+
 type Forwarder struct {
 	neighborsTable *VNeighborTable
 	channel *DataLinkLayerChannel
@@ -26,6 +34,16 @@ func (f *Forwarder) ForwardToAllExcept(payload []byte, addr net.HardwareAddr) {
 	for item := range f.neighborsTable.Iter() {
 		neighborMac := item.MAC
 		if neighborMac.String() != addr.String() {
+			f.ForwardTo(payload, neighborMac)
+		}
+	}
+}
+
+func (f *Forwarder) ForwardToAllExceptIP(payload []byte, ip net.IP) {
+	for item := range f.neighborsTable.Iter() {
+		neighborMac := item.MAC
+		neighborIP := item.IP
+		if !neighborIP.Equal(ip) {
 			f.ForwardTo(payload, neighborMac)
 		}
 	}

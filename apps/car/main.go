@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"log"
@@ -41,12 +42,19 @@ func main() {
 
 	initLogger(debug, id)
 
+	key, err := base64.StdEncoding.DecodeString(os.Getenv(AES_KEY_PATH))
+	if err != nil {
+		log.Fatalf("failed to decode AES key: %v", err)
+	}
+
+	log.Printf("My key is %s\n", key)
+
 	app := NewApp(id)
 
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)	
-	go func(){
-		<- c
+	signal.Notify(c, os.Interrupt)
+	go func() {
+		<-c
 		app.Stop()
 		os.Exit(1)
 	}()

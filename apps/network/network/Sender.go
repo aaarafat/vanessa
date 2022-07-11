@@ -3,14 +3,16 @@ package network
 import (
 	"log"
 	"net"
+
+	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 )
 
 func (n *NetworkLayer) Send(payload []byte, srcIP net.IP, destIP net.IP) {
 	n.ipConn.Write(payload, srcIP, destIP)
 }
 
-
 func (n *NetworkLayer) SendUnicast(packet []byte, destIP net.IP) {
+	log.Printf("Sending unicast to %s\n", destIP)
 	route, found := n.unicastProtocol.GetRoute(destIP)
 	if !found {
 		log.Printf("No route to %s\n", destIP)
@@ -21,6 +23,10 @@ func (n *NetworkLayer) SendUnicast(packet []byte, destIP net.IP) {
 	n.forwarders[route.Interface].ForwardTo(packet, route.NextHop)
 }
 
+func (n *NetworkLayer) SendBroadcast(packet []byte, from net.IP) {
+	log.Printf("Sending broadcast from %s\n", from)
+	n.forwarders[1].ForwardToAllExceptIP(packet, from)
+}
 
 func (n *NetworkLayer) addToBuffer(packet []byte, destIP net.IP) {
 	n.packetBuffer.Add(packet, destIP)
@@ -28,6 +34,7 @@ func (n *NetworkLayer) addToBuffer(packet []byte, destIP net.IP) {
 }
 
 func (n *NetworkLayer) onPathDiscovery(destIP net.IP) {
+	go n.sendPathDiscoveryMessage(destIP)
 	data, ok := n.packetBuffer.Get(destIP)
 	if ok {
 		for _, packet := range data {
@@ -36,4 +43,8 @@ func (n *NetworkLayer) onPathDiscovery(destIP net.IP) {
 		n.packetBuffer.Del(destIP)
 		log.Printf("Removed from buffer: %s\n", destIP)
 	}
+}
+
+func (n *NetworkLayer) sendPathDiscoveryMessage(destIP net.IP) {
+	n.ipConn.Write(NewVPathDiscoveryMessage(destIP).Marshal(), n.ip, n.ip)
 }

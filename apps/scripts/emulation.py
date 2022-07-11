@@ -23,8 +23,10 @@ import shutil
 import math
 from http import client
 import glob
+import base64
 
 from engineio.payload import Payload
+
 
 Payload.max_decode_packets = 50
 
@@ -48,6 +50,7 @@ stations_car = {}
 ap_rsus = {}
 
 running_threads = []
+ports = []
 
 STATIONS_COUNT = 5
 RSU_COUNT = 5
@@ -68,6 +71,11 @@ car_kwargs = dict(
     s_inverval=5,
     l_interval=10
 )
+
+
+key_bytes = os.urandom(16)
+print(key_bytes)
+os.environ["VANESSA_KEY"] = base64.b64encode(key_bytes).decode('utf-8')
 
 
 @sio.on('connect')
@@ -151,15 +159,20 @@ def add_rsu(message):
 
 @sio.on('add-car')
 def add_car(message):
+    print("Received Add Car ...")
     if len(stations_pool) == 0:
         raise Exception("Pool ran out of stations")
 
     id = message['id']
-    if id not in stations_car:
-        st = stations_pool.pop(0)
-        stations_car[id] = st
-    else:
-        st = stations_car[id]
+    if id in stations_car:
+        update_car(message)
+        return
+
+    st = stations_pool.pop(0)
+    stations_car[id] = st
+
+    port = message['port']
+    ports.append(port)
 
     coordinates = message["coordinates"]
     position = to_grid(coordinates)
@@ -168,14 +181,18 @@ def add_car(message):
 
     st.cmd(f"sudo dist/apps/network -id {id} -name car -debug &")
     st.cmd(f"sudo dist/apps/car -id {id} -debug &")
+    os.system(
+        f"socat TCP4-LISTEN:{port},fork,reuseaddr UNIX-CONNECT:/tmp/car{id}.ui.socket &")
 
     payload = {
         'type': 'add-car',
         'data': {
             'coordinates': coordinates,
+            'speed': message['speed'],
+            'route': message['route'],
         }
     }
-    time.sleep(0.01)
+    time.sleep(0.5)
     send_to_car(f"/tmp/car{id}.socket", payload)
 
     # run in a new thread
@@ -188,6 +205,26 @@ def add_car(message):
     thread.start()
 
 
+def update_car(message):
+    id = message['id']
+    st = stations_car[id]
+
+    coordinates = message["coordinates"]
+    position = to_grid(coordinates)
+    st.setPosition(position)
+    print(position)
+
+    payload = {
+        'type': 'add-car',
+        'data': {
+            'coordinates': coordinates,
+            'speed': message['speed'],
+            'route': message['route'],
+        }
+    }
+    send_to_car(f"/tmp/car{id}.socket", payload)
+
+
 @sio.on('update-location')
 def update_locations(message):
     id = message['id']
@@ -198,7 +235,7 @@ def update_locations(message):
     position = to_grid(coordinates)
     stations_car[id].setPosition(position)
 
-    lng, lat = coordinates["lng"], coordinates["lat"]
+    # lng, lat = coordinates["lng"], coordinates["lat"]
     # print(f"car {id} moved to {position}, lng: {lng} lat: {lat}")
 
     payload = {
@@ -213,12 +250,17 @@ def update_locations(message):
 def recieve_from_car(car_socket):
     global running
     try:
-        server = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         server.bind(car_socket)
+        server.listen(1)
         print(f"Listening on {car_socket}")
         while running:
-            data = server.recv(1024)
-            sio.emit('change', data)
+            conn, _ = server.accept()
+            data = conn.recv(1024)
+            if not data:
+                continue
+            data_json = json.loads(data)
+            sio.emit(data_json['type'], data_json)
 
     except Exception as e:
         print(f'recieve_from_car error: {e}')
@@ -227,11 +269,13 @@ def recieve_from_car(car_socket):
 
 def send_to_car(car_socket, payload):
     try:
-        client = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         client.connect(car_socket)
         client.send(json.dumps(payload).encode('ASCII'))
     except Exception as e:
         print(f'send_to_car error: {e}')
+        time.sleep(0.5)
+        send_to_car(car_socket, payload)
         pass
 
 
@@ -296,7 +340,7 @@ def topology(args):
     for i, rsu in enumerate(rsus_pool):
         rsu.start([c1])
 
-    s0.cmd('sudo apps/scripts/switch &')
+    s0.cmd('sudo apps/scripts/switch -debug &')
 
     info("\n*** Establishing socket connections\n")
     for f in glob.glob('/tmp/car*.socket'):
@@ -314,6 +358,9 @@ def topology(args):
     global running
     running = False
     time.sleep(0.5)
+    for port in ports:
+        # killing all apps listening on port
+        os.system(f"kill $(lsof -t -i:{port})")
     for thread in running_threads:
         thread.join(0.1)
 

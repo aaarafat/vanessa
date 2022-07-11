@@ -1,29 +1,34 @@
 package app
 
 import (
-	"encoding/json"
 	"log"
 	"net"
-	"time"
+	"sync"
 
 	"github.com/aaarafat/vanessa/apps/car/unix"
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
+	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 )
 
 type App struct {
 	id int
 	ip net.IP
 
-	// car data
-	position *unix.Position
+	// state
+	state     *unix.State
+	stateLock *sync.RWMutex
 
 	// to send messages to the network
 	ipConn *ip.IPConnection
 
 	// to connect to the simulator (read sensor data)
-	unix *unix.UnixSocket
-	// to connect to the router 
+	sensor *unix.SensorUnix
+
+	// to connect to the router
 	router *unix.Router
+
+	// to connect to the car ui
+	ui *unix.UiUnix
 }
 
 func NewApp(id int) *App {
@@ -40,48 +45,40 @@ func NewApp(id int) *App {
 		return nil
 	}
 
-	return &App{
-		id: id, 
-		ip: ip, 
-		unix: unix.NewUnixSocket(id), 
-		ipConn: ipConn, 
-		router: unix.NewRouter(id),
+	app := App{
+		id:        id,
+		ip:        ip,
+		ipConn:    ipConn,
+		sensor:    unix.NewSensorUnix(id),
+		router:    unix.NewRouter(id),
+		stateLock: &sync.RWMutex{},
 	}
-}
 
-func (a *App) sendCarData() {
-	for {
-		if a.position == nil {
-			continue
-		}
-		updateLocation := unix.UpdateLocationData{Coordinates: *a.position}
-		data, err := json.Marshal(updateLocation)
-		if err != nil {
-			log.Printf("Error encoding update-location data: %v", err)
-			continue
-		}
-		a.ipConn.Write(data, a.ip, net.ParseIP(ip.RsuIP))
-		a.unix.Write(data)
-		time.Sleep(time.Millisecond * DATA_SENDING_INTERVAL_MS)
-	}
-}
+	app.ui = unix.NewUiUnix(id, app.GetState)
 
-func (a *App) updatePosition(pos *unix.Position) {
-	a.position = pos
-	log.Printf("Position updated: lng: %f lat: %f", pos.Lng, pos.Lat)
+	app.initState(0, []Position{}, Position{Lng: 0, Lat: 0})
+
+	return &app
 }
 
 func (a *App) Run() {
 	log.Printf("App %d starting.....", a.id)
-	go a.unix.Start()
-	go a.router.Start()
-	go a.startSocketHandlers()
-	go a.sendCarData()
+	a.startSocketHandlers()
+	a.sensor.Start()
+	a.router.Start()
+	go a.listen()
+	go a.sendHeartBeat()
+	// go a.sendZoneMsg()
+	go a.ui.Start()
+
 	log.Printf("App %d started", a.id)
 }
 
 func (a *App) Stop() {
 	log.Printf("App %d stopping", a.id)
 	a.ipConn.Close()
+	a.sensor.Close()
+	a.router.Close()
+	a.ui.Close()
 	log.Printf("App %d stopped", a.id)
 }

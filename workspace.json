@@ -3,6 +3,7 @@
   "projects": {
     "car": "apps/car",
     "car-ui": "apps/car-ui",
+    "crypto": "libs/crypto",
     "map": "libs/map",
     "network": "apps/network",
     "router": "apps/router",

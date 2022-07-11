@@ -46,7 +46,7 @@ func UnmarshalPacket(data []byte) (*IPPacket, error) {
 }
 
 func MarshalIPPacket(packet *IPPacket) []byte {
-	data := make([]byte, packet.Header.TotalLength)
+	data := make([]byte, packet.Header.LengthInBytes() + len(packet.Payload))
 	copy(data, MarshalIPHeader(packet.Header))
 	copy(data[packet.Header.LengthInBytes():], packet.Payload)
 	return data

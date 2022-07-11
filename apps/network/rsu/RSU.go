@@ -10,13 +10,15 @@ import (
 )
 
 type RSU struct {
-	ip net.IP
-	ethChannel *DataLinkLayerChannel
+	ip          net.IP
+	ethChannel  *DataLinkLayerChannel
 	wlanChannel *DataLinkLayerChannel
+	RARP        *RSUARP
+	OTable      *ObstaclesTable
 }
 
 const (
-	RSUETHInterface = 1
+	RSUETHInterface  = 1
 	RSUWLANInterface = 3
 )
 
@@ -39,15 +41,18 @@ func createWLANChannel() *DataLinkLayerChannel {
 func NewRSU() *RSU {
 	ethChannel := createETHChannel()
 	wlanChannel := createWLANChannel()
+	RARP := NewRSUARP()
+	OTable := NewObstaclesTable()
 	return &RSU{
-		ip: net.ParseIP(RsuIP),
-		ethChannel: ethChannel,
+		ip:          net.ParseIP(RsuIP),
+		ethChannel:  ethChannel,
 		wlanChannel: wlanChannel,
+		RARP:        RARP,
+		OTable:      OTable,
 	}
 }
 
-
-func (r* RSU) readFromETHInterface() {
+func (r *RSU) readFromETHInterface() {
 	for {
 
 		data, addr, err := r.ethChannel.Read()
@@ -55,7 +60,7 @@ func (r* RSU) readFromETHInterface() {
 			return
 		}
 		fmt.Println()
-		
+
 		packet, err := UnmarshalPacket(data)
 		if err != nil {
 			log.Printf("Failed to unmarshal data: %v\n", err)
@@ -63,8 +68,8 @@ func (r* RSU) readFromETHInterface() {
 		}
 
 		log.Printf("Received \"%s\" from: [%s] on intf-%d", string(packet.Payload), addr.String(), RSUETHInterface)
-		// TODO: Forward up with callback to decide what to do
-		r.wlanChannel.Broadcast(data)
+
+		r.handleEthMessages(*packet, addr)
 	}
 }
 
@@ -85,9 +90,15 @@ func (r *RSU) readFromWLANInterface() {
 		}
 
 		log.Printf("Received \"%s\" from: [%s] on intf-%d", string(packet.Payload), addr.String(), RSUWLANInterface)
-		// TODO: Forward up with callback to decide what to do
-		r.ethChannel.Broadcast(data)
+
+		r.handleMessage(*packet, addr)
 	}
+}
+
+// get MAC from RSUARP using ip then send to wlan interface
+func (r *RSU) sendToWLANInterface(data []byte, ip string) {
+	mac := r.RARP.Get(ip)
+	r.wlanChannel.SendTo(data, mac)
 }
 
 func (r *RSU) Start() {

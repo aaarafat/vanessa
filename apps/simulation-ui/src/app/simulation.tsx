@@ -1,11 +1,18 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Map, MapContext } from '@vanessa/map';
 import styled, { keyframes } from 'styled-components';
-import { Car, Coordinates, ICar, IRSU, RSU } from '@vanessa/utils';
+import {
+  Car,
+  Coordinates,
+  createFeaturePoint,
+  getObstacleFeatures,
+  ICar,
+  IRSU,
+  RSU,
+} from '@vanessa/utils';
 import * as turf from '@turf/turf';
 import mapboxgl from 'mapbox-gl';
-import { SocketContext } from '../context';
-import { CLICK_SOURCE_ID } from './constants';
+import { socketEvents, SocketContext } from '../context';
 import ControlPanel from './control-panel';
 import { useAppDispatch, useAppSelector } from './store';
 import {
@@ -13,7 +20,6 @@ import {
   addRSU,
   clearState,
   focusCar,
-  initRSUs,
   unfocusCar,
 } from './store/simulationSlice';
 import { useHistory, useParams } from 'react-router-dom';
@@ -52,44 +58,50 @@ const LoaderContainer = styled.div`
   justify-content: center;
 `;
 
+let carPortsCounter = 10000;
+let rsuPortsCounter = 5000;
+
 export const Simulation: React.FC = () => {
   const { map, mapDirections } = useContext(MapContext);
   const socket = useContext(SocketContext);
   const [mapLoaded, setMapLoaded] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [obstacles, setObstacles] = useState<turf.FeatureCollection>({
-    type: 'FeatureCollection',
-    features: [],
-  });
+  const [loading, setLoading] = useState(true);
+  const [obstacles, setObstacles] = useState<turf.Feature<turf.Point>[]>([]);
   const dispatch = useAppDispatch();
-  const { cars, rsus } = useAppSelector((state) => state.simulation);
-  const history = useHistory();
-  const { id } = useParams<{
-    id: string;
-  }>();
+  const { cars, rsus, rsusData } = useAppSelector((state) => state.simulation);
 
   useEffect(() => {
-    if (map && socket) {
+    if (map && socket && !mapLoaded) {
       map.setMaxZoom(18);
       map.on('load', () => {
-        dispatch(
-          initRSUs({
-            map,
-            socket,
-          })
-        );
         setMapLoaded(true);
+
+        rsusData.forEach((r) => {
+          const rsu = new RSU({ ...r, map, port: rsuPortsCounter++ });
+          dispatch(addRSU(rsu));
+          socketEvents.addRSU(rsu);
+        });
+        setLoading(false);
       });
     }
-  }, [map, socket]);
+  }, [map, socket, dispatch, rsusData, mapLoaded]);
 
   useEffect(() => {
     if (mapLoaded && map) {
-      const obstacle = turf.buffer(obstacles, 10, { units: 'meters' });
+      const obstacle = getObstacleFeatures(obstacles);
+      const obstaclePoints = turf.featureCollection(
+        obstacles.map((o) => createFeaturePoint(o.geometry.coordinates))
+      );
+
       if (!map.getSource('obstacles')) {
         map.addSource('obstacles', {
           type: 'geojson',
           data: obstacle,
+        });
+
+        map.addSource('obstacles-points', {
+          type: 'geojson',
+          data: obstaclePoints,
         });
 
         map.addLayer({
@@ -107,76 +119,45 @@ export const Simulation: React.FC = () => {
         (map.getSource('obstacles') as mapboxgl.GeoJSONSource).setData(
           obstacle
         );
+        (map.getSource('obstacles-points') as mapboxgl.GeoJSONSource).setData(
+          obstaclePoints
+        );
       }
     }
   }, [obstacles, map, mapLoaded]);
 
-  useEffect(() => {
-    if (id && isNaN(Number(id))) {
-      history.replace('/');
-      return;
-    }
-    if (mapLoaded) {
-      if (!id) {
-        dispatch(unfocusCar());
-        map?.setLayoutProperty('obstacles', 'visibility', 'visible');
-        mapDirections.options.interactive = true;
-        return;
-      }
-      const index = cars.findIndex((c) => c.id === +id);
-      if (index === -1) {
-        history.replace('/');
-        return;
-      }
-      dispatch(focusCar(index));
-      map?.setLayoutProperty('obstacles', 'visibility', 'none');
-      mapDirections.options.interactive = false;
-    }
-  }, [id, mapLoaded]);
-
   const handleAddObstacle = (coordinates: Coordinates | null) => {
     if (!coordinates) return;
-    setObstacles((prev) => ({
-      ...prev,
-      features: [
-        ...prev.features,
-        {
-          type: 'Feature',
-          geometry: {
-            type: 'Point',
-            coordinates: [coordinates.lng, coordinates.lat],
-          },
-          properties: {},
-        },
-      ],
-    }));
+    setObstacles((prev) => [...prev, createFeaturePoint(coordinates)]);
   };
 
   const handleAddCar = (carInputs: Partial<ICar>) => {
     if (!map) return;
 
-    // if no previous click, return
-    const source = map.getSource(CLICK_SOURCE_ID);
-    if (!source || !carInputs.route) return;
+    if (!carInputs.route) return;
 
     const car: Car = new Car({
       ...carInputs,
       map,
-      socket,
+      port: carPortsCounter++,
     });
 
     car.on('click', () => {
       mapDirections.reset();
       mapDirections.freeze();
     });
-
-    car.on('focus', () => {
-      history.push(`/${car.id}`);
-    });
-    car.on('popup-closed', () => {
+    car.on('popup:close', () => {
       mapDirections.unfreeze();
     });
+
+    car.on('move', () => socketEvents.sendCarLocation(car));
+    car.on('obstacle-detected', (obstacle: Coordinates) =>
+      socketEvents.obstacleDetected(car, obstacle)
+    );
+    car.on('destination-reached', () => socketEvents.destinationReached(car));
+
     dispatch(addCar(car));
+    socketEvents.addCar(car);
 
     mapDirections.reset();
   };
@@ -184,7 +165,7 @@ export const Simulation: React.FC = () => {
   const handleExport = () => {
     const info: Array<any> = [...cars, ...rsus].map((item) => item.export());
     info.push({
-      coordinates: obstacles.features
+      coordinates: obstacles
         .map((f) =>
           f.geometry.type === 'Point' ? f.geometry.coordinates : null
         )
@@ -194,6 +175,7 @@ export const Simulation: React.FC = () => {
     const fileData = JSON.stringify(info, null, 2);
     const blob = new Blob([fileData], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
+
     const link = document.createElement('a');
     link.download = 'exported.json';
     link.href = url;
@@ -209,16 +191,11 @@ export const Simulation: React.FC = () => {
         removeRSUs,
       })
     );
-    setObstacles({
-      type: 'FeatureCollection',
-      features: [],
-    });
+    setObstacles([]);
     mapDirections.reset();
   };
 
   const handleImport = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
     const reader = new FileReader();
     reader.addEventListener('load', () => {
       clearMap(true);
@@ -229,23 +206,20 @@ export const Simulation: React.FC = () => {
             ...item,
           });
         } else if (item.type === 'rsu') {
-          dispatch(addRSU(new RSU({ ...item, map, socket })));
+          const rsu = new RSU({ ...item, map });
+          dispatch(addRSU(rsu));
+          socketEvents.addRSU(rsu);
         } else if (item.type === 'obstacles') {
-          setObstacles({
-            type: 'FeatureCollection',
-            features: item.coordinates.map((c: turf.Point) => ({
-              type: 'Feature',
-              geometry: {
-                type: 'Point',
-                coordinates: c,
-              },
-              properties: {},
-            })),
-          });
+          setObstacles(
+            item.coordinates.map((c: turf.Position) => createFeaturePoint(c))
+          );
         }
       });
       setLoading(false);
     });
+
+    const input = document.createElement('input');
+    input.type = 'file';
     input.onchange = (e) => {
       if (input.files?.[0]) {
         setLoading(true);
