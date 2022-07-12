@@ -11,7 +11,8 @@ func getRSU(intfName string) (string, string) {
 
 	out, err := exec.Command("iw", "dev", intfName, "link").Output()
 	if err != nil {
-		log.Panic(err)
+		log.Println(err)
+		return "", ""
 	}
 	cmdOut := string(out)
 	// println(cmdOut)

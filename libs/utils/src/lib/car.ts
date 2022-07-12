@@ -74,7 +74,7 @@ export class Car {
     this.prevCoordinates = this.coordinates;
     this.carSpeed = car.speed ?? 10;
     this.speed = this.carSpeed;
-    this.obstacleDetected = car.obstacleDetected || false;
+    this.obstacleDetected = false;
     this.route = car.route || [];
     this.routeIndex = 0;
     this.originalDirections = turf.lineString(
@@ -99,6 +99,8 @@ export class Car {
       this.update();
     } else {
       this.focused = true;
+      this.obstacleDetected = car.obstacleDetected || false;
+      if (this.obstacleDetected) this.speed = 0;
       this.map.panTo([this.lng, this.lat]);
     }
   }
@@ -268,6 +270,7 @@ export class Car {
       case 'destination-reached':
         this.lat = data.lat ?? this.lat;
         this.lng = data.lng ?? this.lng;
+        this.speed = 0;
         this.routeIndex = this.route.length;
         this.updatePopupProps();
         break;
@@ -367,6 +370,7 @@ export class Car {
       const point = turf.nearestPoint(intersections[0], obstaclesPoints)
         .geometry.coordinates;
       this.emit('obstacle-detected', { lng: point[0], lat: point[1] });
+      this.updatePopupProps();
       return true;
     }
     return false;
@@ -638,10 +642,9 @@ export class Car {
     return {
       id: this.id,
       route: this.route,
-      speed: this.speed,
+      speed: this.carSpeed,
       lng: this.route[0].lng,
       lat: this.route[0].lat,
-      obstacleDetected: this.obstacleDetected,
       type: 'car',
     };
   }
