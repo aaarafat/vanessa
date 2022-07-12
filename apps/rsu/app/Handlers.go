@@ -6,7 +6,6 @@ import (
 
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/apps/network/network/messages"
-	"github.com/aaarafat/vanessa/libs/crypto"
 )
 
 func (a *App) handleEthMessages() {
@@ -80,15 +79,8 @@ func (a *App) handleVObstacle(payload []byte, from net.HardwareAddr, packet *ip.
 		return
 	}
 	log.Println("Recieved Obstacle from: ", obstacle.OriginatorIP.String(), " at: ", obstacle.Position)
-	if a.state.HasObstacle(&obstacle.Position) {
-		log.Println("Not Sending as it is not a new obstacle")
-		return
-	}
 	a.router.RARP.Set(obstacle.OriginatorIP.String(), from)
-	a.router.BroadcastETH(packet)
-	data, _ := crypto.EncryptAES(a.key, payload)
-	a.router.SendToALLWLANInterface(data, obstacle.OriginatorIP.String())
-	a.state.OTable.Set(obstacle.Position, 0)
+	a.addObstacle(&obstacle.Position, obstacle.OriginatorIP, packet)
 }
 
 func (a *App) handleVOREQ(payload []byte, from net.HardwareAddr) {
