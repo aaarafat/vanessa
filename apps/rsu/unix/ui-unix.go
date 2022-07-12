@@ -1,7 +1,6 @@
 package unix
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -98,25 +97,7 @@ func (u *UiUnix) Start() {
 	http.Handle("/", u.server)
 
 	go func() {
-		httpc := http.Client{
-			Transport: &http.Transport{
-				DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-					return net.Dial("unix", u.addr)
-				},
-			},
-		}
-
-		for {
-			time.Sleep(time.Second)
-			resp, err := httpc.Get("http://unix/ok")
-			if err != nil {
-				log.Printf("Error: %v", err)
-				os.Exit(1)
-			}
-			if resp.StatusCode == 200 {
-				break
-			}
-		}
+		time.Sleep(time.Second * 10)
 		// send refresh message to the ui
 		u.Refresh(*u.getState())
 	}()
