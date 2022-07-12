@@ -10,11 +10,7 @@ import (
 )
 
 func (a *App) sendToALLWLANInterface(data []byte, ip string) {
-	cipherdata, err := crypto.EncryptAES(a.key, data)
-	if err != nil {
-		return
-	}
-	count := a.router.SendToALLWLANInterface(cipherdata, ip)
+	count := a.router.SendToALLWLANInterface(data, ip)
 	a.state.SentPacket(1, count)
 }
 
