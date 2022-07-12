@@ -80,7 +80,7 @@ func (u *UiUnix) Start() {
 	listener, err := u.initUnixSocket()
 	defer listener.Close()
 
-	http.HandleFunc("/state", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/state-rsu", func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != "GET" {
 			return
 		}
