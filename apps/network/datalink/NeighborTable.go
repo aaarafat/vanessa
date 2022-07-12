@@ -1,7 +1,6 @@
 package datalink
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"time"
@@ -23,7 +22,7 @@ type VNeighborEntry struct {
 }
 
 const (
-	VNeighborTable_UPDATE_INTERVAL = 6
+	VNeighborTable_UPDATE_INTERVAL_MS = 6000
 )
 
 func NewVNeighborTable(srcIP net.IP, ifiName string, receiveOnly bool) *VNeighborTable {
@@ -46,11 +45,7 @@ func NewVNeighborEntry(ip net.IP, mac net.HardwareAddr) *VNeighborEntry {
 	}
 }
 
-func (nt *VNeighborTable) Set(MAC string, neighbor *VNeighborEntry) {
-	if neighbor == nil {
-		log.Panic("You are trying to add null neighbor")
-	}
-
+func (nt *VNeighborTable) Set(MAC string, neighbor VNeighborEntry) {
 	entry, exist := nt.Get(MAC)
 	if exist {
 		entry.timer.Stop()
@@ -61,7 +56,7 @@ func (nt *VNeighborTable) Set(MAC string, neighbor *VNeighborEntry) {
 		nt.table.Del(MAC)
 	}
 
-	timer := time.AfterFunc(VNeighborTable_UPDATE_INTERVAL*time.Second, callback)
+	timer := time.AfterFunc(VNeighborTable_UPDATE_INTERVAL_MS*time.Millisecond, callback)
 	neighbor.timer = timer
 
 	nt.table.Set(MAC, neighbor)
@@ -72,12 +67,14 @@ func (nt *VNeighborTable) Get(MAC string) (*VNeighborEntry, bool) {
 	if !exist {
 		return nil, false
 	}
-	return neighbor.(*VNeighborEntry), true
+	entry := neighbor.(VNeighborEntry)
+	return &entry, true
 }
 
 func (nt *VNeighborTable) GetFirst() (*VNeighborEntry, bool) {
 	for item := range nt.table.Iter() {
-		return item.Value.(*VNeighborEntry), true
+		entry := item.Value.(VNeighborEntry)
+		return &entry, true
 	}
 	return nil, false
 }
@@ -90,16 +87,16 @@ func (nt *VNeighborTable) Print() {
 
 	for item := range nt.table.Iter() {
 		itemMAC := item.Key.(string)
-		itemIP := item.Value.(*VNeighborEntry)
-		fmt.Printf("key: %s, Value %s", itemMAC, string(itemIP.IP))
+		itemIP := item.Value.(VNeighborEntry).IP
+		log.Printf("key: %s, Value %s", itemMAC, itemIP.String())
 	}
 }
 
-func (nt *VNeighborTable) Iter() <-chan *VNeighborEntry {
-	ch := make(chan *VNeighborEntry)
+func (nt *VNeighborTable) Iter() <-chan VNeighborEntry {
+	ch := make(chan VNeighborEntry)
 	go func() {
 		for item := range nt.table.Iter() {
-			value := item.Value.(*VNeighborEntry)
+			value := item.Value.(VNeighborEntry)
 			ch <- value
 		}
 		close(ch)
@@ -109,11 +106,11 @@ func (nt *VNeighborTable) Iter() <-chan *VNeighborEntry {
 func (nt *VNeighborTable) Update() {
 	for {
 		payload, addr, err := nt.channel.Read()
-		entry := NewVNeighborEntry(net.ParseIP(string(payload)), addr)
-		nt.Set(addr.String(), entry)
 		if err != nil {
-			return
+			continue
 		}
+		entry := NewVNeighborEntry(net.IPv4(payload[0], payload[1], payload[2], payload[3]), addr)
+		nt.Set(addr.String(), *entry)
 	}
 }
 
@@ -123,8 +120,8 @@ func (nt *VNeighborTable) Run() {
 		return
 	}
 	for {
-		nt.channel.Broadcast([]byte(nt.SrcIP.String()))
-		time.Sleep((VNeighborTable_UPDATE_INTERVAL / 3) * time.Second)
+		nt.channel.Broadcast(nt.SrcIP.To4())
+		time.Sleep((VNeighborTable_UPDATE_INTERVAL_MS / 3) * time.Second)
 	}
 }
 

@@ -45,7 +45,7 @@ func createWLANChannel() *DataLinkLayerChannel {
 }
 
 func createNeighborChannel() *DataLinkLayerChannel {
-	c, err := NewDataLinkLayerChannelWithInterface(VNDEtherType, RSUETHInterface)
+	c, err := NewDataLinkLayerChannelWithInterface(VNDEtherType, RSUWLANInterface)
 	if err != nil {
 		log.Println("No interfaces")
 		os.Exit(1)
@@ -133,7 +133,7 @@ func (r *Router) BroadcastETH(packet *IPPacket) {
 }
 
 func (r *Router) SendIPToNeighbors() {
-	r.neighborChannel.Broadcast([]byte(r.ip.String()))
+	r.neighborChannel.Broadcast(r.ip.To4())
 }
 
 func (r *Router) Close() {

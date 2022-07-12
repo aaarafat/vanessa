@@ -54,6 +54,6 @@ func (a *App) sendVOREP(to net.IP) {
 func (a *App) SendIPToNeighbors() {
 	for {
 		a.router.SendIPToNeighbors()
-		time.Sleep((VNeighborTable_UPDATE_INTERVAL / 3) * time.Second)
+		time.Sleep((VNeighborTable_UPDATE_INTERVAL_MS / 3) * time.Millisecond)
 	}
 }
