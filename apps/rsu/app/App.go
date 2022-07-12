@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
+	"github.com/aaarafat/vanessa/apps/network/network/messages"
 	. "github.com/aaarafat/vanessa/apps/rsu/router"
 	. "github.com/aaarafat/vanessa/apps/rsu/state"
 	"github.com/aaarafat/vanessa/apps/rsu/unix"
@@ -33,15 +34,25 @@ func NewApp(id int, key []byte) *App {
 		ip:     net.ParseIP(ip.RsuIP),
 		key:    key,
 		router: router,
-		state:  NewState(router.RARP),
 	}
 
 	app.ui = unix.NewUiUnix(id, app.GetUiState)
+	app.state = NewState(router.RARP, app.ui)
 
 	return app
 }
 
 func (a *App) GetUiState() *unix.UiState {
+	if a.state == nil {
+		return &unix.UiState{
+			ARP:              []unix.UiARPEntry{},
+			Obstacles:        []messages.Position{},
+			ReceivedFromRsus: 0,
+			SentToRsus:       0,
+			ReceivedFromCars: 0,
+			SentToCars:       0,
+		}
+	}
 	arp := make([]unix.UiARPEntry, a.state.RARP.Len())
 	i := 0
 	for ip, entry := range a.state.RARP.GetTable() {
