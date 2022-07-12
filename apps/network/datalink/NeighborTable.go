@@ -10,9 +10,10 @@ import (
 )
 
 type VNeighborTable struct {
-	table   *hashmap.HashMap
-	channel *DataLinkLayerChannel
-	SrcIP   net.IP
+	table       *hashmap.HashMap
+	channel     *DataLinkLayerChannel
+	SrcIP       net.IP
+	receiveOnly bool
 }
 
 type VNeighborEntry struct {
@@ -25,16 +26,17 @@ const (
 	VNeighborTable_UPDATE_INTERVAL = 6
 )
 
-func NewVNeighborTable(srcIP net.IP, ifiName string) *VNeighborTable {
+func NewVNeighborTable(srcIP net.IP, ifiName string, receiveOnly bool) *VNeighborTable {
 	d, err := NewDataLinkLayerChannelWithInterfaceName(VNDEtherType, ifiName)
 	if err != nil {
 		log.Fatalf("failed to create channel: %v", err)
 	}
 
 	return &VNeighborTable{
-		table:   &hashmap.HashMap{},
-		channel: d,
-		SrcIP:   srcIP,
+		table:       &hashmap.HashMap{},
+		channel:     d,
+		SrcIP:       srcIP,
+		receiveOnly: receiveOnly,
 	}
 }
 func NewVNeighborEntry(ip net.IP, mac net.HardwareAddr) *VNeighborEntry {
@@ -73,6 +75,13 @@ func (nt *VNeighborTable) Get(MAC string) (*VNeighborEntry, bool) {
 	return neighbor.(*VNeighborEntry), true
 }
 
+func (nt *VNeighborTable) GetFirst() (*VNeighborEntry, bool) {
+	for item := range nt.table.Iter() {
+		return item.Value.(*VNeighborEntry), true
+	}
+	return nil, false
+}
+
 func (nt *VNeighborTable) Len() int {
 	return nt.table.Len()
 }
@@ -100,7 +109,7 @@ func (nt *VNeighborTable) Iter() <-chan *VNeighborEntry {
 func (nt *VNeighborTable) Update() {
 	for {
 		payload, addr, err := nt.channel.Read()
-		entry := NewVNeighborEntry(net.IP(payload), addr)
+		entry := NewVNeighborEntry(net.ParseIP(string(payload)), addr)
 		nt.Set(addr.String(), entry)
 		if err != nil {
 			return
@@ -110,8 +119,11 @@ func (nt *VNeighborTable) Update() {
 
 func (nt *VNeighborTable) Run() {
 	go nt.Update()
+	if nt.receiveOnly {
+		return
+	}
 	for {
-		nt.channel.Broadcast([]byte(nt.SrcIP))
+		nt.channel.Broadcast([]byte(nt.SrcIP.String()))
 		time.Sleep((VNeighborTable_UPDATE_INTERVAL / 3) * time.Second)
 	}
 }

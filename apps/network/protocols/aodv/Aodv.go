@@ -6,7 +6,6 @@ import (
 	"time"
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
-	"github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/apps/network/protocols"
 	"github.com/cornelk/hashmap"
 )
@@ -124,20 +123,15 @@ func (a *Aodv) SendRREPFor(rreq *RREQMessage) {
 
 func (a *Aodv) updateRSU() {
 	for {
-		if ConnectedToRSU(2) {
-			mac, err := net.ParseMAC(GetRSUMac(2))
-			if err != nil {
-				log.Printf("failed to parse MAC: %v", err)
-				continue
-			}
-			a.neighborTables[WLAN1].Set(mac.String(), NewVNeighborEntry(net.ParseIP(ip.RsuIP), mac))
-			new := a.routingTable.Set(net.ParseIP(ip.RsuIP), mac, 0, RSUActiveRouteTimeMS, 0, WLAN1)
+		entry, ok := a.neighborTables[WLAN1].GetFirst()
+		if ok {
+			new := a.routingTable.Set(entry.IP, entry.MAC, 0, VNeighborTable_UPDATE_INTERVAL, 0, WLAN1)
 			if new {
-				log.Printf("Path Discovery is successful for ip=%s !!!!", ip.RsuIP)
-				go a.pathDiscoveryCallback(net.ParseIP(ip.RsuIP))
+				log.Printf("Path Discovery is successful for ip=%s !!!!", entry.IP)
+				go a.pathDiscoveryCallback(entry.IP)
 			}
 		}
-		time.Sleep(time.Millisecond * time.Duration(RSUActiveRouteTimeMS/3))
+		time.Sleep((VNeighborTable_UPDATE_INTERVAL / 3) * time.Second)
 	}
 }
 

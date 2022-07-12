@@ -57,8 +57,9 @@ func (n *NetworkLayer) openChannels() {
 		log.Fatalf("failed to open channel: %v", err)
 	}
 	n.channels[WLAN0] = ch0
-	n.neighborTables[WLAN0] = NewVNeighborTable(n.ip, UNICAST_IFI)
+	n.neighborTables[WLAN0] = NewVNeighborTable(n.ip, UNICAST_IFI, false)
 	n.flooders[WLAN0] = NewFlooder(n.ip, n.channels[WLAN0], n.neighborTables[WLAN0])
+	go n.neighborTables[WLAN0].Run()
 
 	// open WLAN1 channel
 	ch1, err := NewDataLinkLayerChannelWithInterfaceName(VDATAEtherType, RSU_IFI)
@@ -66,8 +67,9 @@ func (n *NetworkLayer) openChannels() {
 		log.Fatalf("failed to open channel: %v", err)
 	}
 	n.channels[WLAN1] = ch1
-	n.neighborTables[WLAN1] = NewVNeighborTable(n.ip, RSU_IFI)
+	n.neighborTables[WLAN1] = NewVNeighborTable(n.ip, RSU_IFI, true)
 	n.flooders[WLAN1] = NewFlooder(n.ip, n.channels[WLAN1], n.neighborTables[WLAN1])
+	go n.neighborTables[WLAN1].Run()
 }
 
 func (n *NetworkLayer) openListeners() {

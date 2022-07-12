@@ -70,6 +70,7 @@ func (a *App) handleVHBeat(payload []byte, from net.HardwareAddr) {
 	}
 	log.Println("Recieved VHBeat from: ", from, " at: ", HBeat.Position)
 	a.state.AddCar(HBeat.OriginatorIP.String(), from)
+	// send to car
 }
 
 func (a *App) handleVObstacle(payload []byte, from net.HardwareAddr, packet *ip.IPPacket) {

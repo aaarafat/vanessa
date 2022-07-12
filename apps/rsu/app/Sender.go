@@ -3,7 +3,9 @@ package app
 import (
 	"log"
 	"net"
+	"time"
 
+	. "github.com/aaarafat/vanessa/apps/network/datalink"
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 	"github.com/aaarafat/vanessa/libs/crypto"
@@ -47,4 +49,11 @@ func (a *App) sendVOREP(to net.IP) {
 
 	packet := ip.NewIPPacket(cipherData, a.ip, to)
 	a.sendPacketToWLAN(packet, to)
+}
+
+func (a *App) SendIPToNeighbors() {
+	for {
+		a.router.SendIPToNeighbors()
+		time.Sleep((VNeighborTable_UPDATE_INTERVAL / 3) * time.Second)
+	}
 }
