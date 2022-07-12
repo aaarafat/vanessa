@@ -71,5 +71,8 @@ func (a *App) handleMessage(bytes []byte) {
 			data := NewVOREQMessage(a.ip, a.GetState().Obstacles).Marshal()
 			a.sendToRouter(data, net.ParseIP(ip.RsuIP))
 		}
+
+	default:
+		log.Printf("Unknown message type: %d", mType)
 	}
 }

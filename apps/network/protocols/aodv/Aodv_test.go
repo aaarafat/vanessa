@@ -30,15 +30,14 @@ func (f *MockForwarder) Close() {
 
 }
 
-
 func createAodv() *Aodv {
 	return &Aodv{
-		srcIP: net.ParseIP("192.168.1.1"),
-		routingTable: NewVRoutingTable(),
-		rreqBuffer: &hashmap.HashMap{},
-		forwarder: &MockForwarder{},
-		seqNum: 0,
-		rreqID: 0,
+		srcIP:                 net.ParseIP("192.168.1.1"),
+		routingTable:          NewVRoutingTable(),
+		rreqBuffer:            &hashmap.HashMap{},
+		forwarder:             &MockForwarder{},
+		seqNum:                0,
+		rreqID:                0,
 		pathDiscoveryCallback: func(net.IP) {},
 	}
 }
@@ -46,7 +45,7 @@ func createAodv() *Aodv {
 func TestGetRoute(t *testing.T) {
 	aodv := createAodv()
 	destIP := net.ParseIP("192.168.1.2")
-	mac, _  := net.ParseMAC("00:00:00:00:00:02")
+	mac, _ := net.ParseMAC("00:00:00:00:00:02")
 	ifi := 10
 	hops := 5
 	aodv.routingTable.Update(destIP, mac, uint8(hops), 0, 0, ifi)
@@ -73,7 +72,6 @@ func TestBuildRoute(t *testing.T) {
 	started := aodv.BuildRoute(destIP)
 	assert.False(t, started)
 
-
 	// when RREQ is not in the buffer
 	aodv.rreqBuffer.Del(fmt.Sprintf("%s-%d", destIP.String(), aodv.rreqID))
 	started = aodv.BuildRoute(destIP)
@@ -87,5 +85,5 @@ func TestBuildRoute(t *testing.T) {
 
 	// check RREQ is sent
 	aodv.forwarder.(*MockForwarder).AssertCalled(t, "ForwardToAll")
-	
+
 }

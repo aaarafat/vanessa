@@ -2,11 +2,11 @@ package aodv
 
 // Types
 const (
-	RREQType uint8 = 1
-	RREPType uint8 = 2
-	RERRType uint8 = 3
+	RREQType    uint8 = 1
+	RREPType    uint8 = 2
+	RERRType    uint8 = 3
 	RREPACKType uint8 = 4
-	DataType uint8 = 5
+	DataType    uint8 = 5
 )
 
 // Flags
@@ -31,13 +31,13 @@ const (
 
 // Default values
 const (
-	RREPDefaultLifeTimeMS uint32 = 5 * 60 * 1000 // 5 mins
-	ActiveRouteTimeMS uint32 = 60 * 1000 // 1 min
-	RSUActiveRouteTimeMS uint32 = 3000 // 3 seconds
-	PATH_DISCOVERY_TIME_MS uint32 = 500 // 500 ms
+	RREPDefaultLifeTimeMS  uint32 = 5 * 60 * 1000 // 5 mins
+	ActiveRouteTimeMS      uint32 = 60 * 1000     // 1 min
+	RSUActiveRouteTimeMS   uint32 = 3000          // 3 seconds
+	PATH_DISCOVERY_TIME_MS uint32 = 500           // 500 ms
 )
 
-// Limits 
+// Limits
 const (
 	HopCountLimit = 20
 )

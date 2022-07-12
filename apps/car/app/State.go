@@ -78,7 +78,7 @@ func (a *App) updateObstacles(obstacles []Position) {
 		return
 	}
 	a.state.Obstacles = removeDuplicatePositions(append(a.state.Obstacles, obstacles...))
-	log.Printf("Obstacles updated: %v", obstacles)
+	log.Printf("Obstacles updated: %v", a.state.Obstacles)
 
 	go func() {
 		data := unix.FormatObstacles(obstacles)
