@@ -20,12 +20,12 @@ func (n *NetworkLayer) SendUnicast(packet []byte, destIP net.IP) {
 		n.unicastProtocol.BuildRoute(destIP)
 		return
 	}
-	n.forwarders[route.Interface].ForwardTo(packet, route.NextHop)
+	n.flooders[route.Interface].ForwardTo(packet, route.NextHop)
 }
 
 func (n *NetworkLayer) SendBroadcast(packet []byte, from net.IP) {
 	log.Printf("Sending broadcast from %s\n", from)
-	n.forwarders[1].ForwardToAllExceptIP(packet, from)
+	n.flooders[WLAN0].ForwardToAllExceptIP(packet, from)
 }
 
 func (n *NetworkLayer) addToBuffer(packet []byte, destIP net.IP) {

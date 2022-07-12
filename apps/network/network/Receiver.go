@@ -8,7 +8,7 @@ import (
 )
 
 func (n *NetworkLayer) listen(channel *DataLinkLayerChannel) {
-	log.Printf("Listening for DATA packets on channel: %d....\n", channel.IfiIndex)
+	log.Printf("Listening for DATA packets on channel: %s....\n", channel.Ifi.Name)
 	for {
 		packet, addr, err := channel.Read()
 		if err != nil {

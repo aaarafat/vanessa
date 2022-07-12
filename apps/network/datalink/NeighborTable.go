@@ -25,8 +25,8 @@ const (
 	VNeighborTable_UPDATE_INTERVAL = 6
 )
 
-func NewNeighborTable(srcIP net.IP) *VNeighborTable {
-	d, err := NewDataLinkLayerChannel(VNDEtherType)
+func NewVNeighborTable(srcIP net.IP, ifiName string) *VNeighborTable {
+	d, err := NewDataLinkLayerChannelWithInterfaceName(VNDEtherType, ifiName)
 	if err != nil {
 		log.Fatalf("failed to create channel: %v", err)
 	}
@@ -37,50 +37,12 @@ func NewNeighborTable(srcIP net.IP) *VNeighborTable {
 		SrcIP:   srcIP,
 	}
 }
-func NewNeighborEntry(ip net.IP, mac net.HardwareAddr) *VNeighborEntry {
+func NewVNeighborEntry(ip net.IP, mac net.HardwareAddr) *VNeighborEntry {
 	return &VNeighborEntry{
 		IP:  ip,
 		MAC: mac,
 	}
 }
-
-/*
-func (nt *VNeighborTable) MarshalBinary() []byte {
-
-	var payload []byte
-	for item := range nt.table.Iter() {
-		itemMAC := item.Key.(string)
-		itemIP := item.Value.(*VNeighborEntry)
-
-		data := map[string]any{
-			"MAC": itemMAC,
-			"IP": itemIP.IP,
-		}
-
-		b, err := Marshal(data, nt.entryTypes)
-		if err != nil {
-			log.Panic(err)
-		}
-		payload = append(payload, b...)
-	}
-
-	return payload
-}
-
-func (nt *VNeighborTable) UnmarshalBinary(data []byte) {
-	for len(data) > 0 {
-		item, err := Unmarshal(data, nt.entryTypes)
-		if err != nil {
-			log.Panic(err)
-		}
-
-		itemMAC := item["MAC"].(string)
-		itemIP := item["IP"].(net.IP)
-
-		nt.Set(itemMAC, NewNeighborEntry(itemIP))
-	}
-}
-*/
 
 func (nt *VNeighborTable) Set(MAC string, neighbor *VNeighborEntry) {
 	if neighbor == nil {
@@ -138,7 +100,7 @@ func (nt *VNeighborTable) Iter() <-chan *VNeighborEntry {
 func (nt *VNeighborTable) Update() {
 	for {
 		payload, addr, err := nt.channel.Read()
-		entry := NewNeighborEntry(net.IP(payload), addr)
+		entry := NewVNeighborEntry(net.IP(payload), addr)
 		nt.Set(addr.String(), entry)
 		if err != nil {
 			return

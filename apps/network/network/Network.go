@@ -12,12 +12,17 @@ import (
 
 const (
 	UNICAST_IFI = "wlan0"
+	RSU_IFI     = "wlan1"
+	WLAN0       = 0
+	WLAN1       = 1
 )
 
 type NetworkLayer struct {
-	ip         net.IP
-	channels   map[int]*DataLinkLayerChannel
-	forwarders map[int]*Forwarder
+	ip       net.IP
+	channels map[int]*DataLinkLayerChannel
+	flooders map[int]*Flooder
+
+	neighborTables map[int]*VNeighborTable
 
 	// buffer to store packets until path is found
 	packetBuffer *PacketBuffer
@@ -34,43 +39,35 @@ func NewNetworkLayer(ip net.IP) *NetworkLayer {
 	}
 
 	network := &NetworkLayer{
-		ip:           ip,
-		channels:     make(map[int]*DataLinkLayerChannel),
-		forwarders:   make(map[int]*Forwarder),
-		packetBuffer: NewPacketBuffer(),
-		ipConn:       ipConn,
+		ip:             ip,
+		channels:       make(map[int]*DataLinkLayerChannel),
+		flooders:       make(map[int]*Flooder),
+		neighborTables: make(map[int]*VNeighborTable),
+		packetBuffer:   NewPacketBuffer(),
+		ipConn:         ipConn,
 	}
-
-	network.unicastProtocol = aodv.NewAodv(ip, UNICAST_IFI, network.onPathDiscovery)
 
 	return network
 }
 
 func (n *NetworkLayer) openChannels() {
-	channels := make(map[int]*DataLinkLayerChannel)
-	interfaces, err := net.Interfaces()
+	// open WLAN0 channel
+	ch0, err := NewDataLinkLayerChannelWithInterfaceName(VDATAEtherType, UNICAST_IFI)
 	if err != nil {
-		log.Fatalf("failed to open interface: %v", err)
+		log.Fatalf("failed to open channel: %v", err)
 	}
+	n.channels[WLAN0] = ch0
+	n.neighborTables[WLAN0] = NewVNeighborTable(n.ip, UNICAST_IFI)
+	n.flooders[WLAN0] = NewFlooder(n.ip, n.channels[WLAN0], n.neighborTables[WLAN0])
 
-	for index, ifi := range interfaces {
-		if ifi.Name == "lo" {
-			continue
-		}
-		channels[index], err = NewDataLinkLayerChannelWithInterface(VDATAEtherType, index)
-		if err != nil {
-			log.Fatalf("failed to open interface: %v", err)
-		}
+	// open WLAN1 channel
+	ch1, err := NewDataLinkLayerChannelWithInterfaceName(VDATAEtherType, RSU_IFI)
+	if err != nil {
+		log.Fatalf("failed to open channel: %v", err)
 	}
-
-	n.channels = channels
-}
-
-func (n *NetworkLayer) openForwarders() {
-	for ifiIndex, channel := range n.channels {
-		n.forwarders[ifiIndex] = NewForwarder(n.ip, channel)
-		n.forwarders[ifiIndex].Start()
-	}
+	n.channels[WLAN1] = ch1
+	n.neighborTables[WLAN1] = NewVNeighborTable(n.ip, RSU_IFI)
+	n.flooders[WLAN1] = NewFlooder(n.ip, n.channels[WLAN1], n.neighborTables[WLAN1])
 }
 
 func (n *NetworkLayer) openListeners() {
@@ -80,8 +77,8 @@ func (n *NetworkLayer) openListeners() {
 }
 
 func (n *NetworkLayer) Start() {
+	n.unicastProtocol = aodv.NewAodv(n.ip, UNICAST_IFI, n.neighborTables, n.onPathDiscovery)
 	n.openChannels()
-	n.openForwarders()
 	n.openListeners()
 
 	n.unicastProtocol.Start()
@@ -89,17 +86,17 @@ func (n *NetworkLayer) Start() {
 
 func (n *NetworkLayer) Close() {
 	log.Printf("Closing network layer")
-
-	for _, forwarder := range n.forwarders {
-		forwarder.Close()
-	}
+	n.unicastProtocol.Close()
 
 	for _, channel := range n.channels {
 		channel.Close()
 	}
 
+	for _, nt := range n.neighborTables {
+		nt.Close()
+	}
+
 	n.ipConn.Close()
 
-	n.unicastProtocol.Close()
 	log.Printf("Closed network layer")
 }

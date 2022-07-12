@@ -10,23 +10,17 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-type MockForwarder struct {
+type MockFlooder struct {
 	mock.Mock
 }
 
-func (f *MockForwarder) ForwardTo(payload []byte, addr net.HardwareAddr) {
+func (f *MockFlooder) ForwardTo(payload []byte, addr net.HardwareAddr) {
 
 }
-func (f *MockForwarder) ForwardToAll(payload []byte) {
+func (f *MockFlooder) ForwardToAll(payload []byte) {
 	f.Called()
 }
-func (f *MockForwarder) ForwardToAllExcept(payload []byte, addr net.HardwareAddr) {
-
-}
-func (f *MockForwarder) Start() {
-
-}
-func (f *MockForwarder) Close() {
+func (f *MockFlooder) ForwardToAllExcept(payload []byte, addr net.HardwareAddr) {
 
 }
 
@@ -35,7 +29,7 @@ func createAodv() *Aodv {
 		srcIP:                 net.ParseIP("192.168.1.1"),
 		routingTable:          NewVRoutingTable(),
 		rreqBuffer:            &hashmap.HashMap{},
-		forwarder:             &MockForwarder{},
+		flooder:               &MockFlooder{},
 		seqNum:                0,
 		rreqID:                0,
 		pathDiscoveryCallback: func(net.IP) {},
@@ -65,7 +59,7 @@ func TestBuildRoute(t *testing.T) {
 	oldSeq := aodv.seqNum
 	destIP := net.ParseIP("192.168.1.2")
 
-	aodv.forwarder.(*MockForwarder).On("ForwardToAll").Return()
+	aodv.flooder.(*MockFlooder).On("ForwardToAll").Return()
 
 	// when RREQ is sent to the destination
 	aodv.rreqBuffer.Set(fmt.Sprintf("%s-%d", destIP.String(), aodv.rreqID), "")
@@ -84,6 +78,6 @@ func TestBuildRoute(t *testing.T) {
 	assert.Equal(t, oldSeq+1, aodv.seqNum)
 
 	// check RREQ is sent
-	aodv.forwarder.(*MockForwarder).AssertCalled(t, "ForwardToAll")
+	aodv.flooder.(*MockFlooder).AssertCalled(t, "ForwardToAll")
 
 }

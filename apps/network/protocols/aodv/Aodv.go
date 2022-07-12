@@ -12,38 +12,45 @@ import (
 )
 
 type Aodv struct {
-	channel   *DataLinkLayerChannel
-	forwarder IForwarder
-	srcIP     net.IP
+	channel *DataLinkLayerChannel
+	flooder IFlooder
+	srcIP   net.IP
 
 	// Sequence number
 	seqNum uint32
 	rreqID uint32
 
 	// tables
-	routingTable *VRoutingTable
-	seqTable     *VFloodingSeqTable
-	rreqBuffer   *hashmap.HashMap
+	routingTable   *VRoutingTable
+	seqTable       *VFloodingSeqTable
+	rreqBuffer     *hashmap.HashMap
+	neighborTables map[int]*VNeighborTable
 
 	// path discovery callback
 	pathDiscoveryCallback func(net.IP)
 }
 
-func NewAodv(srcIP net.IP, ifiName string, pathDiscoveryCallback func(net.IP)) *Aodv {
+const (
+	WLAN0 = 0
+	WLAN1 = 1
+)
+
+func NewAodv(srcIP net.IP, ifiName string, neighborTables map[int]*VNeighborTable, pathDiscoveryCallback func(net.IP)) *Aodv {
 	channel, err := NewDataLinkLayerChannelWithInterfaceName(VAODVEtherType, ifiName)
 	if err != nil {
 		log.Fatalf("failed to create channel: %v", err)
 	}
 
 	return &Aodv{
-		channel:      channel,
-		forwarder:    NewForwarder(srcIP, channel),
-		routingTable: NewVRoutingTable(),
-		seqTable:     NewVFloodingSeqTable(),
-		rreqBuffer:   &hashmap.HashMap{},
-		srcIP:        srcIP,
-		seqNum:       0,
-		rreqID:       0,
+		channel:        channel,
+		flooder:        NewFlooder(srcIP, channel, neighborTables[WLAN0]),
+		routingTable:   NewVRoutingTable(),
+		seqTable:       NewVFloodingSeqTable(),
+		rreqBuffer:     &hashmap.HashMap{},
+		neighborTables: neighborTables,
+		srcIP:          srcIP,
+		seqNum:         0,
+		rreqID:         0,
 
 		pathDiscoveryCallback: pathDiscoveryCallback,
 	}
@@ -71,7 +78,7 @@ func (a *Aodv) BuildRoute(destIP net.IP) (started bool) {
 func (a *Aodv) Send(payload []byte, dest net.IP) {
 	item, ok := a.routingTable.Get(dest)
 	if ok {
-		a.forwarder.ForwardTo(payload, item.NextHop)
+		a.flooder.ForwardTo(payload, item.NextHop)
 	} else {
 		a.SendRREQ(dest)
 	}
@@ -93,7 +100,7 @@ func (a *Aodv) SendRREQ(destination net.IP) {
 
 	// broadcast the RREQ
 	log.Printf("Sending: %s\n", rreq.String())
-	a.forwarder.ForwardToAll(rreq.Marshal())
+	a.flooder.ForwardToAll(rreq.Marshal())
 }
 
 func (a *Aodv) SendRREPFor(rreq *RREQMessage) {
@@ -123,7 +130,8 @@ func (a *Aodv) updateRSU() {
 				log.Printf("failed to parse MAC: %v", err)
 				continue
 			}
-			new := a.routingTable.Set(net.ParseIP(ip.RsuIP), mac, 0, RSUActiveRouteTimeMS, 0, 2)
+			a.neighborTables[WLAN1].Set(mac.String(), NewVNeighborEntry(net.ParseIP(ip.RsuIP), mac))
+			new := a.routingTable.Set(net.ParseIP(ip.RsuIP), mac, 0, RSUActiveRouteTimeMS, 0, WLAN1)
 			if new {
 				log.Printf("Path Discovery is successful for ip=%s !!!!", ip.RsuIP)
 				go a.pathDiscoveryCallback(net.ParseIP(ip.RsuIP))
@@ -135,12 +143,10 @@ func (a *Aodv) updateRSU() {
 
 func (a *Aodv) Start() {
 	log.Printf("Starting AODV for IP: %s.....\n", a.srcIP)
-	go a.forwarder.Start()
 	go a.listen(a.channel)
 	go a.updateRSU()
 }
 
 func (a *Aodv) Close() {
 	a.channel.Close()
-	a.forwarder.Close()
 }

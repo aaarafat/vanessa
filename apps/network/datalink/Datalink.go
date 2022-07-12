@@ -15,6 +15,7 @@ type DataLinkLayerChannel struct {
 	etherType Ethertype
 	channel   *packet.Conn
 	IfiIndex  int
+	Ifi       net.Interface
 }
 
 type Ethertype int
@@ -44,6 +45,7 @@ func newDataLinkLayerChannel(ether Ethertype, ifi net.Interface, ifiIndex int) (
 		channel:   c,
 		source:    ifi.HardwareAddr, // Identify the car as the sender.
 		IfiIndex:  ifiIndex,
+		Ifi:       ifi,
 	}, nil
 
 }
