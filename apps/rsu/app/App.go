@@ -79,6 +79,7 @@ func (a *App) Start() {
 	go a.ui.Start()
 	go a.handleEthMessages()
 	go a.handleWLANMessgaes()
+	go a.SendIPToNeighbors()
 	log.Printf("RSU is started!!!\n")
 }
 

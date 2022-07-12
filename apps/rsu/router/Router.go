@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"os"
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
@@ -11,9 +12,10 @@ import (
 )
 
 type Router struct {
-	ip          net.IP
-	ethChannel  *DataLinkLayerChannel
-	wlanChannel *DataLinkLayerChannel
+	ip              net.IP
+	ethChannel      *DataLinkLayerChannel
+	wlanChannel     *DataLinkLayerChannel
+	neighborChannel *DataLinkLayerChannel
 
 	RARP        *RSUARP
 	onARPDelete func(ip string, mac net.HardwareAddr)
@@ -27,7 +29,8 @@ const (
 func createETHChannel() *DataLinkLayerChannel {
 	c, err := NewDataLinkLayerChannelWithInterface(VEtherType, RSUETHInterface)
 	if err != nil {
-		log.Panicln("No interfaces")
+		log.Println("No interfaces")
+		os.Exit(1)
 	}
 	return c
 }
@@ -35,7 +38,17 @@ func createETHChannel() *DataLinkLayerChannel {
 func createWLANChannel() *DataLinkLayerChannel {
 	c, err := NewDataLinkLayerChannelWithInterface(VDATAEtherType, RSUWLANInterface)
 	if err != nil {
-		log.Panicln("No interfaces")
+		log.Println("No interfaces")
+		os.Exit(1)
+	}
+	return c
+}
+
+func createNeighborChannel() *DataLinkLayerChannel {
+	c, err := NewDataLinkLayerChannelWithInterface(VNDEtherType, RSUETHInterface)
+	if err != nil {
+		log.Println("No interfaces")
+		os.Exit(1)
 	}
 	return c
 }
@@ -43,11 +56,13 @@ func createWLANChannel() *DataLinkLayerChannel {
 func NewRouter(arp *RSUARP) *Router {
 	ethChannel := createETHChannel()
 	wlanChannel := createWLANChannel()
+	neighborChannel := createNeighborChannel()
 	return &Router{
-		ip:          net.ParseIP(RsuIP),
-		ethChannel:  ethChannel,
-		wlanChannel: wlanChannel,
-		RARP:        arp,
+		ip:              net.ParseIP(RsuIP),
+		ethChannel:      ethChannel,
+		wlanChannel:     wlanChannel,
+		neighborChannel: neighborChannel,
+		RARP:            arp,
 	}
 }
 
@@ -115,6 +130,10 @@ func (r *Router) BroadcastETH(packet *IPPacket) {
 	bytes := ip.MarshalIPPacket(packet)
 	ip.Update(bytes)
 	r.ethChannel.Broadcast(bytes)
+}
+
+func (r *Router) SendIPToNeighbors() {
+	r.neighborChannel.Broadcast([]byte(r.ip.String()))
 }
 
 func (r *Router) Close() {
