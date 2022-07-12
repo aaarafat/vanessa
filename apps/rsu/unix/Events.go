@@ -16,7 +16,7 @@ const (
 )
 
 type AddObstacleData struct {
-	Obstacles []Position `json:"obstacles"`
+	Obstacle Position `json:"obstacle"`
 }
 
 type AddARPEntryData = UiARPEntry

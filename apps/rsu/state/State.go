@@ -55,7 +55,7 @@ func (s *State) AddObstacle(obstacle *Position) {
 	s.OTable.Set(*obstacle, 0)
 
 	s.ui.Write(unix.AddObstacleData{
-		Obstacles: s.OTable.GetTable(),
+		Obstacle: *obstacle,
 	}, string(unix.AddObstacleEvent))
 }
 
@@ -65,7 +65,21 @@ func (s *State) RemoveObstacle(obstacle *Position) {
 }
 
 func (s *State) AddCar(ip string, mac net.HardwareAddr) {
-	if s.RARP.Set(ip, mac) {
+	result := s.RARP.Set(ip, mac)
+	switch result {
+	case NEW_ENTRY:
+		s.ui.Write(unix.AddARPEntryData{
+			IP:  ip,
+			MAC: mac.String(),
+		}, string(unix.AddARPEntryEvent))
+	case UPDATED_ENTRY:
+		// remove
+		s.ui.Write(unix.RemoveARPEntryData{
+			IP:  ip,
+			MAC: mac.String(),
+		}, string(unix.RemoveARPEntryEvent))
+
+		// add
 		s.ui.Write(unix.AddARPEntryData{
 			IP:  ip,
 			MAC: mac.String(),

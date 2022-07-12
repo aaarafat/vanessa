@@ -11,6 +11,14 @@ type RARPEntry struct {
 	timer *time.Timer
 }
 
+type ARPEntryState uint8
+
+const (
+	OLD_ENTRY     ARPEntryState = 0
+	NEW_ENTRY     ARPEntryState = 1
+	UPDATED_ENTRY ARPEntryState = 2
+)
+
 const lifeTimeMS = 10000
 
 type RSUARP struct {
@@ -26,7 +34,7 @@ func NewRSUARP(onARPDelete func(ip string, mac net.HardwareAddr)) *RSUARP {
 	}
 }
 
-func (RARP *RSUARP) Set(ip string, mac net.HardwareAddr) (new bool) {
+func (RARP *RSUARP) Set(ip string, mac net.HardwareAddr) ARPEntryState {
 
 	if mac == nil {
 		log.Panic("You are trying to add null neighbor")
@@ -36,7 +44,14 @@ func (RARP *RSUARP) Set(ip string, mac net.HardwareAddr) (new bool) {
 	}
 	if val, ok := RARP.table[ip]; ok {
 		val.timer.Reset(lifeTimeMS * time.Millisecond)
-		return false
+
+		if val.MAC.String() == mac.String() {
+			return OLD_ENTRY
+		} else {
+			val.MAC = mac
+			RARP.table[ip] = val
+			return NEW_ENTRY
+		}
 	} else {
 
 		entry := &RARPEntry{
@@ -46,7 +61,7 @@ func (RARP *RSUARP) Set(ip string, mac net.HardwareAddr) (new bool) {
 
 		RARP.table[ip] = *entry
 		log.Printf("adding %s with %s", ip, mac.String())
-		return true
+		return NEW_ENTRY
 	}
 }
 
