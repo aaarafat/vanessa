@@ -65,12 +65,12 @@ func (s *State) RemoveObstacle(obstacle *Position) {
 }
 
 func (s *State) AddCar(ip string, mac net.HardwareAddr) {
-	s.RARP.Set(ip, mac)
-
-	s.ui.Write(unix.AddARPEntryData{
-		IP:  ip,
-		MAC: mac.String(),
-	}, string(unix.AddARPEntryEvent))
+	if s.RARP.Set(ip, mac) {
+		s.ui.Write(unix.AddARPEntryData{
+			IP:  ip,
+			MAC: mac.String(),
+		}, string(unix.AddARPEntryEvent))
+	}
 }
 
 func (s *State) RemoveCar(ip string, mac net.HardwareAddr) {

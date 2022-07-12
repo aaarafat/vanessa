@@ -26,7 +26,7 @@ func NewRSUARP(onARPDelete func(ip string, mac net.HardwareAddr)) *RSUARP {
 	}
 }
 
-func (RARP *RSUARP) Set(ip string, mac net.HardwareAddr) {
+func (RARP *RSUARP) Set(ip string, mac net.HardwareAddr) (new bool) {
 
 	if mac == nil {
 		log.Panic("You are trying to add null neighbor")
@@ -36,6 +36,7 @@ func (RARP *RSUARP) Set(ip string, mac net.HardwareAddr) {
 	}
 	if val, ok := RARP.table[ip]; ok {
 		val.timer.Reset(lifeTimeMS * time.Millisecond)
+		return false
 	} else {
 
 		entry := &RARPEntry{
@@ -45,6 +46,7 @@ func (RARP *RSUARP) Set(ip string, mac net.HardwareAddr) {
 
 		RARP.table[ip] = *entry
 		log.Printf("adding %s with %s", ip, mac.String())
+		return true
 	}
 }
 
