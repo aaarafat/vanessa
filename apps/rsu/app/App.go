@@ -79,10 +79,6 @@ func (a *App) Start() {
 	go a.ui.Start()
 	go a.handleEthMessages()
 	go a.handleWLANMessgaes()
-
-	// send refresh message to the ui
-	a.ui.Refresh(*a.GetUiState())
-
 	log.Printf("RSU is started!!!\n")
 }
 
