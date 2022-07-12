@@ -10,6 +10,7 @@ const (
 	AddObstacleEvent           Event = "add-obstacle"
 	AddARPEntryEvent           Event = "add-arp-entry"
 	RemoveARPEntryEvent        Event = "remove-arp-entry"
+	UpdateARPEntryEvent        Event = "update-arp-entry"
 	UpdateReceivedPacketsEvent Event = "update-received-packets"
 	UpdateSentPacketsEvent     Event = "update-sent-packets"
 	RefreshEvent               Event = "refresh"
@@ -21,6 +22,7 @@ type AddObstacleData struct {
 
 type AddARPEntryData = UiARPEntry
 type RemoveARPEntryData = UiARPEntry
+type UpdateARPEntryData = UiARPEntry
 
 type UpdateReceivedPacketsData struct {
 	ReceivedFromRsus int `json:"receivedFromRsus"`

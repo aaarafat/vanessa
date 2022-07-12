@@ -73,17 +73,10 @@ func (s *State) AddCar(ip string, mac net.HardwareAddr) {
 			MAC: mac.String(),
 		}, string(unix.AddARPEntryEvent))
 	case UPDATED_ENTRY:
-		// remove
-		s.ui.Write(unix.RemoveARPEntryData{
+		s.ui.Write(unix.UpdateARPEntryData{
 			IP:  ip,
 			MAC: mac.String(),
-		}, string(unix.RemoveARPEntryEvent))
-
-		// add
-		s.ui.Write(unix.AddARPEntryData{
-			IP:  ip,
-			MAC: mac.String(),
-		}, string(unix.AddARPEntryEvent))
+		}, string(unix.UpdateARPEntryEvent))
 	}
 }
 

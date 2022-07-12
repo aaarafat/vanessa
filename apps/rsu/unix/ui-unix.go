@@ -1,6 +1,7 @@
 package unix
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -87,10 +88,35 @@ func (u *UiUnix) Start() {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		json.NewEncoder(w).Encode(*u.getState())
 	})
+	http.HandleFunc("/ok", func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			return
+		}
+		w.WriteHeader(200)
+	})
+
 	http.Handle("/", u.server)
 
 	go func() {
-		time.Sleep(time.Second)
+		httpc := http.Client{
+			Transport: &http.Transport{
+				DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
+					return net.Dial("unix", u.addr)
+				},
+			},
+		}
+
+		for {
+			time.Sleep(time.Second)
+			resp, err := httpc.Get("http://unix/ok")
+			if err != nil {
+				log.Printf("Error: %v", err)
+				os.Exit(1)
+			}
+			if resp.StatusCode == 200 {
+				break
+			}
+		}
 		// send refresh message to the ui
 		u.Refresh(*u.getState())
 	}()
