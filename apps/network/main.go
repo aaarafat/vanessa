@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
 
 	. "github.com/aaarafat/vanessa/apps/network/packetFilter"
 )
@@ -44,13 +45,14 @@ func main() {
 	packetfilter, err := NewPacketFilterWithInterfaceName(id, "wlan0")
 
 	if err != nil {
-		log.Panicf("failed to create packet filter: %v", err)
+		log.Printf("failed to create packet filter: %v", err)
 	}
 
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGSTOP, syscall.SIGHUP)
 	go func() {
-		<-c
+		s := <-c
+		log.Println("Got signal: ", s)
 		packetfilter.Close()
 		os.Exit(1)
 	}()

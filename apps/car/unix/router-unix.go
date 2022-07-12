@@ -33,19 +33,19 @@ func (r *Router) Start() {
 	err := os.RemoveAll(socketAddress)
 	if err != nil {
 		log.Printf("Error: %v", err)
-		os.Exit(1)
+		return
 	}
 
 	addr, err := net.ResolveUnixAddr("unixgram", socketAddress)
 	if err != nil {
 		log.Printf("Failed to resolve: %v\n", err)
-		os.Exit(1)
+		return
 	}
 
 	conn, err := net.ListenUnixgram("unixgram", addr)
 	if err != nil {
 		log.Printf("Failed to resolve: %v\n", err)
-		os.Exit(1)
+		return
 	}
 
 	r.conn = conn
@@ -53,5 +53,7 @@ func (r *Router) Start() {
 }
 
 func (r *Router) Close() {
-	r.conn.Close()
+	if r.conn != nil {
+		r.conn.Close()
+	}
 }

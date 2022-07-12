@@ -22,23 +22,26 @@ type PacketFilter struct {
 }
 
 func newPacketFilter(id int, ifi net.Interface) (*PacketFilter, error) {
+	DeleteIPTablesRule()
+	DeleteDefaultGateway()
+
 	var err error
 
 	if err := ChainNFQUEUE(); err != nil {
 		DeleteIPTablesRule()
-		log.Panicf("Reversed chaining NFQUEUE %v\n", err)
+		log.Printf("Reversed chaining NFQUEUE %v\n", err)
 		return nil, err
 	}
 
 	if err := AddDefaultGateway(); err != nil {
 		DeleteDefaultGateway()
-		log.Panicf("Removed Default Gatway %v\n", err)
+		log.Printf("Removed Default Gatway %v\n", err)
 		return nil, err
 	}
 	ip, _, err := MyIP(&ifi)
 	ip = ip.To4()
 	if err != nil {
-		log.Panicf("failed to get iface ips, err: %s", err)
+		log.Printf("failed to get iface ips, err: %s", err)
 		return nil, err
 	}
 
@@ -145,6 +148,7 @@ func (pf *PacketFilter) Close() {
 	DeleteIPTablesRule()
 	DeleteDefaultGateway()
 
+	pf.nfq.Close()
 	pf.routerSocket.Close()
 	pf.networkLayer.Close()
 

@@ -8,7 +8,7 @@ import (
 )
 
 type RouterSocket struct {
-	id int
+	id   int
 	conn net.Conn
 }
 
@@ -34,6 +34,9 @@ func initSocket(id int) (net.Conn, error) {
 }
 
 func (a *RouterSocket) Write(data []byte) {
+	if a.conn == nil {
+		return
+	}
 	n, err := a.conn.Write(data)
 	if err != nil {
 		log.Printf("Error: %v\n", err)
@@ -43,5 +46,7 @@ func (a *RouterSocket) Write(data []byte) {
 }
 
 func (a *RouterSocket) Close() {
-	a.conn.Close()
+	if a.conn != nil {
+		a.conn.Close()
+	}
 }
