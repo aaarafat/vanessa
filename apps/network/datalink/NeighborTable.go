@@ -16,12 +16,13 @@ type VNeighborTable struct {
 }
 
 type VNeighborEntry struct {
-	MAC net.HardwareAddr
-	IP  net.IP
+	MAC   net.HardwareAddr
+	IP    net.IP
+	timer *time.Timer
 }
 
 const (
-	VNeighborTable_UPDATE_INTERVAL = 5
+	VNeighborTable_UPDATE_INTERVAL = 6
 )
 
 func NewNeighborTable(srcIP net.IP) *VNeighborTable {
@@ -86,13 +87,25 @@ func (nt *VNeighborTable) Set(MAC string, neighbor *VNeighborEntry) {
 		log.Panic("You are trying to add null neighbor")
 	}
 
+	entry, exist := nt.Get(MAC)
+	if exist {
+		entry.timer.Stop()
+		nt.table.Del(MAC)
+	}
+
+	callback := func() {
+		nt.table.Del(MAC)
+	}
+
+	timer := time.AfterFunc(VNeighborTable_UPDATE_INTERVAL*time.Second, callback)
+	neighbor.timer = timer
+
 	nt.table.Set(MAC, neighbor)
 }
 
 func (nt *VNeighborTable) Get(MAC string) (*VNeighborEntry, bool) {
 	neighbor, exist := nt.table.Get(MAC)
 	if !exist {
-		log.Panic("Neighbor doesn't exist")
 		return nil, false
 	}
 	return neighbor.(*VNeighborEntry), true
@@ -137,7 +150,7 @@ func (nt *VNeighborTable) Run() {
 	go nt.Update()
 	for {
 		nt.channel.Broadcast([]byte(nt.SrcIP))
-		time.Sleep(VNeighborTable_UPDATE_INTERVAL * time.Second)
+		time.Sleep((VNeighborTable_UPDATE_INTERVAL / 3) * time.Second)
 	}
 }
 
