@@ -65,6 +65,7 @@ func (a *App) GetUiState() *unix.UiState {
 	}
 
 	return &unix.UiState{
+		Id:               a.id,
 		ARP:              arp,
 		Obstacles:        a.state.OTable.GetTable(),
 		ReceivedFromRsus: a.state.RecievedPackets[ETH_IFI],
