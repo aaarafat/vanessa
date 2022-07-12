@@ -29,7 +29,7 @@ func (OTable *ObstaclesTable) Set(position Position, clear uint8) {
 
 // Return the table as list of coordinates as a pair of x,y
 func (OTable *ObstaclesTable) GetTable() []Position {
-	var table []Position
+	table := []Position{}
 	for k := range OTable.table {
 		pos := UnmarshalPosition([]byte(k))
 		table = append(table, pos)

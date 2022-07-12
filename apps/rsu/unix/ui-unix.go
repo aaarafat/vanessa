@@ -89,8 +89,11 @@ func (u *UiUnix) Start() {
 	})
 	http.Handle("/", u.server)
 
-	// send refresh message to the ui
-	u.Refresh(*u.getState())
+	go func() {
+		time.Sleep(time.Second)
+		// send refresh message to the ui
+		u.Refresh(*u.getState())
+	}()
 
 	log.Fatal(http.Serve(listener, nil))
 }
