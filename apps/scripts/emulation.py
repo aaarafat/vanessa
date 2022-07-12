@@ -80,7 +80,7 @@ key = base64.b64encode(key_bytes).decode('utf-8')
 
 
 def cmd(fn, c, bg=True):
-    cmds.append(c)
+    cmds.append(c.replace('sudo', '').strip())
     if bg:
         fn(c + ' &')
     else:
@@ -98,17 +98,24 @@ def disconnected():
 
 
 @sio.on('clear')
-def clear():
+def clear(is_mn_down=False):
     global cmds
     global stations_car, stations_pool, rsus_pool, ap_rsus
 
     print('Begin Clearing... ')
-    for st in stations_car.values():
-        stations_pool.append(st)
-    for rsu in ap_rsus.values():
-        rsus_pool.append(rsu)
-    stations_car = {}
-    ap_rsus = {}
+    if not is_mn_down:
+        for st in stations_car.values():
+            st.setPosition("0,0,0")
+            stations_pool.append(st)
+        for rsu in ap_rsus.values():
+            try:
+                rsu.setPosition("0,0,0")
+            except:
+                #! IMPORTANT
+                pass
+            rsus_pool.append(rsu)
+        stations_car = {}
+        ap_rsus = {}
 
     lines = {
         l[0]: l[1] for l in (line.split(maxsplit=1)
@@ -122,6 +129,8 @@ def clear():
         print(f'killing {pid}:{cmd}')
         os.system(f'sudo kill -9 {pid} > /dev/null 2>&1')
     clear_unix_sockets()
+    if sio:
+        sio.emit('cleared')
     print('Done Clearing.')
 
 
@@ -210,14 +219,15 @@ def add_rsu(message):
 @sio.on('add-car')
 def add_car(message):
     try:
+        id = message['id']
+        if id in stations_car:
+            print("Received Update Car ...")
+            update_car(message)
+            return
+
         print("Received Add Car ...")
         if len(stations_pool) == 0:
             raise Exception("Pool ran out of stations")
-
-        id = message['id']
-        if id in stations_car:
-            update_car(message)
-            return
 
         st = stations_pool.pop(0)
         stations_car[id] = st
@@ -230,7 +240,7 @@ def add_car(message):
         print(position)
 
         cmd(st.cmd, f"sudo dist/apps/network -id {id} -debug")
-        cmd(st.cmd, f"sudo dist/apps/car -id {id} -key {key} -debug ")
+        cmd(st.cmd, f"sudo dist/apps/car -id {id} -key {key} -debug")
         cmd(os.system,
             f"socat TCP4-LISTEN:{port},fork,reuseaddr UNIX-CONNECT:/tmp/car{id}.ui.socket")
 
@@ -418,20 +428,21 @@ def topology(args):
     CLI(net)
 
     info("*** Stopping network\n")
-    global running
+    global running, sio
     running = False
     time.sleep(0.5)
     print(f"*** Stopping {len(running_threads)} threads")
-    for thread in running_threads[::-1]:
+    for thread in running_threads:
         thread.join(1)
         info('.')
     info('.\n')
+    sio = None
 
     try:
         net.stop()
     except:
         pass
-    clear()
+    clear(is_mn_down=True)
     os.system(f"kill $(lsof -t -i:{IO_PORT}) > /dev/null 2>&1 &")
 
 

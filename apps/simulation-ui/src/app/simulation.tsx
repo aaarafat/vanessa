@@ -77,13 +77,14 @@ export const Simulation: React.FC = () => {
       map.on('load', () => {
         socketEvents.clear();
         setMapLoaded(true);
-
-        rsusData.forEach((r) => {
-          const rsu = new RSU({ ...r, map, port: rsuPortsCounter++ });
-          dispatch(addRSU(rsu));
-          socketEvents.addRSU(rsu);
+        socket.once('cleared', () => {
+          rsusData.forEach((r) => {
+            const rsu = new RSU({ ...r, map, port: rsuPortsCounter++ });
+            dispatch(addRSU(rsu));
+            socketEvents.addRSU(rsu);
+          });
+          setLoading(false);
         });
-        setLoading(false);
       });
     }
   }, [map, socket, dispatch, rsusData, mapLoaded]);
@@ -165,15 +166,17 @@ export const Simulation: React.FC = () => {
   };
 
   const handleExport = () => {
-    const info: Array<any> = [...cars, ...rsus].map((item) => item.export());
-    info.push({
-      coordinates: obstacles
-        .map((f) =>
-          f.geometry.type === 'Point' ? f.geometry.coordinates : null
-        )
-        .filter(Boolean),
-      type: 'obstacles',
-    });
+    const info: Array<any> = [
+      {
+        coordinates: obstacles
+          .map((f) =>
+            f.geometry.type === 'Point' ? f.geometry.coordinates : null
+          )
+          .filter(Boolean),
+        type: 'obstacles',
+      },
+    ];
+    info.push([...rsus, ...cars].map((item) => item.export()));
     const fileData = JSON.stringify(info, null, 2);
     const blob = new Blob([fileData], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
@@ -188,17 +191,24 @@ export const Simulation: React.FC = () => {
   const clearMap = (removeRSUs = false) => {
     if (!map) return;
     setLoading(true);
+    socketEvents.clear();
+
+    cars.forEach((car) => car.remove());
+    if (removeRSUs) {
+      rsus.forEach((rsu) => rsu.remove());
+    } else {
+      // we need to send it again as it will be cleared from the emulation
+      rsus.forEach((r) => socketEvents.addRSU(r));
+    }
+    // clearing the arrays in the store
     dispatch(
       clearState({
         removeRSUs,
       })
     );
-    socketEvents.clear();
+
     setObstacles([]);
     mapDirections.reset();
-    if (!removeRSUs) {
-      rsus.forEach((r) => socketEvents.addRSU(r));
-    }
     carPortsCounter = CAR_PORT_INIT;
     rsuPortsCounter = RSU_PORT_INIT;
     setLoading(false);
@@ -207,24 +217,13 @@ export const Simulation: React.FC = () => {
   const handleImport = () => {
     const reader = new FileReader();
     reader.addEventListener('load', () => {
+      setLoading(true);
       clearMap(true);
-      const data = JSON.parse(reader.result as string);
-      data.forEach((item: any) => {
-        if (item.type === 'car') {
-          handleAddCar({
-            ...item,
-          });
-        } else if (item.type === 'rsu') {
-          const rsu = new RSU({ ...item, map });
-          dispatch(addRSU(rsu));
-          socketEvents.addRSU(rsu);
-        } else if (item.type === 'obstacles') {
-          setObstacles(
-            item.coordinates.map((c: turf.Position) => createFeaturePoint(c))
-          );
-        }
+      socket?.once('cleared', () => {
+        const data = JSON.parse(reader.result as string);
+        doImport(data);
+        setLoading(false);
       });
-      setLoading(false);
     });
 
     const input = document.createElement('input');
@@ -237,6 +236,24 @@ export const Simulation: React.FC = () => {
     };
     input.click();
     input.remove();
+  };
+
+  const doImport = (data: any) => {
+    return data.forEach((item: any) => {
+      if (item.type === 'car') {
+        handleAddCar({
+          ...item,
+        });
+      } else if (item.type === 'rsu') {
+        const rsu = new RSU({ ...item, map });
+        dispatch(addRSU(rsu));
+        socketEvents.addRSU(rsu);
+      } else if (item.type === 'obstacles') {
+        setObstacles(
+          item.coordinates.map((c: turf.Position) => createFeaturePoint(c))
+        );
+      }
+    });
   };
 
   return (

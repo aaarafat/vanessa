@@ -68,10 +68,10 @@ export const simulationSlice = createSlice({
     ) => {
       const { rsus, cars } = state;
       const { removeRSUs } = action.payload;
-      cars.forEach((car) => car.remove());
+      // cars.forEach((car) => car.remove());
       cars.splice(0, cars.length);
       if (removeRSUs) {
-        rsus.forEach((rsu) => rsu.remove());
+        // rsus.forEach((rsu) => rsu.remove());
         rsus.splice(0, rsus.length);
       }
     },
