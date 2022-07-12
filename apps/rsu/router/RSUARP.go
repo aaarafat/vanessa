@@ -15,11 +15,14 @@ const lifeTimeMS = 10000
 
 type RSUARP struct {
 	table map[string]RARPEntry
+
+	OnARPDelete func(ip string, mac net.HardwareAddr)
 }
 
-func NewRSUARP() *RSUARP {
+func NewRSUARP(onARPDelete func(ip string, mac net.HardwareAddr)) *RSUARP {
 	return &RSUARP{
-		table: make(map[string]RARPEntry),
+		table:       make(map[string]RARPEntry),
+		OnARPDelete: onARPDelete,
 	}
 }
 
@@ -29,7 +32,7 @@ func (RARP *RSUARP) Set(ip string, mac net.HardwareAddr) {
 		log.Panic("You are trying to add null neighbor")
 	}
 	callback := func() {
-		delete(RARP.table, ip)
+		RARP.OnARPDelete(ip, mac)
 	}
 	if val, ok := RARP.table[ip]; ok {
 		val.timer.Reset(lifeTimeMS * time.Millisecond)
@@ -43,6 +46,10 @@ func (RARP *RSUARP) Set(ip string, mac net.HardwareAddr) {
 		RARP.table[ip] = *entry
 		log.Printf("adding %s with %s", ip, mac.String())
 	}
+}
+
+func (RARP *RSUARP) Del(ip string) {
+	delete(RARP.table, ip)
 }
 
 func (RARP *RSUARP) GetTable() map[string]RARPEntry {

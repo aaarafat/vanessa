@@ -92,6 +92,10 @@ func (u *UiUnix) Start() {
 	log.Fatal(http.Serve(listener, nil))
 }
 
+func (u *UiUnix) Refresh(state UiState) {
+	u.Write(state, string(RefreshEvent))
+}
+
 func (u *UiUnix) Close() {
 	u.server.Close()
 }

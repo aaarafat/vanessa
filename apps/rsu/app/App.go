@@ -28,16 +28,15 @@ const (
 )
 
 func NewApp(id int, key []byte) *App {
-	router := NewRouter()
 	app := &App{
-		id:     id,
-		ip:     net.ParseIP(ip.RsuIP),
-		key:    key,
-		router: router,
+		id:  id,
+		ip:  net.ParseIP(ip.RsuIP),
+		key: key,
 	}
 
 	app.ui = unix.NewUiUnix(id, app.GetUiState)
-	app.state = NewState(router.RARP, app.ui)
+	app.state = NewState(app.ui)
+	app.router = NewRouter(app.state.RARP)
 
 	return app
 }
@@ -80,6 +79,10 @@ func (a *App) Start() {
 	go a.ui.Start()
 	go a.handleEthMessages()
 	go a.handleWLANMessgaes()
+
+	// send refresh message to the ui
+	a.ui.Refresh(*a.GetUiState())
+
 	log.Printf("RSU is started!!!\n")
 }
 

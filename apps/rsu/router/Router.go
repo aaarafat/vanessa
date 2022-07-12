@@ -15,7 +15,8 @@ type Router struct {
 	ethChannel  *DataLinkLayerChannel
 	wlanChannel *DataLinkLayerChannel
 
-	RARP *RSUARP
+	RARP        *RSUARP
+	onARPDelete func(ip string, mac net.HardwareAddr)
 }
 
 const (
@@ -39,14 +40,14 @@ func createWLANChannel() *DataLinkLayerChannel {
 	return c
 }
 
-func NewRouter() *Router {
+func NewRouter(arp *RSUARP) *Router {
 	ethChannel := createETHChannel()
 	wlanChannel := createWLANChannel()
 	return &Router{
 		ip:          net.ParseIP(RsuIP),
 		ethChannel:  ethChannel,
 		wlanChannel: wlanChannel,
-		RARP:        NewRSUARP(),
+		RARP:        arp,
 	}
 }
 

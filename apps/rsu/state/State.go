@@ -18,14 +18,18 @@ type State struct {
 	ui *unix.UiUnix
 }
 
-func NewState(arp *RSUARP, ui *unix.UiUnix) *State {
-	return &State{
-		RARP:            arp,
+func NewState(ui *unix.UiUnix) *State {
+	state := &State{
 		OTable:          NewObstaclesTable(),
 		SentPackets:     [2]int{0, 0},
 		RecievedPackets: [2]int{0, 0},
 		ui:              ui,
 	}
+
+	state.RARP = NewRSUARP(state.RemoveCar)
+
+	return state
+
 }
 
 func (s *State) ReceivedPacket(interfaceType int) {
@@ -67,6 +71,15 @@ func (s *State) AddCar(ip string, mac net.HardwareAddr) {
 		IP:  ip,
 		MAC: mac.String(),
 	}, string(unix.AddARPEntryEvent))
+}
+
+func (s *State) RemoveCar(ip string, mac net.HardwareAddr) {
+	s.RARP.Del(ip)
+
+	s.ui.Write(unix.RemoveARPEntryData{
+		IP:  ip,
+		MAC: mac.String(),
+	}, string(unix.RemoveARPEntryEvent))
 }
 
 func (s *State) HasObstacle(obstacle *Position) bool {

@@ -69,7 +69,7 @@ func (a *App) handleVHBeat(payload []byte, from net.HardwareAddr) {
 		return
 	}
 	log.Println("Recieved VHBeat from: ", from, " at: ", HBeat.Position)
-	a.router.RARP.Set(HBeat.OriginatorIP.String(), from)
+	a.state.AddCar(HBeat.OriginatorIP.String(), from)
 }
 
 func (a *App) handleVObstacle(payload []byte, from net.HardwareAddr, packet *ip.IPPacket) {
@@ -79,14 +79,14 @@ func (a *App) handleVObstacle(payload []byte, from net.HardwareAddr, packet *ip.
 		return
 	}
 	log.Println("Recieved Obstacle from: ", obstacle.OriginatorIP.String(), " at: ", obstacle.Position)
-	a.router.RARP.Set(obstacle.OriginatorIP.String(), from)
+	a.state.AddCar(obstacle.OriginatorIP.String(), from)
 	a.addObstacle(&obstacle.Position, obstacle.OriginatorIP, packet)
 }
 
 func (a *App) handleVOREQ(payload []byte, from net.HardwareAddr) {
 	VOREQ := UnmarshalVOREQ(payload)
 	log.Printf("Received VOREQ from %s\n", VOREQ.OriginatorIP.String())
-	a.router.RARP.Set(VOREQ.OriginatorIP.String(), from)
+	a.state.AddCar(VOREQ.OriginatorIP.String(), from)
 	obstacles := UnmarshalPositions(VOREQ.Obstacles, int(VOREQ.Length))
 	a.addObstacles(obstacles, VOREQ.OriginatorIP)
 	a.sendVOREP(VOREQ.OriginatorIP)
