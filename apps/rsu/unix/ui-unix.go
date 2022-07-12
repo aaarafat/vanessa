@@ -7,6 +7,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	. "github.com/aaarafat/vanessa/apps/network/network/messages"
@@ -45,6 +46,8 @@ func NewUiUnix(id int, getState func() *UiState) *UiUnix {
 	return &UiUnix{id: id, addr: addr, server: server, getState: getState}
 }
 
+var id int = 0
+
 func (u *UiUnix) Write(message any, eventName string) {
 	payload, err := json.Marshal(map[string]interface{}{
 		"id":   u.id,
@@ -54,7 +57,8 @@ func (u *UiUnix) Write(message any, eventName string) {
 		log.Printf("Error: %v\n", err)
 		return
 	}
-	u.server.SendEventMessage(string(payload), eventName, "")
+	u.server.SendEventMessage(string(payload), eventName, strconv.Itoa(id))
+	id++
 	log.Printf("Sent event %s to ui\n", eventName)
 }
 
@@ -86,12 +90,6 @@ func (u *UiUnix) Start() {
 		}
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		json.NewEncoder(w).Encode(*u.getState())
-	})
-	http.HandleFunc("/ok", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != "GET" {
-			return
-		}
-		w.WriteHeader(200)
 	})
 
 	http.Handle("/", u.server)

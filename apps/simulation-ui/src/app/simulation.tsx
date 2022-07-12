@@ -24,7 +24,7 @@ import {
 } from './store/simulationSlice';
 import { useHistory, useParams } from 'react-router-dom';
 import MessagesViewer from './messages-viewer';
-import { CAR_PORT_INIT, RSU_PORT_INIT } from 'libs/utils/src/lib/constants';
+import { CAR_PORT_INIT, RSU_PORT_INIT } from '@vanessa/utils';
 
 const spin = keyframes`
   0% {
@@ -245,7 +245,7 @@ export const Simulation: React.FC = () => {
           ...item,
         });
       } else if (item.type === 'rsu') {
-        const rsu = new RSU({ ...item, map });
+        const rsu = new RSU({ ...item, map, port: rsuPortsCounter++ });
         dispatch(addRSU(rsu));
         socketEvents.addRSU(rsu);
       } else if (item.type === 'obstacles') {

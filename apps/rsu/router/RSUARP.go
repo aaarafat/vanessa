@@ -50,7 +50,7 @@ func (RARP *RSUARP) Set(ip string, mac net.HardwareAddr) ARPEntryState {
 		} else {
 			val.MAC = mac
 			RARP.table[ip] = val
-			return NEW_ENTRY
+			return UPDATED_ENTRY
 		}
 	} else {
 

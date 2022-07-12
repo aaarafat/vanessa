@@ -1,35 +1,15 @@
 import React from 'react';
+import { useAppSelector } from '../store';
 import { TableCard } from './table-card';
 
-const table = [
-  {
-    Lat: '52.5',
-    Lon: '13.4',
-  },
-  {
-    Lat: '52.5',
-    Lon: '13.4',
-  },
-  {
-    Lat: '52.5',
-    Lon: '13.4',
-  },
-  {
-    Lat: '52.5',
-    Lon: '13.4',
-  },
-  {
-    Lat: '52.5',
-    Lon: '13.4',
-  },
-  {
-    Lat: '52.5',
-    Lon: '13.4',
-  },
-];
-
 export const ObstaclesTable = () => {
+  const table = useAppSelector((state) => state.rsu.obstacles);
   return (
-    <TableCard table={table} headers={['Lat', 'Lon']} title="Obstacles Table" />
+    <TableCard
+      table={table}
+      headers={['Longitude', 'Latitude']}
+      keys={['lng', 'lat']}
+      title="Obstacles Table"
+    />
   );
 };

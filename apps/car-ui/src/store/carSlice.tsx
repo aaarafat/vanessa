@@ -2,20 +2,20 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { Car } from '@vanessa/utils';
 import * as turf from '@turf/turf';
 
-export interface SimulationState {
+export interface CarState {
   car: Car | undefined;
   obstacles: turf.Feature<turf.Point>[];
   messages: string[];
 }
 
-const initialState: SimulationState = {
+const initialState: CarState = {
   car: undefined,
   obstacles: [],
   messages: [],
 };
 
-export const simulationSlice = createSlice({
-  name: 'simulation',
+export const carSlice = createSlice({
+  name: 'car',
   initialState,
   reducers: {
     initCar: (state, action: PayloadAction<Car>) => {
@@ -38,6 +38,6 @@ export const simulationSlice = createSlice({
 });
 
 export const { initCar, addObstacle, addObstacles, addMessage } =
-  simulationSlice.actions;
+  carSlice.actions;
 
-export default simulationSlice.reducer;
+export default carSlice.reducer;

@@ -16,10 +16,7 @@ const (
 	RefreshEvent               Event = "refresh"
 )
 
-type AddObstacleData struct {
-	Obstacle Position `json:"obstacle"`
-}
-
+type AddObstacleData = Position
 type AddARPEntryData = UiARPEntry
 type RemoveARPEntryData = UiARPEntry
 type UpdateARPEntryData = UiARPEntry

@@ -58,8 +58,9 @@ const SCell = styled.div`
   }
 `;
 type Props = {
-  table: { [key: string]: string }[];
+  table: { [key: string]: string | number }[];
   headers: string[];
+  keys: string[];
 };
 
 export const Table = (props: Props) => {
@@ -73,7 +74,7 @@ export const Table = (props: Props) => {
       {props.table.map((row, index) => {
         return (
           <SRow key={index}>
-            {Object.keys(row).map((key, index) => {
+            {props.keys.map((key, index) => {
               return <SCell key={index}>{row[key]}</SCell>;
             })}
           </SRow>

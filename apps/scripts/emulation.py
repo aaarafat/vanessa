@@ -209,8 +209,12 @@ def add_rsu(message):
             pass
         print(position)
 
+        port = message['port']
+
         cmd(rsu.cmd,
             f"sudo dist/apps/rsu -id {id} -key {key} -debug")
+        cmd(os.system,
+            f"socat TCP4-LISTEN:{port},fork,reuseaddr UNIX-CONNECT:/tmp/rsu{id}.ui.socket")
     except Exception as e:
         if running:
             print(e)
@@ -448,6 +452,11 @@ def topology(args):
 
 def clear_unix_sockets():
     for f in glob.glob('/tmp/car*.socket'):
+        try:
+            os.remove(f)
+        except:
+            pass
+    for f in glob.glob('/tmp/rsu*.socket'):
         try:
             os.remove(f)
         except:

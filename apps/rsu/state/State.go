@@ -55,7 +55,8 @@ func (s *State) AddObstacle(obstacle *Position) {
 	s.OTable.Set(*obstacle, 0)
 
 	s.ui.Write(unix.AddObstacleData{
-		Obstacle: *obstacle,
+		Lng: obstacle.Lng,
+		Lat: obstacle.Lat,
 	}, string(unix.AddObstacleEvent))
 }
 

@@ -19,15 +19,16 @@ const STitle = styled.div`
 `;
 
 type Props = {
-  table: { [key: string]: string }[];
+  table: { [key: string]: string | number }[];
   headers: string[];
+  keys: string[];
   title: string;
 };
 export const TableCard = (props: Props) => {
   return (
     <SCard>
       <STitle>{props.title}</STitle>
-      <Table table={props.table} headers={props.headers} />
+      <Table table={props.table} keys={props.keys} headers={props.headers} />
     </SCard>
   );
 };
