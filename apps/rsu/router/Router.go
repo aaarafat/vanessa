@@ -8,12 +8,10 @@ import (
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/apps/network/network/ip"
-	"github.com/aaarafat/vanessa/libs/crypto"
 )
 
 type Router struct {
 	ip          net.IP
-	key         []byte
 	ethChannel  *DataLinkLayerChannel
 	wlanChannel *DataLinkLayerChannel
 
@@ -103,11 +101,7 @@ func (r *Router) SendToALLWLANInterface(data []byte, originatorIP string) int {
 			continue
 		}
 		log.Printf("Sending to: %s", eip)
-		cipherData, err := crypto.EncryptAES(r.key, data)
-		if err != nil {
-			continue
-		}
-		packet := ip.NewIPPacket(cipherData, r.ip, net.ParseIP(eip))
+		packet := ip.NewIPPacket(data, r.ip, net.ParseIP(eip))
 		bytes := ip.MarshalIPPacket(packet)
 		ip.UpdateChecksum(bytes)
 		r.wlanChannel.SendTo(bytes, entry.MAC)

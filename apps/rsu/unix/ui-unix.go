@@ -9,24 +9,9 @@ import (
 	"os"
 	"time"
 
-	. "github.com/aaarafat/vanessa/apps/network/network/messages"
+	. "github.com/aaarafat/vanessa/apps/rsu/state"
 	"gopkg.in/antage/eventsource.v1"
 )
-
-type Coordinate struct {
-	Lat float64 `json:"lat"`
-	Lng float64 `json:"lng"`
-}
-
-type State struct {
-	Id               int        `json:"id"`
-	Speed            int        `json:"speed"`
-	Route            []Position `json:"route"`
-	Lat              float64    `json:"lat"`
-	Lng              float64    `json:"lng"`
-	ObstacleDetected bool       `json:"obstacleDetected"`
-	Obstacles        []Position `json:"obstacles"`
-}
 
 type UiUnix struct {
 	id       int
@@ -40,7 +25,7 @@ func NewUiUnix(id int, getState func() *State) *UiUnix {
 		return [][]byte{[]byte("Access-Control-Allow-Origin: *")}
 	})
 
-	addr := fmt.Sprintf("/tmp/car%d.ui.socket", id)
+	addr := fmt.Sprintf("/tmp/rsu%d.ui.socket", id)
 
 	return &UiUnix{id: id, addr: addr, server: server, getState: getState}
 }

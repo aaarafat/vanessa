@@ -53,7 +53,7 @@ func main() {
 	log.Printf("My key is %s, from %s written %d  len %d\n", key, keyStr, n, len(key))
 
 	// create a new RSU
-	rsu := NewApp(key)
+	rsu := NewApp(id, key)
 
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
