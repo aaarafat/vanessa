@@ -45,6 +45,7 @@ func NewApp(id int, key []byte) *App {
 func (a *App) GetUiState() *unix.UiState {
 	if a.state == nil {
 		return &unix.UiState{
+			Id:               a.id,
 			ARP:              []unix.UiARPEntry{},
 			Obstacles:        []messages.Position{},
 			ReceivedFromRsus: 0,

@@ -26,6 +26,7 @@ type UiARPEntry struct {
 }
 
 type UiState struct {
+	Id               int          `json:"id"`
 	ARP              []UiARPEntry `json:"arp"`
 	Obstacles        []Position   `json:"obstacles"`
 	ReceivedFromRsus int          `json:"receivedFromRsus"`
