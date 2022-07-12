@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"syscall"
 
 	. "github.com/aaarafat/vanessa/apps/car/app"
 )
@@ -55,7 +56,7 @@ func main() {
 	app := NewApp(id, key)
 
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGSTOP, syscall.SIGHUP)
 	go func() {
 		<-c
 		app.Stop()
