@@ -100,7 +100,7 @@ func (r *Router) SendToALLWLANInterface(data []byte, originatorIP string) int {
 		if originatorIP == eip {
 			continue
 		}
-		log.Printf("Sending to: %s", eip)
+		log.Printf("Sending to: %s  mac: %s", eip, entry.MAC)
 		packet := ip.NewIPPacket(data, r.ip, net.ParseIP(eip))
 		bytes := ip.MarshalIPPacket(packet)
 		ip.UpdateChecksum(bytes)

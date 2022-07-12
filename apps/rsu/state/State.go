@@ -1,6 +1,7 @@
 package state
 
 import (
+	"log"
 	"net"
 
 	. "github.com/aaarafat/vanessa/apps/network/network/messages"
@@ -32,10 +33,12 @@ func (s *State) SentPacket(interfaceType int, count int) {
 }
 
 func (s *State) AddObstacle(obstacle *Position) {
+	log.Printf("Adding obstacle: %v\n", obstacle)
 	s.OTable.Set(*obstacle, 0)
 }
 
 func (s *State) RemoveObstacle(obstacle *Position) {
+	log.Printf("Removing obstacle: %v\n", obstacle)
 	s.OTable.Set(*obstacle, 1)
 }
 
