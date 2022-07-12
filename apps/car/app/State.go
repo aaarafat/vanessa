@@ -77,7 +77,7 @@ func (a *App) updateObstacles(obstacles []Position) {
 	if a.state == nil {
 		return
 	}
-	a.state.Obstacles = obstacles
+	a.state.Obstacles = removeDuplicatePositions(append(a.state.Obstacles, obstacles...))
 	log.Printf("Obstacles updated: %v", obstacles)
 
 	go func() {
