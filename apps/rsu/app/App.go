@@ -21,6 +21,11 @@ type App struct {
 	ui *unix.UiUnix
 }
 
+const (
+	ETH_IFI  = 0
+	WLAN_IFI = 1
+)
+
 func NewApp(id int, key []byte) *App {
 	router := NewRouter()
 	app := &App{
@@ -31,13 +36,30 @@ func NewApp(id int, key []byte) *App {
 		state:  NewState(router.RARP),
 	}
 
-	app.ui = unix.NewUiUnix(id, app.GetState)
+	app.ui = unix.NewUiUnix(id, app.GetUiState)
 
 	return app
 }
 
-func (a *App) GetState() *State {
-	return a.state
+func (a *App) GetUiState() *unix.UiState {
+	arp := make([]unix.UiARPEntry, a.state.RARP.Len())
+	i := 0
+	for ip, entry := range a.state.RARP.GetTable() {
+		arp[i] = unix.UiARPEntry{
+			IP:  ip,
+			MAC: entry.MAC.String(),
+		}
+		i++
+	}
+
+	return &unix.UiState{
+		ARP:              arp,
+		Obstacles:        a.state.OTable.GetTable(),
+		ReceivedFromRsus: a.state.RecievedPackets[ETH_IFI],
+		SentToRsus:       a.state.SentPackets[ETH_IFI],
+		ReceivedFromCars: a.state.RecievedPackets[WLAN_IFI],
+		SentToCars:       a.state.SentPackets[WLAN_IFI],
+	}
 }
 
 func (a *App) Start() {

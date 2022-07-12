@@ -45,6 +45,14 @@ func (RARP *RSUARP) Set(ip string, mac net.HardwareAddr) {
 	}
 }
 
+func (RARP *RSUARP) GetTable() map[string]RARPEntry {
+	return RARP.table
+}
+
+func (RSUARP *RSUARP) Len() int {
+	return len(RSUARP.table)
+}
+
 func (RARP *RSUARP) Get(ip string) net.HardwareAddr {
 	return RARP.table[ip].MAC
 }

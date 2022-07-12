@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	. "github.com/aaarafat/vanessa/apps/rsu/state"
+	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 	"gopkg.in/antage/eventsource.v1"
 )
 
@@ -17,10 +17,24 @@ type UiUnix struct {
 	id       int
 	addr     string
 	server   eventsource.EventSource
-	getState func() *State
+	getState func() *UiState
 }
 
-func NewUiUnix(id int, getState func() *State) *UiUnix {
+type UiARPEntry struct {
+	IP  string `json:"ip"`
+	MAC string `json:"mac"`
+}
+
+type UiState struct {
+	ARP              []UiARPEntry `json:"arp"`
+	Obstacles        []Position   `json:"obstacles"`
+	ReceivedFromRsus int          `json:"receivedFromRsus"`
+	SentToRsus       int          `json:"sentToRsus"`
+	ReceivedFromCars int          `json:"receivedFromCars"`
+	SentToCars       int          `json:"sentToCars"`
+}
+
+func NewUiUnix(id int, getState func() *UiState) *UiUnix {
 	server := eventsource.New(nil, func(req *http.Request) [][]byte {
 		return [][]byte{[]byte("Access-Control-Allow-Origin: *")}
 	})
