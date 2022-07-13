@@ -50,7 +50,6 @@ func (a *App) handleMessage(bytes []byte) {
 			return
 		}
 		log.Printf("Car with ip: %s  in my zone", msg.OriginatorIP)
-		a.ipConn.Forward(bytes)
 
 	case VPathDiscoveryType:
 		msg, err := UnmarshalVPathDiscovery(data)
