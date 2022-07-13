@@ -34,7 +34,11 @@ func (a *App) initState(speed int, route []Position, pos Position) {
 		a.state.Lng = pos.Lng
 	}
 
-	log.Printf("Car state initialized  state:  %v\n", a.state)
+	if a.state.Speed > a.maxSpeed {
+		a.maxSpeed = a.state.Speed
+	}
+
+	log.Printf("Car state initialized  state:  %s  maxSpeed  %d\n", a.state.String(), a.maxSpeed)
 }
 
 func (a *App) updatePosition(pos Position) {
@@ -74,7 +78,7 @@ func (a *App) addObstacle(pos Position, fromSensor bool) {
 func (a *App) updateObstacles(obstacles []Position) {
 	a.stateLock.Lock()
 	defer a.stateLock.Unlock()
-	if a.state == nil {
+	if a.state == nil || len(obstacles) == 0 {
 		return
 	}
 	a.state.Obstacles = removeDuplicatePositions(append(a.state.Obstacles, obstacles...))

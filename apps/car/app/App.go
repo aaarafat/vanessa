@@ -17,6 +17,7 @@ type App struct {
 
 	// state
 	state     *unix.State
+	maxSpeed  int
 	stateLock *sync.RWMutex
 
 	// to send messages to the network
@@ -50,6 +51,7 @@ func NewApp(id int, key []byte) *App {
 		id:        id,
 		ip:        ip,
 		key:       key,
+		maxSpeed:  0,
 		ipConn:    ipConn,
 		sensor:    unix.NewSensorUnix(id),
 		router:    unix.NewRouter(id),

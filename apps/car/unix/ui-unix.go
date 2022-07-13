@@ -32,6 +32,10 @@ func (s *State) GetPosition() Position {
 	return Position{Lng: s.Lng, Lat: s.Lat}
 }
 
+func (s *State) String() string {
+	return fmt.Sprintf("State{Id: %d, Speed: %d, Route: %v, Lat: %f, Lng: %f, ObstacleDetected: %t, Obstacles: %v}", s.Id, s.Speed, s.Route, s.Lat, s.Lng, s.ObstacleDetected, s.Obstacles)
+}
+
 type UiUnix struct {
 	id       int
 	addr     string
