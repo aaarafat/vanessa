@@ -49,6 +49,7 @@ func (a *App) handleMessage(bytes []byte) {
 			log.Printf("Error decoding VZone message: %v", err)
 			return
 		}
+		a.zoneTable.Set(msg.OriginatorIP, msg.Speed, msg.Position)
 		log.Printf("Car with ip: %s  in my zone", msg.OriginatorIP)
 
 	case VPathDiscoveryType:

@@ -4,6 +4,7 @@ import (
 	"log"
 	"net"
 	"sync"
+	"time"
 
 	"github.com/aaarafat/vanessa/apps/car/unix"
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
@@ -18,6 +19,7 @@ type App struct {
 	// state
 	state     *unix.State
 	maxSpeed  int
+	zoneTable *ZoneTable
 	stateLock *sync.RWMutex
 
 	// to send messages to the network
@@ -52,6 +54,7 @@ func NewApp(id int, key []byte) *App {
 		ip:        ip,
 		key:       key,
 		maxSpeed:  0,
+		zoneTable: NewZoneTable(),
 		ipConn:    ipConn,
 		sensor:    unix.NewSensorUnix(id),
 		router:    unix.NewRouter(id),
@@ -65,6 +68,13 @@ func NewApp(id int, key []byte) *App {
 	return &app
 }
 
+func (a *App) printZone() {
+	for {
+		a.zoneTable.Print()
+		time.Sleep(time.Second * 5)
+	}
+}
+
 func (a *App) Run() {
 	log.Printf("App %d starting.....", a.id)
 	a.startSocketHandlers()
@@ -74,6 +84,7 @@ func (a *App) Run() {
 	go a.sendHeartBeat()
 	go a.sendZoneMsg()
 	go a.ui.Start()
+	go a.printZone()
 
 	log.Printf("App %d started", a.id)
 }

@@ -75,6 +75,16 @@ func (p *Position) Distance(p2 *Position) float64 {
 	return ans * EARTH_RADIUS_METER
 }
 
+func (p *Position) Magnitude() float64 {
+	return math.Sqrt(math.Pow(p.Lat, 2) + math.Pow(p.Lng, 2))
+}
+
+func (p *Position) Normalize() {
+	mag := p.Magnitude()
+	p.Lat = p.Lat / mag
+	p.Lng = p.Lng / mag
+}
+
 // Heart beat message from car to the associated RSU
 type VHBeatMessage struct {
 	// Type
