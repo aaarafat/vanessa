@@ -76,7 +76,11 @@ export class Car {
     this.speed = this.carSpeed;
     this.obstacleDetected = false;
     this.route = car.route || [];
-    this.routeIndex = 0;
+    this.routeIndex =
+      this.lat === this.route[this.route.length - 1].lat &&
+      this.lng === this.route[this.route.length - 1].lng
+        ? this.route.length
+        : 0;
     this.originalDirections = turf.lineString(
       this.route.map((r: Coordinates) => [r.lng, r.lat])
     );
@@ -89,6 +93,10 @@ export class Car {
     this.animationFrame = 0;
 
     this.port = car.port || -1;
+
+    if (this.arrived) {
+      this.speed = 0;
+    }
 
     this.draw();
     this.attachHandlers();

@@ -35,7 +35,7 @@ export const useEventSource = () => {
     eventSource.addEventListener('destination-reached', ({ data: message }) => {
       const json: DestinationReachedData = JSON.parse(message).data;
       car?.updateDestinationFromData(json.coordinates);
-      dispatch(addMessage(`Destination reached: ${json.coordinates}`));
+      dispatch(addMessage('Destination reached'));
     });
 
     eventSource.addEventListener('obstacle-detected', ({ data: message }) => {
@@ -52,6 +52,7 @@ export const useEventSource = () => {
 
     eventSource.addEventListener('obstacle-received', ({ data: message }) => {
       const json: ObstacleReceivedData = JSON.parse(message).data;
+      console.log(message);
       dispatch(addObstacle(createFeaturePoint(json.obstacle_coordinates)));
       dispatch(addMessage('Obstacle received'));
     });

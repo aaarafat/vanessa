@@ -93,7 +93,9 @@ export const Interface: React.FC = () => {
       const state = await fetch(`http://localhost:${port}/state`);
       const json: carState = await state.json();
       dispatch(initCar(new Car({ ...json, map }, { displayOnly: true })));
+
       dispatch(addObstacles(json.obstacles.map((o) => createFeaturePoint(o))));
+
       setEventSource(new EventSource(`http://localhost:${port}`));
       document.title = `Car - ${json.id}`;
     } catch (e) {

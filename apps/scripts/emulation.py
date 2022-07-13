@@ -1,4 +1,3 @@
-import http
 from numpy import stack
 import socket
 import json
@@ -11,7 +10,6 @@ from mininet.log import setLogLevel, info
 from flask import Flask
 from flask_socketio import SocketIO, emit
 import threading
-from turtle import position
 import sys
 import os
 from mininet.node import Controller
@@ -19,9 +17,7 @@ from mininet.node import UserSwitch
 from mn_wifi.node import UserAP
 
 import time
-import shutil
 import math
-from http import client
 import glob
 import base64
 import subprocess
@@ -450,12 +446,12 @@ def topology(args):
 
 
 def clear_unix_sockets():
-    for f in glob.glob('/tmp/car*.socket'):
-        try:
-            os.remove(f)
-        except:
-            pass
-    for f in glob.glob('/tmp/rsu*.socket'):
+    remove_file_safe('/tmp/car*.socket')
+    remove_file_safe('/tmp/rsu*.socket')
+
+
+def remove_file_safe(path):
+    for f in glob.glob(path):
         try:
             os.remove(f)
         except:
@@ -464,5 +460,5 @@ def clear_unix_sockets():
 
 if __name__ == '__main__':
     setLogLevel('info')
-    shutil.rmtree('/var/log/vanessa', ignore_errors=True)
+    remove_file_safe('/var/log/vanessa/*')
     topology(sys.argv)
