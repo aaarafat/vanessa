@@ -22,6 +22,7 @@ type IPHeader struct {
 	HeaderChecksum        uint16
 	SrcIP                 net.IP
 	DestIP                net.IP
+	Options               uint32
 }
 
 func UnmarshalIPHeader(data []byte) (*IPHeader, error) {
@@ -48,6 +49,10 @@ func UnmarshalIPHeader(data []byte) (*IPHeader, error) {
 	header.SrcIP = net.IPv4(data[12], data[13], data[14], data[15])
 	header.DestIP = net.IPv4(data[16], data[17], data[18], data[19])
 
+	if header.LengthInBytes() > IPv4HeaderLen {
+		header.Options = binary.LittleEndian.Uint32(data[20:24])
+	}
+
 	if csm := HeaderChecksum(data); csm != 0 || header.TTL == 0 {
 		return nil, fmt.Errorf("IP Packet is invalid or outdated csm: %d, ttl: %d", csm, header.TTL)
 	}
@@ -67,6 +72,10 @@ func MarshalIPHeader(header *IPHeader) []byte {
 	binary.LittleEndian.PutUint16(data[10:], header.HeaderChecksum)
 	copy(data[12:16], header.SrcIP.To4())
 	copy(data[16:20], header.DestIP.To4())
+
+	if header.LengthInBytes() > IPv4HeaderLen {
+		binary.LittleEndian.PutUint32(data[20:], header.Options)
+	}
 
 	return data
 }

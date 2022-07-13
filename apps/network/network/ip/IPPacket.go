@@ -36,6 +36,27 @@ func NewIPPacket(payload []byte, srcIP, destIp net.IP) *IPPacket {
 	}
 }
 
+func NewIPPacketWithOptions(payload []byte, srcIP, destIp net.IP, options uint32) *IPPacket {
+	header := &IPHeader{
+		Version:               4,
+		Length:                (DefaultIP4HeaderLen + 4) / 4,
+		TypeOfService:         0,
+		TotalLength:           (DefaultIP4HeaderLen + 4) + uint16(len(payload)),
+		IdentifierFlagsOffset: 0,
+		TTL:                   DefaultTTL,
+		Protocol:              DefaultProtocol,
+		HeaderChecksum:        0,
+		SrcIP:                 srcIP,
+		DestIP:                destIp,
+		Options:               options,
+	}
+
+	return &IPPacket{
+		Header:  header,
+		Payload: payload,
+	}
+}
+
 func UnmarshalPacket(data []byte) (*IPPacket, error) {
 	header, err := UnmarshalIPHeader(data)
 	if err != nil {
