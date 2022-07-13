@@ -49,16 +49,8 @@ func (a *App) handleMessage(bytes []byte) {
 			log.Printf("Error decoding VZone message: %v", err)
 			return
 		}
-		log.Printf("VZone message received: %s", msg.String())
-		// Calculate distance between my position and the zone
-		dist := distancePosition(msg.Position, a.GetPosition())
-		// If the distance is less than the max distance, then I am in the zone
-		// and forward it again to router
-		log.Printf("Distance: %f", dist)
-		if dist <= msg.MaxDistance {
-			log.Printf("Car with ip: %s  in my zone", msg.OriginatorIP)
-			a.ipConn.Forward(bytes)
-		}
+		log.Printf("Car with ip: %s  in my zone", msg.OriginatorIP)
+		a.ipConn.Forward(bytes)
 
 	case VPathDiscoveryType:
 		msg, err := UnmarshalVPathDiscovery(data)

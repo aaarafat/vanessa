@@ -8,8 +8,8 @@ import (
 
 	"github.com/AkihiroSuda/go-netfilter-queue"
 	. "github.com/aaarafat/vanessa/apps/network/network"
-	"github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/apps/network/network/ip"
+	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 	"github.com/aaarafat/vanessa/apps/network/unix"
 )
 
@@ -17,6 +17,7 @@ type PacketFilter struct {
 	nfq          *netfilter.NFQueue
 	srcIP        net.IP
 	id           int
+	position     *Position
 	networkLayer *NetworkLayer
 	routerSocket *unix.RouterSocket
 }
@@ -112,11 +113,15 @@ func (pf *PacketFilter) StealPacket() {
 					return
 				}
 
+				if !pf.ValidOptions(packet) {
+					return
+				}
+
 				if pf.srcIP.Equal(packet.Header.DestIP) {
 					pf.dataCallback(packetBytes, packet.Header.SrcIP)
 
 					// TODO : grpc call to the router to process the packet
-				} else if packet.Header.DestIP.Equal(net.ParseIP(ip.BroadcastIP)) {
+				} else if packet.Header.DestIP.Equal(net.ParseIP(BroadcastIP)) {
 					if !pf.srcIP.Equal(packet.Header.SrcIP) {
 						pf.dataCallback(packetBytes, packet.Header.SrcIP)
 
@@ -134,6 +139,44 @@ func (pf *PacketFilter) StealPacket() {
 			}()
 		}
 	}
+}
+
+func (pf *PacketFilter) ValidOptions(packet *IPPacket) bool {
+	if !packet.HasOptions() {
+		return true
+	}
+
+	if packet.Header.Options[0] == PositionOptionType {
+		positionOption, err := UnmarshalPositionOption(packet.Header.Options)
+		if err != nil {
+			log.Printf("Error decoding Position Option: %v\n", err)
+			return false
+		}
+
+		if pf.srcIP.Equal(packet.Header.SrcIP) {
+			// update my position
+			pf.position = &positionOption.Position
+			return true
+		}
+
+		if pf.position == nil {
+			// have not received my position yet
+			return false
+		}
+
+		// check distance
+		distance := pf.position.Distance(&positionOption.Position)
+
+		log.Printf("Distance: %f from %s\n", distance, packet.Header.SrcIP)
+
+		if distance < positionOption.MaxDistance {
+			log.Printf("Distance is less than %f from %s\n", positionOption.MaxDistance, packet.Header.SrcIP)
+			return true
+		}
+		log.Printf("Distance is greater than %f from %s\n", positionOption.MaxDistance, packet.Header.SrcIP)
+	}
+
+	return false
 }
 
 func (pf *PacketFilter) Start() {

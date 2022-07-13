@@ -6,17 +6,23 @@ import (
 	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 )
 
+const (
+	PositionOptionType uint8 = 0x01
+)
+
 type PositionOption struct {
+	Type        uint8
 	Position    Position
 	MaxDistance float64
 }
 
 const (
-	PositionOptionLen = 24
+	PositionOptionLen = 25
 )
 
 func NewPositionOption(position Position, maxDistance float64) *PositionOption {
 	return &PositionOption{
+		Type:        PositionOptionType,
 		Position:    position,
 		MaxDistance: maxDistance,
 	}
@@ -25,8 +31,9 @@ func NewPositionOption(position Position, maxDistance float64) *PositionOption {
 func (po *PositionOption) Marshal() []byte {
 	bytes := make([]byte, PositionOptionLen)
 
-	copy(bytes[0:16], po.Position.Marshal())
-	copy(bytes[16:24], Float64bytes(po.MaxDistance))
+	bytes[0] = po.Type
+	copy(bytes[1:17], po.Position.Marshal())
+	copy(bytes[17:25], Float64bytes(po.MaxDistance))
 
 	return bytes
 }
@@ -38,8 +45,9 @@ func UnmarshalPositionOption(data []byte) (*PositionOption, error) {
 
 	positionOption := &PositionOption{}
 
-	positionOption.Position = UnmarshalPosition(data[0:16])
-	positionOption.MaxDistance = Float64FromBytes(data[16:24])
+	positionOption.Type = uint8(data[0])
+	positionOption.Position = UnmarshalPosition(data[1:17])
+	positionOption.MaxDistance = Float64FromBytes(data[17:25])
 
 	return positionOption, nil
 }

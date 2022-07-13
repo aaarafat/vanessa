@@ -59,7 +59,7 @@ func UnmarshalIPHeader(data []byte) (*IPHeader, error) {
 }
 
 func MarshalIPHeader(header *IPHeader) []byte {
-	data := make([]byte, IPv4HeaderLen)
+	data := make([]byte, header.LengthInBytes())
 
 	data[0] = byte(header.Version<<4) | byte(header.Length)
 	data[1] = byte(header.TypeOfService)
