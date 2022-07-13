@@ -23,9 +23,14 @@ func (n *NetworkLayer) SendUnicast(packet []byte, destIP net.IP) {
 	n.flooders[route.Interface].ForwardTo(packet, route.NextHop)
 }
 
-func (n *NetworkLayer) SendBroadcast(packet []byte, from net.IP) {
-	log.Printf("Sending broadcast from %s\n", from)
-	n.flooders[WLAN0].ForwardToAllExceptIP(packet, from)
+func (n *NetworkLayer) SendBroadcast(packet []byte, fromIP net.IP) {
+	if fromIP.Equal(n.ip) {
+		log.Printf("Sending broadcast\n")
+		n.broadcastProtocol.Flood(packet)
+	} else {
+		log.Printf("Forwarding broadcast from %s\n", fromIP)
+		n.broadcastProtocol.Forward(packet, fromIP)
+	}
 }
 
 func (n *NetworkLayer) addToBuffer(packet []byte, destIP net.IP) {

@@ -8,6 +8,7 @@ import (
 	. "github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/apps/network/protocols"
 	"github.com/aaarafat/vanessa/apps/network/protocols/aodv"
+	"github.com/aaarafat/vanessa/apps/network/protocols/sncf"
 )
 
 const (
@@ -29,7 +30,8 @@ type NetworkLayer struct {
 
 	ipConn *IPConnection
 
-	unicastProtocol UnicastProtocol
+	unicastProtocol   UnicastProtocol
+	broadcastProtocol BroadcastProtocol
 }
 
 func NewNetworkLayer(ip net.IP) *NetworkLayer {
@@ -80,6 +82,7 @@ func (n *NetworkLayer) openListeners() {
 
 func (n *NetworkLayer) Start() {
 	n.unicastProtocol = aodv.NewAodv(n.ip, UNICAST_IFI, n.neighborTables, n.onPathDiscovery)
+	n.broadcastProtocol = sncf.NewSNCF(n.flooders[WLAN0])
 	n.openChannels()
 	n.openListeners()
 

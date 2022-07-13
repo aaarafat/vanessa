@@ -4,7 +4,6 @@ import (
 	"net"
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
-	"github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/apps/network/protocols"
 )
 
@@ -40,14 +39,13 @@ func (sncf *SNCF) Flood(packet []byte) {
 	sncf.flooder.ForwardToAll(data)
 }
 
-func (sncf *SNCF) Forward(data []byte, from net.HardwareAddr) {
+func (sncf *SNCF) Forward(data []byte, fromIP net.IP) {
 	seqHeader := UnmarshalSequenceHeader(data[0:4])
-	packet, err := ip.UnmarshalPacket(data[4:])
-	if err != nil || sncf.seqTable.Exists(packet.Header.SrcIP, seqHeader.SequenceNumber) {
+	if sncf.seqTable.Exists(fromIP, seqHeader.SequenceNumber) {
 		return
 	}
 
-	sncf.seqTable.Set(packet.Header.SrcIP, seqHeader.SequenceNumber)
+	sncf.seqTable.Set(fromIP, seqHeader.SequenceNumber)
 
-	sncf.flooder.ForwardToAllExcept(data[4:], from)
+	sncf.flooder.ForwardToAllExceptIP(data, fromIP)
 }

@@ -119,9 +119,9 @@ func (pf *PacketFilter) StealPacket() {
 				} else if packet.Header.DestIP.Equal(net.ParseIP(ip.BroadcastIP)) {
 					if !pf.srcIP.Equal(packet.Header.SrcIP) {
 						pf.dataCallback(packetBytes, packet.Header.SrcIP)
-					}
 
-					Update(packetBytes)
+						Update(packetBytes)
+					}
 
 					log.Printf("Sending packet size %d to %s\n", len(packetBytes), packet.Header.DestIP)
 					pf.networkLayer.SendBroadcast(packetBytes, packet.Header.SrcIP)
