@@ -1,17 +1,17 @@
 package messages
 
 import (
+	"encoding/binary"
 	"fmt"
 	"net"
 )
 
-
-func NewVZoneMessage(OriginatorIP net.IP, position Position, maxDistance float64) *VZoneMessage {
+func NewVZoneMessage(OriginatorIP net.IP, position Position, speed uint32) *VZoneMessage {
 	return &VZoneMessage{
-		Type: VZoneType,
+		Type:         VZoneType,
 		OriginatorIP: OriginatorIP,
-		Position : position,
-		MaxDistance : maxDistance,
+		Position:     position,
+		Speed:        speed,
 	}
 }
 
@@ -22,10 +22,10 @@ func (VZone *VZoneMessage) Marshal() []byte {
 	copy(bytes[1:5], VZone.OriginatorIP.To4())
 	// add marashalled position object to bytes
 	copy(bytes[5:21], VZone.Position.Marshal())
-	copy(bytes[21:29],  Float64bytes(VZone.MaxDistance))
-	
+	binary.LittleEndian.PutUint32(bytes[21:25], VZone.Speed)
+
 	return bytes
-} 
+}
 
 func UnmarshalVZone(data []byte) (*VZoneMessage, error) {
 	if len(data) < VZoneMessageLen {
@@ -36,11 +36,11 @@ func UnmarshalVZone(data []byte) (*VZoneMessage, error) {
 	VZone.Type = uint8(data[0])
 	VZone.OriginatorIP = net.IPv4(data[1], data[2], data[3], data[4])
 	VZone.Position = UnmarshalPosition(data[5:21])
-	VZone.MaxDistance = Float64FromBytes(data[21:29])
-	
+	binary.LittleEndian.PutUint32(data[21:25], VZone.Speed)
+
 	return VZone, nil
 }
 
 func (VZone *VZoneMessage) String() string {
-	return fmt.Sprintf("VZone: Type: %d, OriginatorIP: %s,  Lat: %f, Lng: %f, MaxDistance: %f", VZone.Type, VZone.OriginatorIP.String(), VZone.Position.Lat, VZone.Position.Lng, VZone.MaxDistance)
+	return fmt.Sprintf("VZone: Type: %d, OriginatorIP: %s,  Lat: %f, Lng: %f, Speed: %d", VZone.Type, VZone.OriginatorIP.String(), VZone.Position.Lat, VZone.Position.Lng, VZone.Speed)
 }

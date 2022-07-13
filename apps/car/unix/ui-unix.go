@@ -28,6 +28,10 @@ type State struct {
 	Obstacles        []Position `json:"obstacles"`
 }
 
+func (s *State) GetPosition() Position {
+	return Position{Lng: s.Lng, Lat: s.Lat}
+}
+
 type UiUnix struct {
 	id       int
 	addr     string

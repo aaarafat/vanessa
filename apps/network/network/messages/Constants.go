@@ -131,8 +131,8 @@ type VZoneMessage struct {
 	OriginatorIP net.IP
 	// Position of the obstacle
 	Position Position
-	// Max Distance from the originator
-	MaxDistance float64
+	// Speed of the vehicle
+	Speed uint32
 }
 
 const (
@@ -141,7 +141,7 @@ const (
 	VOREQMessageLen          = 6
 	VOREPMessageLen          = 2
 	VPathDiscoveryMessageLen = 5
-	VZoneMessageLen          = 29
+	VZoneMessageLen          = 25
 )
 
 const (

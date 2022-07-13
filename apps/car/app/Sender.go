@@ -24,9 +24,11 @@ func (a *App) sendHeartBeat() {
 func (a *App) sendZoneMsg() {
 	for {
 		if a.state != nil {
-			pos := a.GetPosition()
-			data := NewVZoneMessage(a.ip, pos, MAX_DIST_METER).Marshal()
-			log.Printf("Sending zone msg : %f  %f, max dist %dm", pos.Lng, pos.Lat, MAX_DIST_METER)
+			state := a.GetState()
+			pos := state.GetPosition()
+			speed := state.Speed
+			data := NewVZoneMessage(a.ip, pos, uint32(speed)).Marshal()
+			log.Printf("Sending zone msg : %f  %f, speed %d  MaxDistance %d m", pos.Lng, pos.Lat, speed, MAX_DIST_METER)
 			positionOption := ip.NewPositionOption(pos, MAX_DIST_METER)
 			a.sendToRouterWithOptions(data, net.ParseIP(ip.BroadcastIP), positionOption.Marshal())
 		}
