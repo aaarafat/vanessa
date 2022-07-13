@@ -29,7 +29,7 @@ type NetworkLayer struct {
 
 	ipConn *IPConnection
 
-	unicastProtocol Protocol
+	unicastProtocol UnicastProtocol
 }
 
 func NewNetworkLayer(ip net.IP) *NetworkLayer {

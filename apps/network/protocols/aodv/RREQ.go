@@ -5,38 +5,39 @@ import (
 	"net"
 
 	"encoding/binary"
+
+	. "github.com/aaarafat/vanessa/apps/network/protocols"
 )
 
 // https://datatracker.ietf.org/doc/html/rfc3561#section-5.1
 type RREQMessage struct {
 	// Type
-	Type uint8  
+	Type uint8
 	// Flags J|R|G|D|U|   Reserved
-	Flags uint16 
+	Flags uint16
 	// The number of hops that the RREQ has already made.
-	HopCount uint8 
+	HopCount uint8
 	// RREQ ID
-	RREQID uint32 
+	RREQID uint32
 	// The IP address of the node that is the destination of the RREQ.
 	DestinationIP net.IP
 	// Destination sequence number
-	DestinationSeqNum uint32 
+	DestinationSeqNum uint32
 	// The IP address of the node that originated the RREQ.
 	OriginatorIP net.IP
 	// The sequence number of the RREQ.
-	OriginatorSequenceNumber uint32 
+	OriginatorSequenceNumber uint32
 }
-
 
 func NewRREQMessage(SrcIP, DestIP net.IP) *RREQMessage {
 	rreq := &RREQMessage{
-		Type: RREQType,
-		Flags: 0,
-		HopCount: 0,
-		RREQID: 0,
-		DestinationIP: DestIP,
-		OriginatorIP: SrcIP,
-		DestinationSeqNum: 0,
+		Type:                     RREQType,
+		Flags:                    0,
+		HopCount:                 0,
+		RREQID:                   0,
+		DestinationIP:            DestIP,
+		OriginatorIP:             SrcIP,
+		DestinationSeqNum:        0,
 		OriginatorSequenceNumber: 0,
 	}
 
@@ -46,7 +47,7 @@ func NewRREQMessage(SrcIP, DestIP net.IP) *RREQMessage {
 	return rreq
 }
 
-func (rreq* RREQMessage) Marshal() []byte {
+func (rreq *RREQMessage) Marshal() []byte {
 	bytes := make([]byte, RREQMessageLen)
 
 	bytes[0] = byte(rreq.Type)
@@ -65,7 +66,7 @@ func UnmarshalRREQ(data []byte) (*RREQMessage, error) {
 	if len(data) < RREQMessageLen {
 		return nil, fmt.Errorf("RREQ message length is %d, expected %d", len(data), RREQMessageLen)
 	}
-	
+
 	rreq := &RREQMessage{}
 	rreq.Type = uint8(data[0])
 	rreq.Flags = binary.LittleEndian.Uint16(data[1:3])
@@ -79,34 +80,33 @@ func UnmarshalRREQ(data []byte) (*RREQMessage, error) {
 	return rreq, nil
 }
 
-func (rreq* RREQMessage) SetFlag(flag uint16) *RREQMessage {
+func (rreq *RREQMessage) SetFlag(flag uint16) *RREQMessage {
 	rreq.Flags |= flag
 	return rreq
 }
 
-func (rreq* RREQMessage) ClearFlag(flag uint16) *RREQMessage {
+func (rreq *RREQMessage) ClearFlag(flag uint16) *RREQMessage {
 	rreq.Flags &= ^flag
 	return rreq
 }
 
-func (rreq* RREQMessage) ToggleFlag(flag uint16) *RREQMessage {
+func (rreq *RREQMessage) ToggleFlag(flag uint16) *RREQMessage {
 	rreq.Flags ^= flag
 	return rreq
 }
 
-func (rreq* RREQMessage) HasFlag(flag uint16) bool {
-	return rreq.Flags & flag != 0
+func (rreq *RREQMessage) HasFlag(flag uint16) bool {
+	return rreq.Flags&flag != 0
 }
-
 
 func (rreq *RREQMessage) Invalid(seqTable *VFloodingSeqTable, srcIP net.IP) bool {
 	return rreq.Type != RREQType ||
-				rreq.HopCount > HopCountLimit || 
-				rreq.OriginatorIP.Equal(srcIP) || 
-				seqTable.Exists(rreq.OriginatorIP, rreq.RREQID) 
+		rreq.HopCount > HopCountLimit ||
+		rreq.OriginatorIP.Equal(srcIP) ||
+		seqTable.Exists(rreq.OriginatorIP, rreq.RREQID)
 }
 
-func (rreq* RREQMessage) String() string {
+func (rreq *RREQMessage) String() string {
 	return fmt.Sprintf("RREQ: Type: %d, Flags: %d, HopCount: %d, RREQID: %d, DestinationIP: %s, DestinationSeqNum: %d, OriginatorIP: %s, OriginatorSequenceNumber: %d",
 		rreq.Type, rreq.Flags, rreq.HopCount, rreq.RREQID, rreq.DestinationIP.String(), rreq.DestinationSeqNum, rreq.OriginatorIP.String(), rreq.OriginatorSequenceNumber)
 }
