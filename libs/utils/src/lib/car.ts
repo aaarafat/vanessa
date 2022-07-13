@@ -273,7 +273,6 @@ export class Car {
     data: Partial<ICar> = {}
   ) {
     if (this.removed) return;
-    console.log(data);
     switch (type) {
       case 'destination-reached':
         this.lat = data.lat ?? this.lat;
@@ -388,8 +387,10 @@ export class Car {
     if (this.obstacleDetected) return false;
     const o = obstacles.map((c) => createFeaturePoint(c));
     if (!this.checkObstaclesOnRoute(o)) return false;
+
     const result = await this.getRoute(o);
     if (!result) return false;
+
     this.originalDirections = turf.lineString(result);
     this.route = result.map((c) => ({ lat: c[1], lng: c[0] }));
     this.routeIndex = 0;
@@ -430,6 +431,7 @@ export class Car {
     const routeSlice = this.route
       .slice(this.routeIndex)
       .map((c) => [c.lng, c.lat]);
+    if (routeSlice.length < 1) return false;
 
     const remainingRoute = turf.lineString([
       [this.lng, this.lat],
@@ -673,6 +675,7 @@ export class Car {
 
     cancelAnimationFrame(this.animationFrame);
     this.map.off('click', this.sourceId, this.onClick);
+    this.handlers = {};
   }
 
   public hide() {

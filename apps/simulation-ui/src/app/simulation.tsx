@@ -176,7 +176,7 @@ export const Simulation: React.FC = () => {
         type: 'obstacles',
       },
     ];
-    info.push([...rsus, ...cars].map((item) => item.export()));
+    info.push(...[...rsus, ...cars].map((item) => item.export()));
     const fileData = JSON.stringify(info, null, 2);
     const blob = new Blob([fileData], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);

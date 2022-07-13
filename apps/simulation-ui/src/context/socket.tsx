@@ -27,6 +27,9 @@ export const SocketProvider: React.FC<React.ReactNode> = ({ children }) => {
         ?.updateRoute(message.data.obstacle_coordinates)
         .then((res: boolean) => res && socketEvents.addCar(car));
     });
+    return () => {
+      socket.removeListener('reroute');
+    };
   }, [cars]);
 
   return (
