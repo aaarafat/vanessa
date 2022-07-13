@@ -36,12 +36,12 @@ func NewIPPacket(payload []byte, srcIP, destIp net.IP) *IPPacket {
 	}
 }
 
-func NewIPPacketWithOptions(payload []byte, srcIP, destIp net.IP, options uint32) *IPPacket {
+func NewIPPacketWithOptions(payload []byte, srcIP, destIp net.IP, options []byte) *IPPacket {
 	header := &IPHeader{
 		Version:               4,
-		Length:                (DefaultIP4HeaderLen + 4) / 4,
+		Length:                (DefaultIP4HeaderLen + uint8(len(options))) / 4,
 		TypeOfService:         0,
-		TotalLength:           (DefaultIP4HeaderLen + 4) + uint16(len(payload)),
+		TotalLength:           (DefaultIP4HeaderLen + uint16(len(options))) + uint16(len(payload)),
 		IdentifierFlagsOffset: 0,
 		TTL:                   DefaultTTL,
 		Protocol:              DefaultProtocol,
