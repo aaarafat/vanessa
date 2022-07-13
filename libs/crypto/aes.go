@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"log"
+	"math/rand"
 
 	"github.com/zenazn/pkcs7pad"
 )
@@ -18,6 +19,7 @@ func EncryptAES(key []byte, plaintext []byte) ([]byte, error) {
 
 	ciphertext := make([]byte, aes.BlockSize+len(pPlaintext))
 	iv := ciphertext[:aes.BlockSize]
+	rand.Read(iv)
 
 	cipher.NewCBCEncrypter(block, iv).CryptBlocks(ciphertext[aes.BlockSize:], pPlaintext)
 

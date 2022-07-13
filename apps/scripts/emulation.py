@@ -75,7 +75,6 @@ car_kwargs = dict(
 
 
 key_bytes = os.urandom(16)
-print(key_bytes)
 key = base64.b64encode(key_bytes).decode('utf-8')
 
 

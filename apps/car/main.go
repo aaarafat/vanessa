@@ -5,9 +5,11 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	. "github.com/aaarafat/vanessa/apps/car/app"
 )
@@ -46,12 +48,12 @@ func main() {
 	initLogger(debug, id)
 
 	key := make([]byte, 16)
-	n, err := base64.StdEncoding.Decode(key, []byte(keyStr))
+	_, err := base64.StdEncoding.Decode(key, []byte(keyStr))
 	if err != nil {
 		log.Fatalf("failed to decode AES key: %v", err)
 	}
 
-	log.Printf("My key is %s, from %s written %d  len %d\n", key, keyStr, n, len(key))
+	rand.Seed(time.Now().UnixNano())
 
 	app := NewApp(id, key)
 
