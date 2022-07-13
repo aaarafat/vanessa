@@ -18,7 +18,7 @@ func (a *App) sendToALLWLANInterface(data []byte, ip string) {
 
 func (a *App) sendPacketToWLAN(packet *ip.IPPacket, to net.IP) {
 	bytes := ip.MarshalIPPacket(packet)
-	ip.UpdateChecksum(bytes)
+	ip.UpdateChecksum(bytes, packet.Header.LengthInBytes())
 	a.router.SendToWLANInterface(bytes, to.String())
 	a.state.SentPacket(1, 1)
 }

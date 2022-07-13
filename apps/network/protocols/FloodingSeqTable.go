@@ -18,7 +18,7 @@ type VSeqEntry struct {
 }
 
 const (
-	DefaultSeqEntryAge = 5 // seconds
+	DefaultSeqEntryAge = 2 // 2 seconds
 )
 
 func NewVFloodingSeqTable() *VFloodingSeqTable {

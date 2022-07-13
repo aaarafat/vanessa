@@ -1,4 +1,4 @@
-package sncf
+package asncf
 
 import "encoding/binary"
 

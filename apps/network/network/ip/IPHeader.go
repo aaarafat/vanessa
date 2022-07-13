@@ -51,7 +51,7 @@ func UnmarshalIPHeader(data []byte) (*IPHeader, error) {
 
 	header.Options = data[20:header.LengthInBytes()]
 
-	if csm := HeaderChecksum(data); csm != 0 || header.TTL == 0 {
+	if csm := HeaderChecksum(data, header.LengthInBytes()); csm != 0 || header.TTL == 0 {
 		return nil, fmt.Errorf("IP Packet is invalid or outdated csm: %d, ttl: %d", csm, header.TTL)
 	}
 
@@ -80,31 +80,30 @@ func (h *IPHeader) LengthInBytes() int {
 	return int(h.Length * 4)
 }
 
-func HeaderChecksum(data []byte) uint16 {
+func HeaderChecksum(data []byte, len int) uint16 {
 	// copy data bytes
 	var sum uint32 = 0
-	for i := 0; i < IPv4HeaderLen; i += 2 {
+	for i := 0; i < len; i += 2 {
 		sum += uint32(data[i])<<8 | uint32(data[i+1])
 	}
 	return ^uint16((sum >> 16) + sum)
 }
 
-func UpdateChecksum(data []byte) {
-	// update checksum
-	data[10] = 0 // MSB
-	data[11] = 0 // LSB
-	csum := HeaderChecksum(data)
-	data[10] = byte(csum >> 8) // MSB
-	data[11] = byte(csum)      // LSB
+func UpdateChecksum(data []byte, len int) {
+	data[10] = 0
+	data[11] = 0
+	csum := HeaderChecksum(data, len)
+	data[10] = byte(csum >> 8)
+	data[11] = byte(csum)
 }
 
 func UpdateTTL(data []byte) {
 	data[8] = byte(uint8(data[8]) - 1)
 }
 
-func Update(data []byte) {
+func Update(data []byte, len int) {
 	UpdateTTL(data)
-	UpdateChecksum(data)
+	UpdateChecksum(data, len)
 }
 
 func (h *IPHeader) String() string {

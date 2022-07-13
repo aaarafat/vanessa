@@ -9,7 +9,6 @@ import (
 	"github.com/AkihiroSuda/go-netfilter-queue"
 	. "github.com/aaarafat/vanessa/apps/network/network"
 	. "github.com/aaarafat/vanessa/apps/network/network/ip"
-	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 	"github.com/aaarafat/vanessa/apps/network/unix"
 )
 
@@ -17,7 +16,6 @@ type PacketFilter struct {
 	nfq          *netfilter.NFQueue
 	srcIP        net.IP
 	id           int
-	position     *Position
 	networkLayer *NetworkLayer
 	routerSocket *unix.RouterSocket
 }
@@ -113,9 +111,7 @@ func (pf *PacketFilter) StealPacket() {
 					return
 				}
 
-				if !pf.ValidOptions(packet) {
-					return
-				}
+				log.Printf("Received packet size %d from %s\n", len(packetBytes), packet.Header.SrcIP)
 
 				if pf.srcIP.Equal(packet.Header.DestIP) {
 					pf.dataCallback(packetBytes, packet.Header.SrcIP)
@@ -124,14 +120,13 @@ func (pf *PacketFilter) StealPacket() {
 				} else if packet.Header.DestIP.Equal(net.ParseIP(BroadcastIP)) {
 					if !pf.srcIP.Equal(packet.Header.SrcIP) {
 						pf.dataCallback(packetBytes, packet.Header.SrcIP)
-
-						Update(packetBytes)
+						return // don't forward the packet to the router
 					}
 
 					log.Printf("Sending packet size %d to %s\n", len(packetBytes), packet.Header.DestIP)
 					pf.networkLayer.SendBroadcast(packetBytes, packet.Header.SrcIP)
 				} else {
-					Update(packetBytes)
+					Update(packetBytes, packet.Header.LengthInBytes())
 
 					log.Printf("Sending packet size %d to %s\n", len(packetBytes), packet.Header.DestIP)
 					pf.networkLayer.SendUnicast(packetBytes, packet.Header.DestIP)
@@ -141,47 +136,9 @@ func (pf *PacketFilter) StealPacket() {
 	}
 }
 
-func (pf *PacketFilter) ValidOptions(packet *IPPacket) bool {
-	if !packet.HasOptions() {
-		return true
-	}
-
-	if packet.Header.Options[0] == PositionOptionType {
-		positionOption, err := UnmarshalPositionOption(packet.Header.Options)
-		if err != nil {
-			log.Printf("Error decoding Position Option: %v\n", err)
-			return false
-		}
-
-		if pf.srcIP.Equal(packet.Header.SrcIP) {
-			// update my position
-			pf.position = &positionOption.Position
-			return true
-		}
-
-		if pf.position == nil {
-			// have not received my position yet
-			return false
-		}
-
-		// check distance
-		distance := pf.position.Distance(&positionOption.Position)
-
-		log.Printf("Distance: %f from %s\n", distance, packet.Header.SrcIP)
-
-		if distance < positionOption.MaxDistance {
-			log.Printf("Distance is less than %f from %s\n", positionOption.MaxDistance, packet.Header.SrcIP)
-			return true
-		}
-		log.Printf("Distance is greater than %f from %s\n", positionOption.MaxDistance, packet.Header.SrcIP)
-	}
-
-	return false
-}
-
 func (pf *PacketFilter) Start() {
 	log.Printf("Starting PacketFilter for IP: %s.....\n", pf.srcIP)
-	go pf.networkLayer.Start()
+	pf.networkLayer.Start()
 
 	pf.StealPacket()
 }

@@ -11,5 +11,6 @@ type UnicastProtocol interface {
 
 type BroadcastProtocol interface {
 	Flood(packet []byte)
-	Forward(packet []byte, fromIP net.IP)
+	Read() ([]byte, net.HardwareAddr, error)
+	Close()
 }

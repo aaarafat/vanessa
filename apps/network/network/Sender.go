@@ -24,13 +24,8 @@ func (n *NetworkLayer) SendUnicast(packet []byte, destIP net.IP) {
 }
 
 func (n *NetworkLayer) SendBroadcast(packet []byte, fromIP net.IP) {
-	if fromIP.Equal(n.ip) {
-		log.Printf("Sending broadcast\n")
-		n.broadcastProtocol.Flood(packet)
-	} else {
-		log.Printf("Forwarding broadcast from %s\n", fromIP)
-		n.broadcastProtocol.Forward(packet, fromIP)
-	}
+	log.Printf("Sending broadcast\n")
+	n.broadcastProtocol.Flood(packet)
 }
 
 func (n *NetworkLayer) addToBuffer(packet []byte, destIP net.IP) {

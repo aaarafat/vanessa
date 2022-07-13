@@ -70,7 +70,7 @@ func (a *App) Run() {
 	a.router.Start()
 	go a.listen()
 	go a.sendHeartBeat()
-	// go a.sendZoneMsg()
+	go a.sendZoneMsg()
 	go a.ui.Start()
 
 	log.Printf("App %d started", a.id)

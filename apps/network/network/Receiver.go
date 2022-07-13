@@ -12,7 +12,18 @@ func (n *NetworkLayer) listen(channel *DataLinkLayerChannel) {
 	for {
 		packet, addr, err := channel.Read()
 		if err != nil {
-			return
+			continue
+		}
+		go n.handleMessage(packet, addr)
+	}
+}
+
+func (n *NetworkLayer) flooderListiner() {
+	log.Printf("Listening for DATA packets on Flooder....\n")
+	for {
+		packet, addr, err := n.broadcastProtocol.Read()
+		if err != nil {
+			continue
 		}
 		go n.handleMessage(packet, addr)
 	}
