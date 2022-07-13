@@ -409,7 +409,7 @@ export class Car {
         (c) =>
           `point(${c.geometry.coordinates[0]} ${c.geometry.coordinates[1]})`
       )
-      .join(', ');
+      .join(',');
     const params = {
       ...directionsAPIParams,
       exclude: o,
