@@ -13,13 +13,14 @@ const Container = styled.div<{ open: boolean }>`
   z-index: 1 !important;
   padding: 1rem 2rem;
   font-weight: bold;
-  margin: 1rem;
+  margin: 3rem 0 1rem 1rem;
   width: min(200px, 20%);
   align-items: stretch;
   transition: right 0.3s ease-in-out;
   flex-direction: column;
   overflow-y: auto;
   overflow-x: visible;
+  font-size: 1.5rem;
 `;
 
 const Message = styled.div`

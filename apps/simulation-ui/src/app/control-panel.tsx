@@ -9,7 +9,8 @@ const Container = styled.div<{ open: boolean }>`
   top: 0;
   bottom: 0;
   left: ${(props) => (props.open ? 0 : '-100%')};
-  background-color: #010942ed;
+  background-color: #0d0d0df4;
+  font-family: 'Bebas Neue', cursive;
   color: #ffffff;
   z-index: 1 !important;
   padding: 1rem 2rem;
@@ -32,9 +33,13 @@ const CancelButtonContainer = styled.div<{ show: boolean }>`
   margin: 3rem 1rem;
   z-index: 1 !important;
   cursor: pointer;
-  background-color: #010942ed;
+  background-color: #0d0d0df4;
   border-radius: 100%;
   color: #ffffff;
+`;
+
+const Label = styled.label`
+  font-size: 1.75rem;
 `;
 
 const Form = styled.form`
@@ -46,23 +51,31 @@ const Form = styled.form`
 const PrimaryButton = styled.button`
   margin: 1rem 0;
   padding: 1rem;
-  background-color: #ccc;
-  color: #000;
+  background-color: #ffc000;
+  color: #ffffff;
+  font-family: 'Bebas Neue', cursive;
   font-weight: bold;
   /* width: 100%; */
-  border-radius: 1.5rem;
+  border-radius: 1px;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
   cursor: pointer;
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   &:disabled {
     cursor: not-allowed;
     opacity: 0.5;
   }
 `;
 
-const SmallButton = styled(PrimaryButton)`
+const SmallButton = styled.button`
   align-self: flex-start;
   border-radius: 50%;
+  font-size: 2rem;
+  color: #ffc000;
+  background: none;
+  font-family: 'Bebas Neue', cursive;
+  font-weight: bold;
+  margin: 1rem 0;
+  padding: 1rem;
   width: 30px;
   height: 30px;
   display: flex;
@@ -75,18 +88,20 @@ const OpenButton = styled(SmallButton)<{ open: boolean }>`
   position: absolute;
   top: 0;
   margin: 3rem;
+  color: #0d0d0d;
   ${(props) => (props.open ? 'display: none;' : '')}
 `;
 
 const Input = styled.input`
   margin: 1rem 0;
   padding: 1rem;
-  background-color: #ccc;
+  background-color: #fff;
   color: #000;
   font-weight: bold;
   /* width: 100%; */
-  border-radius: 1.5rem;
+  border-radius: 1px;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+  font-family: 'Lato', sans-serif;
   font-size: 1.2rem;
 `;
 
@@ -176,7 +191,7 @@ const ControlPanel: React.FC<{
           <SmallButton onClick={() => setIsOpen(false)} type="button">
             {'<'}
           </SmallButton>
-          <label htmlFor="speed">Speed (km/h)</label>
+          <Label htmlFor="speed">Speed (km/h)</Label>
           <Input
             id="speed"
             type="number"
