@@ -13,8 +13,18 @@ const AlertWrapper = styled.div`
 `;
 
 const Text = styled.h1`
-  font-size: 1.5rem;
+  font-size: 2rem;
   margin-bottom: 1rem;
+  color: #fff;
+  text-align: center;
+`;
+
+const Paragraph = styled.p`
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  color: #fff;
+  text-align: center;
+  font-family: 'Lato', sans-serif;
 `;
 
 const Button = styled.button`
@@ -24,11 +34,14 @@ const Button = styled.button`
   color: #fff;
   border-radius: 5px;
   padding: 0.5rem;
-  background-color: #2a51ff;
+  background-color: #ffc000;
   width: max(30%, 150px);
+  font-family: 'Bebas Neue', cursive;
+  font-size: 1.25rem;
+  border: none;
   &:hover {
     cursor: pointer;
-    background-color: #2543ca;
+    background-color: #ffcf33;
   }
 `;
 
@@ -54,7 +67,9 @@ export const ConnectionErrorAlert: React.FC<{
           Connection Failed.
           <br />
         </Text>
-        <p>It can be that this port was not given to a car yet.</p>
+        <Paragraph>
+          It can be that this port was not given to a car yet.
+        </Paragraph>
         <ButtonsContainer>
           <Button onClick={() => history.replace('/')}>Change Port</Button>
           <Button onClick={connectCar}>Try Again</Button>

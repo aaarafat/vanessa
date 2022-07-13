@@ -6,6 +6,7 @@ import { MapProvider } from '@vanessa/map';
 import App from './app/app';
 import { Provider } from 'react-redux';
 import { store } from './store';
+import './main.css';
 
 ReactDOM.render(
   <StrictMode>

@@ -107,7 +107,7 @@ export const Interface: React.FC = () => {
   return (
     <>
       <ConnectionErrorAlert
-        connectCar={connectRsu}
+        connectRSU={connectRsu}
         connectionError={connectionError}
       />
       {loading && (
