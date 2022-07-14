@@ -26,19 +26,21 @@ func (a *App) initState(speed int, route []Position, pos Position) {
 			Lng:              pos.Lng,
 			ObstacleDetected: false,
 			Obstacles:        []Position{},
+			MaxSpeed:         speed,
+			Direction:        pos,
 		}
 	} else {
+		a.state.Direction = GetDirection(a.state.GetPosition(), pos)
 		a.state.Speed = speed
 		a.state.Route = route
 		a.state.Lat = pos.Lat
 		a.state.Lng = pos.Lng
+		if a.state.MaxSpeed < speed {
+			a.state.MaxSpeed = speed
+		}
 	}
 
-	if a.state.Speed > a.maxSpeed {
-		a.maxSpeed = a.state.Speed
-	}
-
-	log.Printf("Car state initialized  state:  %s  maxSpeed  %d\n", a.state.String(), a.maxSpeed)
+	log.Printf("Car state initialized  state:  %s\n", a.state.String())
 }
 
 func (a *App) updatePosition(pos Position) {
@@ -47,6 +49,7 @@ func (a *App) updatePosition(pos Position) {
 	if a.state == nil {
 		return
 	}
+	a.state.Direction = GetDirection(a.state.GetPosition(), pos)
 	a.state.Lat = pos.Lat
 	a.state.Lng = pos.Lng
 	log.Printf("Position updated: lng: %f lat: %f", pos.Lng, pos.Lat)

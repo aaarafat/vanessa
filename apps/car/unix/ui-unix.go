@@ -26,6 +26,8 @@ type State struct {
 	Lng              float64    `json:"lng"`
 	ObstacleDetected bool       `json:"obstacleDetected"`
 	Obstacles        []Position `json:"obstacles"`
+	MaxSpeed         int        `json:"maxSpeed"`
+	Direction        Position   `json:"direction"`
 }
 
 func (s *State) GetPosition() Position {
@@ -33,7 +35,7 @@ func (s *State) GetPosition() Position {
 }
 
 func (s *State) String() string {
-	return fmt.Sprintf("State{Id: %d, Speed: %d, Route: %v, Lat: %f, Lng: %f, ObstacleDetected: %t, Obstacles: %v}", s.Id, s.Speed, s.Route, s.Lat, s.Lng, s.ObstacleDetected, s.Obstacles)
+	return fmt.Sprintf("State{Id: %d, Speed: %d, Route: %v, Lat: %f, Lng: %f, ObstacleDetected: %t, Obstacles: %v, MaxSpeed: %d, Direction: %v}", s.Id, s.Speed, s.Route, s.Lat, s.Lng, s.ObstacleDetected, s.Obstacles, s.MaxSpeed, s.Direction)
 }
 
 type UiUnix struct {

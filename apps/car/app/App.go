@@ -18,7 +18,6 @@ type App struct {
 
 	// state
 	state     *unix.State
-	maxSpeed  int
 	zoneTable *ZoneTable
 	stateLock *sync.RWMutex
 
@@ -53,7 +52,6 @@ func NewApp(id int, key []byte) *App {
 		id:        id,
 		ip:        ip,
 		key:       key,
-		maxSpeed:  0,
 		zoneTable: NewZoneTable(),
 		ipConn:    ipConn,
 		sensor:    unix.NewSensorUnix(id),

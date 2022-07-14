@@ -47,12 +47,8 @@ func (zt *ZoneTable) Set(ip net.IP, speed uint32, pos Position) {
 		log.Printf("ZoneTable: entry already exists for %s\n", ip.String())
 		entry.timer.Reset(ZoneTable_UPDATE_INTERVAL_MS * time.Millisecond)
 
-		// get the unit vector
-		direction := Position{Lat: pos.Lat - entry.Position.Lat, Lng: pos.Lng - entry.Position.Lng}
-		direction.Normalize()
-
 		// update
-		entry.Direction = direction
+		entry.Direction = GetDirection(entry.Position, pos)
 		entry.Position = pos
 		entry.Speed = speed
 
