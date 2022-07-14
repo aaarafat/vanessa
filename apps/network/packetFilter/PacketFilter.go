@@ -149,7 +149,6 @@ func (pf *PacketFilter) Close() {
 	DeleteDefaultGateway()
 
 	pf.nfq.Close()
-	pf.routerSocket.Close()
 	pf.networkLayer.Close()
 
 	log.Printf("PacketFilter for IP: %s closed\n", pf.srcIP)
