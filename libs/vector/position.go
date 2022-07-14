@@ -26,7 +26,8 @@ func Float64bytes(float float64) []byte {
 	binary.LittleEndian.PutUint64(bytes, bits)
 	return bytes
 }
-func toRadians(deg float64) float64 {
+
+func ToRadians(deg float64) float64 {
 	return deg * (math.Pi / 180)
 }
 
@@ -58,10 +59,10 @@ func UnmarshalPositions(payload []byte, len int) []Position {
 
 // Distance returns the distance between two points on the Earth in meter.
 func (p *Position) Distance(p2 *Position) float64 {
-	latRad1 := toRadians(p.Lat)
-	latRad2 := toRadians(p2.Lat)
-	lngRad1 := toRadians(p.Lng)
-	lngRad2 := toRadians(p2.Lng)
+	latRad1 := ToRadians(p.Lat)
+	latRad2 := ToRadians(p2.Lat)
+	lngRad1 := ToRadians(p.Lng)
+	lngRad2 := ToRadians(p2.Lng)
 
 	dlng := lngRad2 - lngRad1
 	dlat := latRad2 - latRad1
