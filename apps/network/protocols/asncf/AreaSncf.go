@@ -44,6 +44,7 @@ func (sncf *AreaSNCF) updateSeqNum() {
 func (sncf *AreaSNCF) Flood(bytes []byte) {
 	packet, err := ip.UnmarshalPacket(bytes)
 	if err != nil {
+		log.Printf("Error unmarshaling packet: %v\n", err)
 		return
 	}
 	if !sncf.validOptions(packet) {
@@ -128,6 +129,7 @@ func (sncf *AreaSNCF) Read() ([]byte, net.HardwareAddr, error) {
 
 	packet, err := ip.UnmarshalPacket(data[4:])
 	if err != nil {
+		log.Printf("Error unmarshaling packet: %v\n", err)
 		return nil, nil, err
 	}
 
