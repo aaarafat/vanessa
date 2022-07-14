@@ -13,21 +13,22 @@ func (a *App) GetState() *unix.State {
 	return a.state
 }
 
-func (a *App) initState(speed int, route []Position, pos Position) {
+func (a *App) initState(speed uint32, route []Position, pos Position) {
 	log.Printf("Initializing car state......")
 	a.stateLock.Lock()
 	defer a.stateLock.Unlock()
 	if a.state == nil {
 		a.state = &unix.State{
-			Id:               a.id,
-			Speed:            speed,
-			Route:            route,
-			Lat:              pos.Lat,
-			Lng:              pos.Lng,
-			ObstacleDetected: false,
-			Obstacles:        []Position{},
-			MaxSpeed:         speed,
-			Direction:        NewUnitVector(pos, pos),
+			Id:                 a.id,
+			Speed:              speed,
+			Route:              route,
+			Lat:                pos.Lat,
+			Lng:                pos.Lng,
+			ObstacleDetected:   false,
+			Obstacles:          []Position{},
+			MaxSpeed:           speed,
+			Direction:          NewUnitVector(pos, pos),
+			DestinationReached: false,
 		}
 	} else {
 		a.state.Direction = NewUnitVector(a.state.GetPosition(), pos)
@@ -41,6 +42,18 @@ func (a *App) initState(speed int, route []Position, pos Position) {
 	}
 
 	log.Printf("Car state initialized  state:  %s\n", a.state.String())
+}
+
+func (a *App) updateSpeed(speed uint32) {
+	a.stateLock.Lock()
+	defer a.stateLock.Unlock()
+	if a.state == nil {
+		return
+	}
+	a.state.Speed = speed
+	log.Printf("Speed updated: %d", speed)
+
+	// TODO: send speed to sensor
 }
 
 func (a *App) updatePosition(pos Position) {
@@ -91,5 +104,20 @@ func (a *App) updateObstacles(obstacles []Position) {
 		data := unix.FormatObstacles(obstacles)
 		a.ui.Write(data, string(unix.ObstaclesReceivedEvent))
 		a.sensor.Write(data, unix.RerouteEvent)
+	}()
+}
+
+func (a *App) destinationReached(pos Position) {
+	a.stateLock.Lock()
+	defer a.stateLock.Unlock()
+	if a.state == nil {
+		return
+	}
+	a.state.DestinationReached = true
+	log.Printf("Destination reached")
+
+	go func() {
+		a.updateSpeed(0)
+		a.ui.Write(unix.DestinationReachedData{Coordinates: pos}, string(unix.DestinationReachedEvent))
 	}()
 }

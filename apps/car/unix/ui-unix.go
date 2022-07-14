@@ -19,15 +19,16 @@ type Coordinate struct {
 }
 
 type State struct {
-	Id               int        `json:"id"`
-	Speed            int        `json:"speed"`
-	Route            []Position `json:"route"`
-	Lat              float64    `json:"lat"`
-	Lng              float64    `json:"lng"`
-	ObstacleDetected bool       `json:"obstacleDetected"`
-	Obstacles        []Position `json:"obstacles"`
-	MaxSpeed         int        `json:"maxSpeed"`
-	Direction        Vector     `json:"direction"`
+	Id                 int        `json:"id"`
+	Speed              uint32     `json:"speed"`
+	Route              []Position `json:"route"`
+	Lat                float64    `json:"lat"`
+	Lng                float64    `json:"lng"`
+	ObstacleDetected   bool       `json:"obstacleDetected"`
+	Obstacles          []Position `json:"obstacles"`
+	MaxSpeed           uint32     `json:"maxSpeed"`
+	Direction          Vector     `json:"direction"`
+	DestinationReached bool       `json:"destinationReached"`
 }
 
 func (s *State) GetPosition() Position {

@@ -5,8 +5,8 @@ import (
 )
 
 type Vector struct {
-	Lng float64
-	Lat float64
+	Lng float64 `json:"lat"`
+	Lat float64 `json:"lng"`
 }
 
 func NewVector(pos1, pos2 Position) Vector {

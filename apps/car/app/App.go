@@ -73,6 +73,29 @@ func (a *App) printZone() {
 	}
 }
 
+func (a *App) checkZone() {
+	for {
+		// check front
+		front := a.zoneTable.GetInFrontOfMe()
+		mnSpeed := a.GetState().MaxSpeed
+		for _, entry := range front {
+			if entry.Speed > mnSpeed {
+				mnSpeed = entry.Speed
+			}
+		}
+		a.updateSpeed(mnSpeed)
+
+		// check back
+		back := a.zoneTable.GetBehindMe()
+		for _, entry := range back {
+			if entry.Speed > mnSpeed {
+				// TODO: send slow down
+			}
+		}
+		time.Sleep(ZONE_MSG_INTERVAL_MS * time.Millisecond)
+	}
+}
+
 func (a *App) Run() {
 	log.Printf("App %d starting.....", a.id)
 	a.startSocketHandlers()

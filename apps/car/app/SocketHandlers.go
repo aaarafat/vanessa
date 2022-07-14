@@ -30,7 +30,7 @@ func (a *App) addCarHandler() {
 					return
 				}
 
-				a.initState(addCar.Speed, addCar.Route, addCar.Coordinates)
+				a.initState(uint32(addCar.Speed), addCar.Route, addCar.Coordinates)
 			}
 		}
 	}()
@@ -74,7 +74,7 @@ func (a *App) destinationReachedHandler() {
 					return
 				}
 
-				go a.ui.Write(data, string(unix.DestinationReachedEvent))
+				go a.destinationReached(destinationReached.Coordinates)
 			}
 		}
 	}()
