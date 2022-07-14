@@ -49,7 +49,7 @@ func (a *App) handleMessage(bytes []byte) {
 			log.Printf("Error decoding VZone message: %v", err)
 			return
 		}
-		log.Printf("Car with ip: %s  in my zone", msg.OriginatorIP)
+		log.Printf("VZone message received: %s", msg.String())
 		state := a.GetState()
 		a.zoneTable.Set(msg.OriginatorIP, msg.Speed, msg.Position, state.GetPosition(), state.Direction)
 

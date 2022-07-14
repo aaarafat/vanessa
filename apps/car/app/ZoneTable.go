@@ -122,4 +122,14 @@ func (zt *ZoneTable) Print() {
 		itemEntry := item.Value.(ZoneTableEntry)
 		itemEntry.Print()
 	}
+	log.Println()
+	log.Println("ZoneTable: front of me:")
+	for _, entry := range zt.GetInFrontOfMe() {
+		entry.Print()
+	}
+	log.Println("ZoneTable: behind me:")
+	for _, entry := range zt.GetBehindMe() {
+		entry.Print()
+	}
+	log.Println()
 }

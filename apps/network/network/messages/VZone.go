@@ -38,7 +38,7 @@ func UnmarshalVZone(data []byte) (*VZoneMessage, error) {
 	VZone.Type = uint8(data[0])
 	VZone.OriginatorIP = net.IPv4(data[1], data[2], data[3], data[4])
 	VZone.Position = UnmarshalPosition(data[5:21])
-	binary.LittleEndian.PutUint32(data[21:25], VZone.Speed)
+	VZone.Speed = binary.LittleEndian.Uint32(data[21:25])
 
 	return VZone, nil
 }
