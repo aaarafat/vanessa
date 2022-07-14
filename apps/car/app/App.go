@@ -17,6 +17,7 @@ type App struct {
 
 	// state
 	state     *unix.State
+	zoneTable *ZoneTable
 	stateLock *sync.RWMutex
 
 	// to send messages to the network
@@ -50,6 +51,7 @@ func NewApp(id int, key []byte) *App {
 		id:        id,
 		ip:        ip,
 		key:       key,
+		zoneTable: NewZoneTable(),
 		ipConn:    ipConn,
 		sensor:    unix.NewSensorUnix(id),
 		router:    unix.NewRouter(id),
