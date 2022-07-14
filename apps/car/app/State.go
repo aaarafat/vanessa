@@ -4,7 +4,7 @@ import (
 	"log"
 
 	"github.com/aaarafat/vanessa/apps/car/unix"
-	. "github.com/aaarafat/vanessa/apps/network/network/messages"
+	. "github.com/aaarafat/vanessa/libs/vector"
 )
 
 func (a *App) GetState() *unix.State {
@@ -27,10 +27,10 @@ func (a *App) initState(speed int, route []Position, pos Position) {
 			ObstacleDetected: false,
 			Obstacles:        []Position{},
 			MaxSpeed:         speed,
-			Direction:        pos,
+			Direction:        NewUnitVector(pos, pos),
 		}
 	} else {
-		a.state.Direction = GetDirection(a.state.GetPosition(), pos)
+		a.state.Direction = NewUnitVector(a.state.GetPosition(), pos)
 		a.state.Speed = speed
 		a.state.Route = route
 		a.state.Lat = pos.Lat
@@ -49,7 +49,7 @@ func (a *App) updatePosition(pos Position) {
 	if a.state == nil {
 		return
 	}
-	a.state.Direction = GetDirection(a.state.GetPosition(), pos)
+	a.state.Direction = NewUnitVector(a.state.GetPosition(), pos)
 	a.state.Lat = pos.Lat
 	a.state.Lng = pos.Lng
 	log.Printf("Position updated: lng: %f lat: %f", pos.Lng, pos.Lat)

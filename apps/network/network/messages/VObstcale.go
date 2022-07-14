@@ -3,10 +3,9 @@ package messages
 import (
 	"fmt"
 	"net"
+
+	. "github.com/aaarafat/vanessa/libs/vector"
 )
-
-
-
 
 func (VObstacle *VObstacleMessage) Marshal() []byte {
 	bytes := make([]byte, VObstacleMessageLen)
@@ -16,21 +15,18 @@ func (VObstacle *VObstacleMessage) Marshal() []byte {
 	copy(bytes[5:21], VObstacle.Position.Marshal())
 	bytes[21] = byte(VObstacle.Clear)
 
-
 	return bytes
 }
 
 //Create a new VObstacle message
 func NewVObstacleMessage(OriginatorIP net.IP, position Position, Clear uint8) *VObstacleMessage {
 	return &VObstacleMessage{
-		Type: VObstacleType,
+		Type:         VObstacleType,
 		OriginatorIP: OriginatorIP,
-		Position: position,
-		Clear: Clear,
+		Position:     position,
+		Clear:        Clear,
 	}
 }
-
-
 
 func UnmarshalVObstacle(data []byte) (*VObstacleMessage, error) {
 	if len(data) < VObstacleMessageLen {
@@ -45,9 +41,7 @@ func UnmarshalVObstacle(data []byte) (*VObstacleMessage, error) {
 	return VObstacle, nil
 }
 
-
 // print the VObstacle message
 func (VObstacle *VObstacleMessage) String() string {
 	return fmt.Sprintf("VObstacle: Type: %d, OriginatorIP: %s, Lat: %f, Lng: %f, Clear: %d", VObstacle.Type, VObstacle.OriginatorIP.String(), VObstacle.Position.Lat, VObstacle.Position.Lng, VObstacle.Clear)
 }
-

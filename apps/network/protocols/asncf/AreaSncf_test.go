@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
-	"github.com/aaarafat/vanessa/apps/network/network/messages"
+	. "github.com/aaarafat/vanessa/libs/vector"
 )
 
 func CreateAreaSncf() *AreaSNCF {
@@ -27,13 +27,13 @@ func TestValidOptions(t *testing.T) {
 		{*ip.NewIPPacketWithOptions([]byte("test"), sncf.srcIP, dst, []byte{0}), false}, // invalid option
 		{*ip.NewIPPacketWithOptions([]byte("test"), sncf.srcIP, dst, []byte{1}), false}, // invalid position option marshal
 		{*ip.NewIPPacketWithOptions([]byte("test"), dst, sncf.srcIP,
-			ip.NewPositionOption(messages.Position{Lng: 0, Lat: 0}, 1).Marshal()), false}, // no current position
+			ip.NewPositionOption(Position{Lng: 0, Lat: 0}, 1).Marshal()), false}, // no current position
 		{*ip.NewIPPacketWithOptions([]byte("test"), sncf.srcIP, dst,
-			ip.NewPositionOption(messages.Position{Lng: 0, Lat: 0}, 1).Marshal()), true}, // update current position
+			ip.NewPositionOption(Position{Lng: 0, Lat: 0}, 1).Marshal()), true}, // update current position
 		{*ip.NewIPPacketWithOptions([]byte("test"), dst, sncf.srcIP,
-			ip.NewPositionOption(messages.Position{Lng: 0.000001, Lat: 0.000001}, 1).Marshal()), true}, // accepted distance
+			ip.NewPositionOption(Position{Lng: 0.000001, Lat: 0.000001}, 1).Marshal()), true}, // accepted distance
 		{*ip.NewIPPacketWithOptions([]byte("test"), dst, sncf.srcIP,
-			ip.NewPositionOption(messages.Position{Lng: 10, Lat: 10}, 1).Marshal()), false}, // not accepted distance
+			ip.NewPositionOption(Position{Lng: 10, Lat: 10}, 1).Marshal()), false}, // not accepted distance
 	}
 
 	for _, testcase := range testcases {

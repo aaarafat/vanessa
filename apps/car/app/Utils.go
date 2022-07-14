@@ -7,15 +7,9 @@ import (
 	"strings"
 
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
-	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 	"github.com/aaarafat/vanessa/libs/crypto"
+	. "github.com/aaarafat/vanessa/libs/vector"
 )
-
-func GetDirection(pos1, pos2 Position) Position {
-	dir := Position{Lat: pos2.Lat - pos1.Lat, Lng: pos2.Lng - pos1.Lng}
-	dir.Normalize()
-	return dir
-}
 
 func (a *App) getDataFromPacket(bytes []byte) ([]byte, error) {
 	packet, err := ip.UnmarshalPacket(bytes)

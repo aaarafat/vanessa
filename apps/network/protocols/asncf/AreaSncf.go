@@ -7,8 +7,8 @@ import (
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
-	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 	. "github.com/aaarafat/vanessa/apps/network/protocols"
+	. "github.com/aaarafat/vanessa/libs/vector"
 )
 
 type AreaSNCF struct {

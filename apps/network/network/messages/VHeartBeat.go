@@ -3,10 +3,9 @@ package messages
 import (
 	"fmt"
 	"net"
+
+	. "github.com/aaarafat/vanessa/libs/vector"
 )
-
-
-
 
 func (VHBeat *VHBeatMessage) Marshal() []byte {
 	bytes := make([]byte, VHBeatMessageLen)
@@ -16,20 +15,17 @@ func (VHBeat *VHBeatMessage) Marshal() []byte {
 	// add marashalled position object to bytes
 	copy(bytes[5:], VHBeat.Position.Marshal())
 
-
 	return bytes
 }
 
 //Create a new VHBeat message
 func NewVHBeatMessage(OriginatorIP net.IP, position Position) *VHBeatMessage {
 	return &VHBeatMessage{
-		Type: VHBeatType,
+		Type:         VHBeatType,
 		OriginatorIP: OriginatorIP,
-		Position : position,
+		Position:     position,
 	}
 }
-
-
 
 func UnmarshalVHBeat(data []byte) (*VHBeatMessage, error) {
 	if len(data) < VHBeatMessageLen {
@@ -44,9 +40,7 @@ func UnmarshalVHBeat(data []byte) (*VHBeatMessage, error) {
 	return VHBeat, nil
 }
 
-
 // print the VHBeat message
 func (VHBeat *VHBeatMessage) String() string {
 	return fmt.Sprintf("VHBeat: Type: %d, OriginatorIP: %s,  Lat: %f, Lng: %f", VHBeat.Type, VHBeat.OriginatorIP.String(), VHBeat.Position.Lat, VHBeat.Position.Lng)
 }
-

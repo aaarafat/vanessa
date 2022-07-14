@@ -1,7 +1,7 @@
 package unix
 
 import (
-	. "github.com/aaarafat/vanessa/apps/network/network/messages"
+	. "github.com/aaarafat/vanessa/libs/vector"
 )
 
 type Event string

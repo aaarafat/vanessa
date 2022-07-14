@@ -9,6 +9,7 @@ import (
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 	"github.com/aaarafat/vanessa/libs/crypto"
+	. "github.com/aaarafat/vanessa/libs/vector"
 )
 
 func (a *App) sendToALLWLANInterface(data []byte, ip string) {

@@ -3,7 +3,7 @@ package ip
 import (
 	"fmt"
 
-	. "github.com/aaarafat/vanessa/apps/network/network/messages"
+	. "github.com/aaarafat/vanessa/libs/vector"
 )
 
 const (

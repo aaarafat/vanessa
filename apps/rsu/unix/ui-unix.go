@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	. "github.com/aaarafat/vanessa/apps/network/network/messages"
+	. "github.com/aaarafat/vanessa/libs/vector"
 	"gopkg.in/antage/eventsource.v1"
 )
 

@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"net"
+
+	. "github.com/aaarafat/vanessa/libs/vector"
 )
 
 func NewVZoneMessage(OriginatorIP net.IP, position Position, speed uint32) *VZoneMessage {

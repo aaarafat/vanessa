@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	. "github.com/aaarafat/vanessa/apps/network/network/messages"
+	. "github.com/aaarafat/vanessa/libs/vector"
 	"gopkg.in/antage/eventsource.v1"
 )
 
@@ -27,7 +27,7 @@ type State struct {
 	ObstacleDetected bool       `json:"obstacleDetected"`
 	Obstacles        []Position `json:"obstacles"`
 	MaxSpeed         int        `json:"maxSpeed"`
-	Direction        Position   `json:"direction"`
+	Direction        Vector     `json:"direction"`
 }
 
 func (s *State) GetPosition() Position {

@@ -5,7 +5,7 @@ import (
 	"net"
 	"time"
 
-	. "github.com/aaarafat/vanessa/apps/network/network/messages"
+	. "github.com/aaarafat/vanessa/libs/vector"
 	"github.com/cornelk/hashmap"
 )
 
@@ -14,11 +14,13 @@ type ZoneTable struct {
 }
 
 type ZoneTableEntry struct {
-	IP        net.IP
-	Speed     uint32
-	Position  Position
-	Direction Position
-	timer     *time.Timer
+	IP              net.IP
+	Speed           uint32
+	Position        Position
+	Direction       Vector  // pos2 - pos1
+	DirectionFromMe Vector  // how I'm facing the other vehicle (targetPos - myPos)
+	Angle           float64 // angle between Direction and DirectionFromMe
+	timer           *time.Timer
 }
 
 const (
@@ -36,7 +38,7 @@ func NewZoneTableEntry(ip net.IP, speed uint32, pos Position) *ZoneTableEntry {
 		IP:        ip,
 		Speed:     speed,
 		Position:  pos,
-		Direction: pos,
+		Direction: NewUnitVector(pos, pos),
 		timer:     nil,
 	}
 }
@@ -48,7 +50,7 @@ func (zt *ZoneTable) Set(ip net.IP, speed uint32, pos Position) {
 		entry.timer.Reset(ZoneTable_UPDATE_INTERVAL_MS * time.Millisecond)
 
 		// update
-		entry.Direction = GetDirection(entry.Position, pos)
+		entry.Direction = NewUnitVector(entry.Position, pos)
 		entry.Position = pos
 		entry.Speed = speed
 
