@@ -3,11 +3,19 @@ import React, { createContext, useEffect } from 'react';
 import io, { Socket } from 'socket.io-client';
 import { useAppSelector } from '../app/store';
 
-type rerouteEvent = {
+type RerouteEvent = {
   type: 'reroute';
   id: number;
   data: {
     obstacle_coordinates: Coordinates[];
+  };
+};
+
+type ChangeSpeedEvent = {
+  type: 'change-speed';
+  id: number;
+  data: {
+    speed: number;
   };
 };
 
@@ -17,7 +25,7 @@ export const SocketProvider: React.FC<React.ReactNode> = ({ children }) => {
   const cars = useAppSelector((state) => state.simulation.cars);
 
   useEffect(() => {
-    socket.on('reroute', (message: rerouteEvent) => {
+    socket.on('reroute', (message: RerouteEvent) => {
       socket.receiveBuffer = socket.receiveBuffer.filter(
         ({ data: [type, data] }: any) =>
           !(data.id === message.id && type === 'reroute')
@@ -27,6 +35,16 @@ export const SocketProvider: React.FC<React.ReactNode> = ({ children }) => {
         ?.updateRoute(message.data.obstacle_coordinates)
         .then((res: boolean) => res && socketEvents.addCar(car));
     });
+
+    socket.on('change-speed', (message: ChangeSpeedEvent) => {
+      const car = cars.find((c) => c.id === message.id);
+      car?.setSpeed(message.data.speed);
+    });
+
+    return () => {
+      socket.off('reroute');
+      socket.off('change-speed');
+    };
   }, [cars]);
 
   return (
