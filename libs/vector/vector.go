@@ -42,3 +42,7 @@ func (v *Vector) Dot(v2 Vector) float64 {
 func (v *Vector) Cross(v2 Vector) float64 {
 	return float64(v.Lng*v2.Lat - v.Lat*v2.Lng)
 }
+
+func (v *Vector) Angle(v2 Vector) float64 {
+	return math.Atan2(v.Cross(v2), v.Dot(v2))
+}

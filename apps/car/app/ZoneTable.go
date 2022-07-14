@@ -33,17 +33,22 @@ func NewZoneTable() *ZoneTable {
 	}
 }
 
-func NewZoneTableEntry(ip net.IP, speed uint32, pos Position) *ZoneTableEntry {
-	return &ZoneTableEntry{
-		IP:        ip,
-		Speed:     speed,
-		Position:  pos,
-		Direction: NewUnitVector(pos, pos),
-		timer:     nil,
+func NewZoneTableEntry(ip net.IP, speed uint32, pos, myPos Position) *ZoneTableEntry {
+	entry := &ZoneTableEntry{
+		IP:              ip,
+		Speed:           speed,
+		Position:        pos,
+		Direction:       NewUnitVector(pos, pos),
+		DirectionFromMe: NewUnitVector(myPos, pos),
+		timer:           nil,
 	}
+
+	entry.Angle = entry.Direction.Angle(entry.DirectionFromMe)
+
+	return entry
 }
 
-func (zt *ZoneTable) Set(ip net.IP, speed uint32, pos Position) {
+func (zt *ZoneTable) Set(ip net.IP, speed uint32, pos, myPos Position) {
 	entry, exists := zt.Get(ip)
 	if exists {
 		log.Printf("ZoneTable: entry already exists for %s\n", ip.String())
@@ -51,6 +56,8 @@ func (zt *ZoneTable) Set(ip net.IP, speed uint32, pos Position) {
 
 		// update
 		entry.Direction = NewUnitVector(entry.Position, pos)
+		entry.DirectionFromMe = NewUnitVector(myPos, pos)
+		entry.Angle = entry.Direction.Angle(entry.DirectionFromMe)
 		entry.Position = pos
 		entry.Speed = speed
 
@@ -58,7 +65,7 @@ func (zt *ZoneTable) Set(ip net.IP, speed uint32, pos Position) {
 		log.Printf("ZoneTable: updated entry for %s\n", ip.String())
 	} else {
 		log.Printf("ZoneTable: adding entry for %s\n", ip.String())
-		entry := NewZoneTableEntry(ip, speed, pos)
+		entry := NewZoneTableEntry(ip, speed, pos, myPos)
 		entry.timer = time.AfterFunc(ZoneTable_UPDATE_INTERVAL_MS*time.Millisecond, func() {
 			log.Printf("ZoneTable: entry expired: %s\n", ip.String())
 			zt.table.Del(ip.String())

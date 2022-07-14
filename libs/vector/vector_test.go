@@ -81,3 +81,30 @@ func TestCross(t *testing.T) {
 		assert.Equal(t, tc.expected, v1.Cross(v2))
 	}
 }
+
+func TestAngle(t *testing.T) {
+	testCases := []struct {
+		lng1     float64
+		lat1     float64
+		lng2     float64
+		lat2     float64
+		expected float64
+	}{
+		{0, 0, 0, 0, 0},
+		{1, 0, 0, 0, 0},
+		{0, 1, 0, 0, 0},
+		{0, 0, 1, 0, 0},
+		{0, 0, 0, 1, 0},
+		{0, 0, 0, 0, 0},
+		{1, 1, 1, 1, 0},
+		{1, 1, -1, -1, math.Pi},
+		{1, 1, -1, 1, math.Pi / 2},
+		{1, 1, 1, -1, -math.Pi / 2},
+	}
+
+	for _, tc := range testCases {
+		v1 := Vector{Lng: tc.lng1, Lat: tc.lat1}
+		v2 := Vector{Lng: tc.lng2, Lat: tc.lat2}
+		assert.Equal(t, tc.expected, v1.Angle(v2))
+	}
+}
