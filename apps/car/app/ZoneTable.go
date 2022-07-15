@@ -4,6 +4,7 @@ import (
 	"log"
 	"math"
 	"net"
+	"sync"
 	"time"
 
 	. "github.com/aaarafat/vanessa/libs/vector"
@@ -12,6 +13,12 @@ import (
 
 type ZoneTable struct {
 	table *hashmap.HashMap
+
+	nearestFrontIP   net.IP
+	nearestFrontLock *sync.RWMutex
+
+	nearestBehindIP   net.IP
+	nearestBehindLock *sync.RWMutex
 }
 
 type ZoneTableEntry struct {
@@ -21,6 +28,7 @@ type ZoneTableEntry struct {
 	Direction       Vector  // pos2 - pos1
 	DirectionFromMe Vector  // how I'm facing the other vehicle (targetPos - myPos)
 	Angle           float64 // angle between MyDirection and DirectionFromMe
+	Ignored         bool
 	timer           *time.Timer
 }
 
@@ -29,9 +37,19 @@ const (
 	MAX_ANGLE_DEG                = 10
 )
 
+type NEAREST_BOOL int
+
+const (
+	NEAREST  NEAREST_BOOL = -1
+	FARTHEST NEAREST_BOOL = 1
+	EQUAL    NEAREST_BOOL = 0
+)
+
 func NewZoneTable() *ZoneTable {
 	return &ZoneTable{
-		table: &hashmap.HashMap{},
+		table:             &hashmap.HashMap{},
+		nearestFrontLock:  &sync.RWMutex{},
+		nearestBehindLock: &sync.RWMutex{},
 	}
 }
 
@@ -42,6 +60,7 @@ func NewZoneTableEntry(ip net.IP, speed uint32, pos, myPos Position, myDir Vecto
 		Position:        pos,
 		Direction:       NewUnitVector(pos, pos),
 		DirectionFromMe: NewUnitVector(myPos, pos),
+		Ignored:         false,
 		timer:           nil,
 	}
 
@@ -64,6 +83,8 @@ func (zt *ZoneTable) Set(ip net.IP, speed uint32, pos, myPos Position, myDir Vec
 		entry.Speed = speed
 
 		zt.table.Set(ip.String(), *entry)
+		zt.updateNearest(entry, &myPos)
+
 		log.Printf("ZoneTable: updated entry for %s\n", ip.String())
 		return entry
 	} else {
@@ -72,9 +93,11 @@ func (zt *ZoneTable) Set(ip net.IP, speed uint32, pos, myPos Position, myDir Vec
 		entry.timer = time.AfterFunc(ZoneTable_UPDATE_INTERVAL_MS*time.Millisecond, func() {
 			log.Printf("ZoneTable: entry expired: %s\n", ip.String())
 			zt.table.Del(ip.String())
+			zt.removeNearestIfEqual(entry)
 		})
 
 		zt.table.Set(ip.String(), *entry)
+		zt.updateNearest(entry, &myPos)
 
 		log.Printf("ZoneTable: added entry for %s\n", ip.String())
 		return entry
@@ -91,11 +114,11 @@ func (zt *ZoneTable) Get(ip net.IP) (*ZoneTableEntry, bool) {
 }
 
 func (zt *ZoneTable) IsFront(entry *ZoneTableEntry) bool {
-	return math.Abs(entry.Angle) <= ToRadians(MAX_ANGLE_DEG)
+	return !entry.Ignored && math.Abs(entry.Angle) <= ToRadians(MAX_ANGLE_DEG)
 }
 
 func (zt *ZoneTable) IsBehind(entry *ZoneTableEntry) bool {
-	return math.Abs(entry.Angle) >= ToRadians(180-MAX_ANGLE_DEG)
+	return !entry.Ignored && math.Abs(entry.Angle) >= ToRadians(180-MAX_ANGLE_DEG)
 }
 
 func (zt *ZoneTable) GetInFrontOfMe() []*ZoneTableEntry {
@@ -121,6 +144,17 @@ func (zt *ZoneTable) GetBehindMe() []*ZoneTableEntry {
 }
 
 func (zt *ZoneTable) GetNearestFrontFrom(pos *Position) *ZoneTableEntry {
+	// if stored return it
+	zt.nearestFrontLock.RLock()
+	if zt.nearestFrontIP != nil {
+		entry, exists := zt.Get(zt.nearestFrontIP)
+		if exists && zt.IsFront(entry) {
+			zt.nearestFrontLock.RUnlock()
+			return entry
+		}
+	}
+	zt.nearestFrontLock.RUnlock()
+
 	var nearest *ZoneTableEntry
 	var nearestDist float64 = math.MaxFloat64
 	for _, entry := range zt.GetInFrontOfMe() {
@@ -130,10 +164,29 @@ func (zt *ZoneTable) GetNearestFrontFrom(pos *Position) *ZoneTableEntry {
 			nearestDist = dist
 		}
 	}
+
+	// update
+	zt.nearestFrontLock.Lock()
+	zt.nearestFrontIP = nil
+	if nearest != nil {
+		zt.nearestFrontIP = nearest.IP
+	}
+	zt.nearestFrontLock.Unlock()
 	return nearest
 }
 
 func (zt *ZoneTable) GetNearestBehindFrom(pos *Position) *ZoneTableEntry {
+	// if stored return it
+	zt.nearestBehindLock.RLock()
+	if zt.nearestBehindIP != nil {
+		entry, exists := zt.Get(zt.nearestBehindIP)
+		if exists && zt.IsBehind(entry) {
+			zt.nearestBehindLock.RUnlock()
+			return entry
+		}
+	}
+	zt.nearestBehindLock.RUnlock()
+
 	var nearest *ZoneTableEntry
 	var nearestDist float64 = math.MaxFloat64
 	for _, entry := range zt.GetBehindMe() {
@@ -143,7 +196,119 @@ func (zt *ZoneTable) GetNearestBehindFrom(pos *Position) *ZoneTableEntry {
 			nearestDist = dist
 		}
 	}
+
+	// update
+	zt.nearestBehindLock.Lock()
+	zt.nearestBehindIP = nil
+	if nearest != nil {
+		zt.nearestBehindIP = nearest.IP
+	}
+	zt.nearestBehindLock.Unlock()
 	return nearest
+}
+
+func (zt *ZoneTable) Ignore(ip net.IP) {
+	entry, exists := zt.Get(ip)
+	if exists {
+		entry.Ignored = true
+		zt.table.Set(ip.String(), *entry)
+		zt.removeNearestIfEqual(entry)
+		log.Printf("ZoneTable: ignored entry for %s\n", ip.String())
+	}
+}
+
+func (zt *ZoneTable) updateNearest(entry *ZoneTableEntry, pos *Position) {
+	zt.updateNearestFront(entry, pos)
+	zt.updateNearestBehind(entry, pos)
+}
+
+func (zt *ZoneTable) checkNearestBehind(entry *ZoneTableEntry, pos *Position) NEAREST_BOOL {
+	if !zt.IsBehind(entry) {
+		return FARTHEST
+	}
+	zt.nearestBehindLock.RLock()
+	defer zt.nearestBehindLock.RUnlock()
+	if zt.nearestBehindIP == nil {
+		return NEAREST
+	}
+
+	nearest, exists := zt.Get(zt.nearestBehindIP)
+	if !exists {
+		return NEAREST
+	}
+	if zt.nearestBehindIP.Equal(entry.IP) {
+		return EQUAL
+	}
+
+	if nearest.Position.Distance(pos) < entry.Position.Distance(pos) {
+		return FARTHEST
+	}
+	return NEAREST
+}
+
+func (zt *ZoneTable) updateNearestBehind(entry *ZoneTableEntry, pos *Position) {
+	check := zt.checkNearestBehind(entry, pos)
+	if check == NEAREST || check == EQUAL {
+		zt.nearestBehindLock.Lock()
+		zt.nearestBehindIP = entry.IP
+		zt.nearestBehindLock.Unlock()
+	}
+}
+
+func (zt *ZoneTable) checkNearestFront(entry *ZoneTableEntry, pos *Position) NEAREST_BOOL {
+	if !zt.IsFront(entry) {
+		return FARTHEST
+	}
+	zt.nearestFrontLock.RLock()
+	defer zt.nearestFrontLock.RUnlock()
+	if zt.nearestFrontIP == nil {
+		return NEAREST
+	}
+	nearest, exists := zt.Get(zt.nearestFrontIP)
+	if !exists {
+		return NEAREST
+	}
+	if zt.nearestFrontIP.Equal(entry.IP) {
+		return EQUAL
+	}
+
+	if nearest.Position.Distance(pos) < entry.Position.Distance(pos) {
+		return FARTHEST
+	}
+	return NEAREST
+}
+
+func (zt *ZoneTable) updateNearestFront(entry *ZoneTableEntry, pos *Position) {
+	check := zt.checkNearestFront(entry, pos)
+	if check == NEAREST || check == EQUAL {
+		zt.nearestFrontLock.Lock()
+		zt.nearestFrontIP = entry.IP
+		zt.nearestFrontLock.Unlock()
+	}
+}
+
+func (zt *ZoneTable) removeNearestIfEqual(entry *ZoneTableEntry) {
+	// check if this is the nearest front
+	zt.nearestFrontLock.RLock()
+	if zt.IsFront(entry) && zt.nearestFrontIP != nil && zt.nearestFrontIP.Equal(entry.IP) {
+		zt.nearestFrontLock.RUnlock()
+		zt.nearestFrontLock.Lock()
+		zt.nearestFrontIP = nil
+		zt.nearestFrontLock.Unlock()
+	} else {
+		zt.nearestFrontLock.RUnlock()
+	}
+
+	// check if this is the nearest behind
+	zt.nearestBehindLock.RLock()
+	if zt.IsBehind(entry) && zt.nearestBehindIP != nil && zt.nearestBehindIP.Equal(entry.IP) {
+		zt.nearestBehindLock.RUnlock()
+		zt.nearestBehindLock.Lock()
+		zt.nearestBehindIP = nil
+		zt.nearestBehindLock.Unlock()
+	} else {
+		zt.nearestBehindLock.RUnlock()
+	}
 }
 
 func (zte *ZoneTableEntry) Print() {

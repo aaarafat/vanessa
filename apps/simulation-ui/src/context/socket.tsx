@@ -44,6 +44,10 @@ export const SocketProvider: React.FC<React.ReactNode> = ({ children }) => {
       // socket.emit('change-speed', message);
     });
 
+    socket.on('check-route', (message: any) => {
+      console.log('check-route', message);
+    });
+
     return () => {
       socket.off('reroute');
       socket.off('change-speed');

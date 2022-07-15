@@ -73,18 +73,30 @@ func (a *App) printZone() {
 	}
 }
 
+func (a *App) checkFront() {
+	state := a.GetState()
+	pos := state.GetPosition()
+	mnSpeed := state.MaxSpeed
+	front := a.zoneTable.GetNearestFrontFrom(&pos)
+	if front != nil {
+		log.Printf("App %d: Front ", a.id)
+		front.Print()
+	}
+	if front != nil && front.Speed < mnSpeed {
+		mnSpeed = front.Speed
+		if front.Speed < state.Speed {
+			// send check route to simulator
+			a.sensor.Write(unix.CheckRouteData{Coordinate: front.Position}, unix.CheckRouteEvent)
+		}
+	}
+	if mnSpeed != state.Speed {
+		a.updateSpeed(mnSpeed)
+	}
+}
+
 func (a *App) checkZone() {
 	for {
-		// check front
-		front := a.zoneTable.GetInFrontOfMe()
-		mnSpeed := a.GetState().MaxSpeed
-		for _, entry := range front {
-			if entry.Speed < mnSpeed {
-				mnSpeed = entry.Speed
-			}
-		}
-		a.updateSpeed(mnSpeed)
-
+		a.checkFront()
 		time.Sleep(ZONE_MSG_INTERVAL_MS * time.Millisecond)
 	}
 }

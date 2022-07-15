@@ -68,11 +68,10 @@ func (a *App) sendSpeed(speed uint32) {
 	a.sensor.Write(unix.SpeedData{Speed: int(speed)}, unix.ChangeSpeedEvent)
 	a.ui.Write(unix.SpeedData{Speed: int(speed)}, string(unix.ChangeSpeedEvent))
 
-	entries := a.zoneTable.GetBehindMe()
-	for _, entry := range entries {
-		if entry.Speed > speed {
-			// send slow down
-			a.sendToRouter(NewVSpeedMessage(a.ip, speed).Marshal(), entry.IP)
-		}
+	pos := a.state.GetPosition()
+	behind := a.zoneTable.GetNearestBehindFrom(&pos)
+	if behind != nil && behind.Speed > speed {
+		// send slow down
+		a.sendToRouter(NewVSpeedMessage(a.ip, speed).Marshal(), behind.IP)
 	}
 }

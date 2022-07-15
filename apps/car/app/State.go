@@ -58,9 +58,6 @@ func (a *App) updateSpeed(speed uint32) {
 	if a.state == nil || a.state.Speed == speed {
 		return
 	}
-	if a.state.MaxSpeed < speed {
-		a.state.MaxSpeed = speed
-	}
 	a.state.Speed = speed
 
 	go func() {
@@ -75,7 +72,11 @@ func (a *App) updatePosition(pos Position) {
 	if a.state == nil {
 		return
 	}
-	a.state.Direction = NewUnitVector(a.state.GetPosition(), pos)
+	// update direction if the car is moving
+	newdirection := NewUnitVector(a.state.GetPosition(), pos)
+	if newdirection.Lng != 0 || newdirection.Lat != 0 {
+		a.state.Direction = newdirection
+	}
 	a.state.Lat = pos.Lat
 	a.state.Lng = pos.Lng
 	log.Printf("Position updated: lng: %f lat: %f", pos.Lng, pos.Lat)
