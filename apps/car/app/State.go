@@ -38,8 +38,11 @@ func (a *App) initState(speed uint32, route []Position, pos Position) {
 		a.state.Lng = pos.Lng
 		a.state.MaxSpeed = speed
 	}
-
 	log.Printf("Car state initialized  state:  %s\n", a.state.String())
+
+	go func() {
+		a.ui.Write(unix.SpeedData{Speed: int(speed)}, string(unix.ChangeSpeedEvent))
+	}()
 }
 
 func (a *App) updateSpeed(speed uint32) {
