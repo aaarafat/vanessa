@@ -66,6 +66,7 @@ func (a *App) sendToRouterWithOptions(data []byte, destIP net.IP, options []byte
 
 func (a *App) sendSpeed(speed uint32) {
 	a.sensor.Write(unix.SpeedData{Speed: int(speed)}, unix.ChangeSpeedEvent)
+	a.ui.Write(unix.SpeedData{Speed: int(speed)}, string(unix.ChangeSpeedEvent))
 
 	entries := a.zoneTable.GetBehindMe()
 	for _, entry := range entries {
