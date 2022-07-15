@@ -5,6 +5,9 @@ echo "Installing socat..."
 sudo apt update
 sudo apt install socat
 echo "Installing socat...done"
+echo "Installing python dependencies..."
+sudo python -m pip install -r ./requirements.txt
+echo "Installing python dependencies...done"
 echo "Installing go dependencies..."
 go get ./...
 echo "Installing go dependencies...done"
