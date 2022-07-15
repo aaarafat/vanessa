@@ -66,6 +66,15 @@ type VZoneMessage struct {
 	Speed uint32
 }
 
+type VSpeedMessage struct {
+	// Type
+	Type uint8
+	// The IP address of the node that originated the speed alert.
+	OriginatorIP net.IP
+	// Speed of the vehicle
+	Speed uint32
+}
+
 const (
 	VHBeatMessageLen         = 21
 	VObstacleMessageLen      = 22
@@ -73,6 +82,7 @@ const (
 	VOREPMessageLen          = 2
 	VPathDiscoveryMessageLen = 5
 	VZoneMessageLen          = 25
+	VSpeedMessageLen         = 9
 )
 
 const (
@@ -82,4 +92,5 @@ const (
 	VOREPType          uint8 = 4
 	VPathDiscoveryType uint8 = 5
 	VZoneType          uint8 = 6
+	VSpeedType         uint8 = 7
 )

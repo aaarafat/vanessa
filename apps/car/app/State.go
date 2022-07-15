@@ -54,7 +54,7 @@ func (a *App) updateSpeed(speed uint32) {
 	a.state.Speed = speed
 
 	go func() {
-		a.sensor.Write(unix.SpeedData{Speed: int(speed)}, unix.ChangeSpeedEvent)
+		a.sendSpeed(speed)
 	}()
 	log.Printf("Speed updated: %d", speed)
 }

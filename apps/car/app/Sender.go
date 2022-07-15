@@ -65,7 +65,13 @@ func (a *App) sendToRouterWithOptions(data []byte, destIP net.IP, options []byte
 }
 
 func (a *App) sendSpeed(speed uint32) {
-	if a.GetState().Speed != speed {
-		a.sensor.Write(unix.SpeedData{Speed: int(speed)}, unix.ChangeSpeedEvent)
+	a.sensor.Write(unix.SpeedData{Speed: int(speed)}, unix.ChangeSpeedEvent)
+
+	entries := a.zoneTable.GetBehindMe()
+	for _, entry := range entries {
+		if entry.Speed > speed {
+			// send slow down
+			a.sendToRouter(NewVSpeedMessage(a.ip, speed).Marshal(), entry.IP)
+		}
 	}
 }

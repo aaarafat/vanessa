@@ -68,6 +68,15 @@ func (a *App) handleMessage(bytes []byte) {
 			a.sendToRouter(data, net.ParseIP(ip.RsuIP))
 		}
 
+	case VSpeedType:
+		msg, err := UnmarshalVSpeed(data)
+		if err != nil {
+			log.Printf("Error decoding VSpeed message: %v", err)
+			return
+		}
+		log.Printf("VSpeed message received: %s", msg.String())
+		a.updateSpeed(msg.Speed)
+
 	default:
 		log.Printf("Unknown message type: %d", mType)
 	}

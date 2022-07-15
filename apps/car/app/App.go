@@ -83,15 +83,8 @@ func (a *App) checkZone() {
 				mnSpeed = entry.Speed
 			}
 		}
-		go a.updateSpeed(mnSpeed)
+		a.updateSpeed(mnSpeed)
 
-		// check back
-		back := a.zoneTable.GetBehindMe()
-		for _, entry := range back {
-			if entry.Speed > mnSpeed {
-				// TODO: send slow down
-			}
-		}
 		time.Sleep(ZONE_MSG_INTERVAL_MS * time.Millisecond)
 	}
 }
