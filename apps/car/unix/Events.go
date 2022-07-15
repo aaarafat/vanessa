@@ -59,6 +59,12 @@ type SpeedData struct {
 	Speed int `json:"speed"`
 }
 
+type StateData struct {
+	Coordinates Position   `json:"coordinates"`
+	Speed       int        `json:"speed"`
+	Route       []Position `json:"route"`
+}
+
 func FormatObstacles(pos []Position) ObstaclesReceivedData {
 	return ObstaclesReceivedData{ObstacleCoordinates: pos}
 }

@@ -2,6 +2,7 @@ package app
 
 import (
 	"log"
+	"reflect"
 
 	"github.com/aaarafat/vanessa/apps/car/unix"
 	. "github.com/aaarafat/vanessa/libs/vector"
@@ -17,6 +18,11 @@ func (a *App) initState(speed uint32, route []Position, pos Position) {
 	log.Printf("Initializing car state......")
 	a.stateLock.Lock()
 	defer a.stateLock.Unlock()
+	changedRoute := route
+	if a.state != nil && reflect.DeepEqual(a.state.Route, route) {
+		changedRoute = nil
+	}
+
 	if a.state == nil {
 		a.state = &unix.State{
 			Id:                 a.id,
@@ -38,10 +44,11 @@ func (a *App) initState(speed uint32, route []Position, pos Position) {
 		a.state.Lng = pos.Lng
 		a.state.MaxSpeed = speed
 	}
+
 	log.Printf("Car state initialized  state:  %s\n", a.state.String())
 
 	go func() {
-		a.ui.Write(*a.GetState(), string(unix.StateEvent))
+		a.ui.Write(unix.StateData{Coordinates: pos, Route: changedRoute, Speed: int(speed)}, string(unix.StateEvent))
 	}()
 }
 
