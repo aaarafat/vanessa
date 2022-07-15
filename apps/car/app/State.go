@@ -79,8 +79,13 @@ func (a *App) addObstacle(pos Position, fromSensor bool) {
 	if fromSensor {
 		a.state.ObstacleDetected = true
 	}
+	oldLen := len(a.state.Obstacles)
 	a.state.Obstacles = removeDuplicatePositions(append(a.state.Obstacles, pos))
 	log.Printf("Obstacle added: lng: %f lat: %f", pos.Lng, pos.Lat)
+
+	if oldLen == len(a.state.Obstacles) {
+		return
+	}
 
 	go func() {
 		if fromSensor {
@@ -100,8 +105,13 @@ func (a *App) updateObstacles(obstacles []Position) {
 	if a.state == nil || len(obstacles) == 0 {
 		return
 	}
+	oldLen := len(a.state.Obstacles)
 	a.state.Obstacles = removeDuplicatePositions(append(a.state.Obstacles, obstacles...))
 	log.Printf("Obstacles updated: %v", a.state.Obstacles)
+
+	if oldLen == len(a.state.Obstacles) {
+		return
+	}
 
 	go func() {
 		data := unix.FormatObstacles(obstacles)
