@@ -75,7 +75,10 @@ func (a *App) handleMessage(bytes []byte) {
 			return
 		}
 		log.Printf("VSpeed message received: %s", msg.String())
-		a.updateSpeed(msg.Speed)
+		entry, exists := a.zoneTable.Get(msg.OriginatorIP)
+		if exists && a.zoneTable.IsFront(entry) {
+			a.updateSpeed(msg.Speed)
+		}
 
 	default:
 		log.Printf("Unknown message type: %d", mType)

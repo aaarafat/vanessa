@@ -55,7 +55,7 @@ func (a *App) initState(speed uint32, route []Position, pos Position) {
 func (a *App) updateSpeed(speed uint32) {
 	a.stateLock.Lock()
 	defer a.stateLock.Unlock()
-	if a.state == nil || a.state.Speed == speed {
+	if a.state == nil || a.state.Speed == speed || speed > a.state.MaxSpeed {
 		return
 	}
 	a.state.Speed = speed
