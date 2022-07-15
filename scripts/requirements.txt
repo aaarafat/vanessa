@@ -1,3 +1,2 @@
-simple-websocket-server==0.4.1 
 flask==2.0.3
 flask-socketio==5.0.2

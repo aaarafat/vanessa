@@ -1,14 +1,12 @@
-from numpy import stack
 import socket
 import json
 from mn_wifi.wmediumdConnector import interference
-from mn_wifi.vanet import vanet
 from mn_wifi.net import Mininet_wifi
 from mn_wifi.cli import CLI
 from mn_wifi.link import wmediumd, adhoc
 from mininet.log import setLogLevel, info
 from flask import Flask
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO
 import threading
 import sys
 import os

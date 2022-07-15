@@ -7,16 +7,16 @@ import (
 type Event string
 
 const (
-	DestinationReachedEvent Event = "destination-reached"
-	ObstacleDetectedEvent   Event = "obstacle-detected"  // from sensor
-	ObstacleReceivedEvent   Event = "obstacle-received"  // from router
-	ObstaclesReceivedEvent  Event = "obstacles-received" // from RSU
-	RerouteEvent            Event = "reroute"
-	ChangeSpeedEvent        Event = "change-speed"
-	AddCarEvent             Event = "add-car"
-	UpdateLocationEvent     Event = "update-location"
-	CheckRouteEvent         Event = "check-route"
-	CheckRouteResponseEvent Event = "check-route-response"
+	DestinationReachedEvent Event = "destination-reached"  // from simulator to car ui when destination is reached
+	ObstacleDetectedEvent   Event = "obstacle-detected"    // from simulator to car
+	ObstacleReceivedEvent   Event = "obstacle-received"    // from car to ui and simulator when obstacle are received from other rsu
+	ObstaclesReceivedEvent  Event = "obstacles-received"   // from car to ui and simulator when obstacles are received from other rsu
+	RerouteEvent            Event = "reroute"              // from car to simulator when reroute is requested
+	ChangeSpeedEvent        Event = "change-speed"         // from car to simulator when speed is changed
+	AddCarEvent             Event = "add-car"              // from simulator to car when car is added, rerouted and speed is changed
+	UpdateLocationEvent     Event = "update-location"      // from simulator to car when location is changed
+	CheckRouteEvent         Event = "check-route"          // from car to simulator when route is checked
+	CheckRouteResponseEvent Event = "check-route-response" // from simulator to car when route is checked
 )
 
 type CheckRouteResponseData struct {

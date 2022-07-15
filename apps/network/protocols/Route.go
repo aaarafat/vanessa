@@ -5,20 +5,19 @@ import (
 	"net"
 )
 
-
 type VRoute struct {
 	Destination net.IP
-	NextHop net.HardwareAddr
-	Interface int
-	Metric int
+	NextHop     net.HardwareAddr
+	Interface   int
+	Metric      int
 }
 
 func NewVRoute(destination net.IP, nextHop net.HardwareAddr, ifi int, metric int) *VRoute {
 	return &VRoute{
 		Destination: destination,
-		NextHop: nextHop,
-		Interface: ifi,
-		Metric: metric,
+		NextHop:     nextHop,
+		Interface:   ifi,
+		Metric:      metric,
 	}
 }
 

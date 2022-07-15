@@ -7,8 +7,6 @@ import (
 	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 )
 
-
-
 func main() {
 	// obstacles as a pair of x,y list
 	obstacles := []Position{
@@ -18,11 +16,10 @@ func main() {
 		{Lat: 325.7, Lng: 69.69},
 		{Lat: 85.7298, Lng: 123.45},
 	}
-	x:= obstacles[0].Marshal()
+	x := obstacles[0].Marshal()
 	fmt.Println(x)
-	y:= UnmarshalPosition(x)
+	y := UnmarshalPosition(x)
 	fmt.Println(y)
-
 
 	fmt.Println("\nCheck VOREP\n")
 	VOREP := NewVOREPMessage(obstacles)
@@ -37,12 +34,12 @@ func main() {
 	obstacles2 := make([][2]float64, int(VOREP2.Length))
 	fmt.Println("Check the obstcales")
 	for i := 0; i < len(obstacles2); i++ {
-		obstacles2[i][0] = Float64FromBytes(VOREP2.Obstacles[i*16:i*16+8])
-		obstacles2[i][1] = Float64FromBytes(VOREP2.Obstacles[i*16+8:i*16+16])
+		obstacles2[i][0] = Float64FromBytes(VOREP2.Obstacles[i*16 : i*16+8])
+		obstacles2[i][1] = Float64FromBytes(VOREP2.Obstacles[i*16+8 : i*16+16])
 	}
 	fmt.Println(obstacles2)
 	fmt.Println("\nCheck VOREQ\n")
-	VOREQ := NewVOREQMessage(net.IPv4(255,255,255,255),obstacles)
+	VOREQ := NewVOREQMessage(net.IPv4(255, 255, 255, 255), obstacles)
 	bytes = VOREQ.Marshal()
 	fmt.Println(bytes)
 	fmt.Println(VOREQ.Obstacles)
@@ -53,8 +50,8 @@ func main() {
 	obstacles2 = make([][2]float64, int(VOREQ2.Length))
 	fmt.Println("Check the obstcales")
 	for i := 0; i < len(obstacles2); i++ {
-		obstacles2[i][0] = Float64FromBytes(VOREQ2.Obstacles[i*16:i*16+8])
-		obstacles2[i][1] = Float64FromBytes(VOREQ2.Obstacles[i*16+8:i*16+16])
+		obstacles2[i][0] = Float64FromBytes(VOREQ2.Obstacles[i*16 : i*16+8])
+		obstacles2[i][1] = Float64FromBytes(VOREQ2.Obstacles[i*16+8 : i*16+16])
 	}
 	fmt.Println(obstacles2)
 

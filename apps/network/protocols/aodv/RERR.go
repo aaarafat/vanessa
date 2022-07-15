@@ -17,15 +17,15 @@ type RERRMessage struct {
 	// The IP address of the node that is the destination of the RREQ.
 	UnreachableDestinationIP net.IP
 	// Destination sequence number
-	UnreachableDestinationSeqNum uint32 
+	UnreachableDestinationSeqNum uint32
 }
 
 func NewRERRMessage(SrcIP, DestIP net.IP) *RERRMessage {
 	return &RERRMessage{
-		Type: RERRType,
-		Flags: 0,
-		DestCount: 0,
-		UnreachableDestinationIP: DestIP,
+		Type:                         RERRType,
+		Flags:                        0,
+		DestCount:                    0,
+		UnreachableDestinationIP:     DestIP,
 		UnreachableDestinationSeqNum: 0,
 	}
 }
@@ -56,7 +56,6 @@ func UnmarshalRERR(data []byte) (*RERRMessage, error) {
 
 	return RERR, nil
 }
-
 
 func (RERR *RERRMessage) String() string {
 	return fmt.Sprintf("RERR: Type=%d, Flags=%d, DestCount=%d, DestinationSeqNum=%d, DestinationIP=%s",

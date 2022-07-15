@@ -1,15 +1,16 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
-	"fmt"
-	"github.com/fsnotify/fsnotify"
 	"strings"
+
+	"github.com/fsnotify/fsnotify"
+
 	// "github.com/juju/fslock"
-	"datbase/sql"
-	"github.com/mattn/go-sqlite3"
+	"database/sql"
 	// "time"
 )
 
@@ -19,7 +20,7 @@ func main() {
 		sender TEXT NOT NULL PRIMARY KEY,
 		msg TEXT
 		);`
-	lFileName := "./"+os.Args[1]+".log"
+	lFileName := "./" + os.Args[1] + ".log"
 	gFileName := "./rsus.db"
 	db, err := sql.Open("sqlite3", gFileName)
 	db.Exec(create)
@@ -40,7 +41,7 @@ func main() {
 					return
 				}
 				msg := getLastLine(lFileName)
-				
+
 			case err, ok := <-watcher.Errors:
 				if !ok {
 					return
@@ -61,10 +62,9 @@ func main() {
 }
 
 func getLastLine(path string) (msg string) {
-    c := exec.Command("tail", "-1" , path)
-    output, _ := c.Output()
+	c := exec.Command("tail", "-1", path)
+	output, _ := c.Output()
 	msg = strings.ReplaceAll(string(output), "\n", "")
-    fmt.Println(msg)
+	fmt.Println(msg)
 	return msg
 }
-

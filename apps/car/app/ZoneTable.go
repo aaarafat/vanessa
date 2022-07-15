@@ -120,6 +120,32 @@ func (zt *ZoneTable) GetBehindMe() []*ZoneTableEntry {
 	return entries
 }
 
+func (zt *ZoneTable) GetNearestFrontFrom(pos *Position) *ZoneTableEntry {
+	var nearest *ZoneTableEntry
+	var nearestDist float64 = math.MaxFloat64
+	for _, entry := range zt.GetInFrontOfMe() {
+		dist := entry.Position.Distance(pos)
+		if dist < nearestDist {
+			nearest = entry
+			nearestDist = dist
+		}
+	}
+	return nearest
+}
+
+func (zt *ZoneTable) GetNearestBehindFrom(pos *Position) *ZoneTableEntry {
+	var nearest *ZoneTableEntry
+	var nearestDist float64 = math.MaxFloat64
+	for _, entry := range zt.GetBehindMe() {
+		dist := entry.Position.Distance(pos)
+		if dist < nearestDist {
+			nearest = entry
+			nearestDist = dist
+		}
+	}
+	return nearest
+}
+
 func (zte *ZoneTableEntry) Print() {
 	log.Printf("IP: %s, Speed: %d, Position: %v, Direction: %v\n", zte.IP.String(), zte.Speed, zte.Position, zte.Direction)
 }

@@ -7,11 +7,10 @@ import (
 
 func NewVPathDiscoveryMessage(destIP net.IP) *VPathDiscoveryMessage {
 	return &VPathDiscoveryMessage{
-		Type: VPathDiscoveryType,
+		Type:   VPathDiscoveryType,
 		DestIP: destIP,
 	}
 }
-
 
 func (p *VPathDiscoveryMessage) Marshal() []byte {
 	bytes := make([]byte, VPathDiscoveryMessageLen)
