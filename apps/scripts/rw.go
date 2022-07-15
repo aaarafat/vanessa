@@ -61,12 +61,12 @@ func main() {
 		case 4:
 			interfaces, _ := net.Interfaces()
 			addresses, _ := interfaces[2].Addrs()
-	
+
 			address := addresses[0]
-			s :=strings.Split(address.String(), "/")[0]
+			s := strings.Split(address.String(), "/")[0]
 			log.Println(s)
 			drsu.Broadcast([]byte(s))
 		}
-		
+
 	}
 }

@@ -17,7 +17,7 @@ type RREPMessage struct {
 	// The IP address of the node that is the destination of the RREQ.
 	DestinationIP net.IP
 	// Destination sequence number
-	DestinationSeqNum uint32 
+	DestinationSeqNum uint32
 	// The IP address of the node that originated the RREQ.
 	OriginatorIP net.IP
 	// The time in milliseconds for which nodes receiving the RREP consider the route to be valid.
@@ -26,13 +26,13 @@ type RREPMessage struct {
 
 func NewRREPMessage(SrcIP, DestIP net.IP) *RREPMessage {
 	return &RREPMessage{
-		Type: RREPType,
-		Flags: 0,
-		HopCount: 0,
-		DestinationIP: DestIP,
-		OriginatorIP: SrcIP,
+		Type:              RREPType,
+		Flags:             0,
+		HopCount:          0,
+		DestinationIP:     DestIP,
+		OriginatorIP:      SrcIP,
 		DestinationSeqNum: 0,
-		LifeTime: RREPDefaultLifeTimeMS,
+		LifeTime:          RREPDefaultLifeTimeMS,
 	}
 }
 
@@ -67,28 +67,28 @@ func UnmarshalRREP(data []byte) (*RREPMessage, error) {
 	return rrep, nil
 }
 
-func (rrep* RREPMessage) SetFlag(flag uint16) *RREPMessage {
+func (rrep *RREPMessage) SetFlag(flag uint16) *RREPMessage {
 	rrep.Flags |= flag
 	return rrep
 }
 
-func (rrep* RREPMessage) ClearFlag(flag uint16) *RREPMessage {
+func (rrep *RREPMessage) ClearFlag(flag uint16) *RREPMessage {
 	rrep.Flags &= ^flag
 	return rrep
 }
 
-func (rrep* RREPMessage) ToggleFlag(flag uint16) *RREPMessage {
+func (rrep *RREPMessage) ToggleFlag(flag uint16) *RREPMessage {
 	rrep.Flags ^= flag
 	return rrep
 }
 
-func (rrep* RREPMessage) HasFlag(flag uint16) bool {
-	return rrep.Flags & flag != 0
+func (rrep *RREPMessage) HasFlag(flag uint16) bool {
+	return rrep.Flags&flag != 0
 }
 
 func (rrep *RREPMessage) Invalid() bool {
 	return rrep.Type != RREPType ||
-				rrep.HopCount > HopCountLimit
+		rrep.HopCount > HopCountLimit
 }
 
 func (rrep *RREPMessage) String() string {

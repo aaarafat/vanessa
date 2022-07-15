@@ -6,17 +6,16 @@ import (
 	"time"
 )
 
-type TypeEnum string;
+type TypeEnum string
 
 const (
-	String TypeEnum = "string"
-	Int32     			= "int32"
-	Int16     			= "int16"
-	Int8     			  = "int8"
-	Bool     				= "bool"
-	ByteArray 			= "bytearray"
-	Frame 					= "frame"
-	
+	String    TypeEnum = "string"
+	Int32              = "int32"
+	Int16              = "int16"
+	Int8               = "int8"
+	Bool               = "bool"
+	ByteArray          = "bytearray"
+	Frame              = "frame"
 )
 
 // Get the current time in milliseconds
@@ -29,7 +28,7 @@ func ConvertBytesToString(bytes []byte) string {
 }
 
 func ConvertStringToBytes(str string) []byte {
-	b:= make([]byte, len(str) + 1)
+	b := make([]byte, len(str)+1)
 	b[0] = byte(len(str))
 	copy(b[1:], str)
 	return b
@@ -79,14 +78,13 @@ func orderedKeys(m map[string]TypeEnum) []string {
 	// get ordered keys
 	keys := make([]string, 0)
 	for k, _ := range m {
-			keys = append(keys, k)
+		keys = append(keys, k)
 	}
 	sort.Strings(keys)
 	return keys
 }
 
-
-func Marshal(packet map[string]any, packetTypes map[string]TypeEnum) ([]byte, error)  {
+func Marshal(packet map[string]any, packetTypes map[string]TypeEnum) ([]byte, error) {
 	var packetBytes []byte
 
 	for _, key := range orderedKeys(packetTypes) {
@@ -117,7 +115,7 @@ func Unmarshal(packetBytes []byte, packetTypes map[string]TypeEnum) (map[string]
 		switch valueType {
 		case String:
 			len := GetLength(packetBytes[0])
-			packet[key] = ConvertBytesToString(packetBytes[1:len+1])
+			packet[key] = ConvertBytesToString(packetBytes[1 : len+1])
 			packetBytes = packetBytes[len+1:]
 		case Int32:
 			packet[key] = ConvertBytesToInt(packetBytes[:4], 4)
@@ -133,7 +131,7 @@ func Unmarshal(packetBytes []byte, packetTypes map[string]TypeEnum) (map[string]
 			packetBytes = packetBytes[1:]
 		case ByteArray:
 			len := GetLength(packetBytes[0])
-			packet[key] = packetBytes[1:len+1]
+			packet[key] = packetBytes[1 : len+1]
 			packetBytes = packetBytes[len+1:]
 		}
 		p := packet[key]
@@ -144,14 +142,13 @@ func Unmarshal(packetBytes []byte, packetTypes map[string]TypeEnum) (map[string]
 	return packet, nil
 }
 
-
-func main()  {
-	str:= "hello"
+func main() {
+	str := "hello"
 	i32 := 12345
 	i16 := 123
 	i8 := 123
 	b := true
-	ba := []byte{1,2,3,4,5}
+	ba := []byte{1, 2, 3, 4, 5}
 
 	println(ba)
 

@@ -10,19 +10,19 @@ import (
 )
 
 type PacketBuffer struct {
-	buf *hashmap.HashMap
+	buf  *hashmap.HashMap
 	lock *sync.RWMutex
 }
 
 type PacketBufferEntry struct {
 	Packet []byte
 	DestIP net.IP
-	timer *time.Timer
+	timer  *time.Timer
 }
 
 func NewPacketBuffer() *PacketBuffer {
 	return &PacketBuffer{
-		buf: &hashmap.HashMap{},
+		buf:  &hashmap.HashMap{},
 		lock: &sync.RWMutex{},
 	}
 }
@@ -42,7 +42,7 @@ func (p *PacketBuffer) Add(packet []byte, destIP net.IP) {
 	m.(*hashmap.HashMap).Set(destIP.String(), PacketBufferEntry{
 		Packet: packet,
 		DestIP: destIP,
-		timer: timer,
+		timer:  timer,
 	})
 
 	p.buf.Set(destIP.String(), m)

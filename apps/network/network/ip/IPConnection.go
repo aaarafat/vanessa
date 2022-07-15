@@ -7,19 +7,19 @@ import (
 )
 
 type IPConnection struct {
-	fd     int
+	fd int
 }
 
 func NewIPConnection() (*IPConnection, error) {
-	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_RAW, syscall.IPPROTO_RAW | syscall.IP_HDRINCL)
+	fd, err := syscall.Socket(syscall.AF_INET, syscall.SOCK_RAW, syscall.IPPROTO_RAW|syscall.IP_HDRINCL)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	log.Printf("Opened IP connection with fd: %d\n", fd)
 
 	return &IPConnection{
-		fd:     fd,
+		fd: fd,
 	}, nil
 }
 
@@ -43,4 +43,3 @@ func (c *IPConnection) Forward(packet []byte) error {
 func (c *IPConnection) Close() {
 	syscall.Close(c.fd)
 }
-
