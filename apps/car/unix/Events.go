@@ -15,7 +15,17 @@ const (
 	ChangeSpeedEvent        Event = "change-speed"
 	AddCarEvent             Event = "add-car"
 	UpdateLocationEvent     Event = "update-location"
+	CheckRouteEvent         Event = "check-route"
+	CheckRouteResponseEvent Event = "check-route-response"
 )
+
+type CheckRouteResponseData struct {
+	InRoute bool `json:"in_route"`
+}
+
+type CheckRouteData struct {
+	Coordinate Position `json:"coordinate"`
+}
 
 type DestinationReachedData struct {
 	Coordinates Position `json:"coordinates"`
