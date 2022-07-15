@@ -18,7 +18,10 @@ const (
 	CheckRouteEvent         Event = "check-route"          // from car to simulator when route is checked
 	CheckRouteResponseEvent Event = "check-route-response" // from simulator to car when route is checked
 	StateEvent              Event = "state"                // from car to ui
+	RefreshEvent            Event = "refresh"              // from car to ui
 )
+
+type RefreshData = State
 
 type CheckRouteResponseData struct {
 	InRoute bool `json:"in_route"`

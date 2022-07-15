@@ -100,7 +100,17 @@ func (u *UiUnix) Start() {
 	})
 	http.Handle("/", u.server)
 
+	go func() {
+		time.Sleep(time.Second * 10)
+		// send refresh message to the ui
+		u.Refresh(*u.getState())
+	}()
+
 	log.Fatal(http.Serve(listener, nil))
+}
+
+func (u *UiUnix) Refresh(state State) {
+	u.Write(state, string(RefreshEvent))
 }
 
 func (u *UiUnix) Close() {
