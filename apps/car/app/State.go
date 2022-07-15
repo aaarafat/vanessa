@@ -89,6 +89,7 @@ func (a *App) addObstacle(pos Position, fromSensor bool) {
 	defer a.stateLock.Unlock()
 	if fromSensor {
 		a.state.ObstacleDetected = true
+		a.state.MaxSpeed = 0
 	}
 	oldLen := len(a.state.Obstacles)
 	a.state.Obstacles = removeDuplicatePositions(append(a.state.Obstacles, pos))
@@ -100,6 +101,7 @@ func (a *App) addObstacle(pos Position, fromSensor bool) {
 
 	go func() {
 		if fromSensor {
+			a.updateSpeed(0)
 			a.sendObstacle(pos)
 			a.ui.Write(unix.ObstacleDetectedData{ObstacleCoordinates: pos}, string(unix.ObstacleDetectedEvent))
 		} else {

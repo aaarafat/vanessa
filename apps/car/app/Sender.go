@@ -75,3 +75,10 @@ func (a *App) sendSpeed(speed uint32) {
 		a.sendToRouter(NewVSpeedMessage(a.ip, speed).Marshal(), behind.IP)
 	}
 }
+
+func (a *App) sendCheckRoute(pos Position, ip net.IP) {
+	_, loaded := a.checkRouteBuffer.GetOrInsert(ip.String(), pos)
+	if !loaded {
+		a.sensor.Write(unix.CheckRouteData{Coordinate: pos}, unix.CheckRouteEvent)
+	}
+}

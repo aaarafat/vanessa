@@ -24,7 +24,8 @@ const (
 type RefreshData = State
 
 type CheckRouteResponseData struct {
-	InRoute bool `json:"in_route"`
+	Coordinate Position `json:"coordinate"`
+	InRoute    bool     `json:"in_route"`
 }
 
 type CheckRouteData struct {

@@ -2,6 +2,7 @@ package vector
 
 import (
 	"encoding/binary"
+	"fmt"
 	"math"
 )
 
@@ -72,4 +73,8 @@ func (p *Position) Distance(p2 *Position) float64 {
 	ans = 2 * math.Asin(math.Sqrt(ans))
 
 	return ans * EARTH_RADIUS_METER
+}
+
+func (p *Position) String() string {
+	return fmt.Sprintf("%f, %f", p.Lat, p.Lng)
 }

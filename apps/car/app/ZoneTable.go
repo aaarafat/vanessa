@@ -105,7 +105,7 @@ func (zt *ZoneTable) Set(ip net.IP, speed uint32, pos, myPos Position, myDir Vec
 }
 
 func (zt *ZoneTable) Get(ip net.IP) (*ZoneTableEntry, bool) {
-	entry, exists := zt.table.Get(ip.String())
+	entry, exists := zt.table.GetStringKey(ip.String())
 	if !exists {
 		return nil, false
 	}

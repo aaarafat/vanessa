@@ -9,6 +9,7 @@ import (
 	"github.com/aaarafat/vanessa/apps/car/unix"
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/libs/vector"
+	"github.com/cornelk/hashmap"
 )
 
 type App struct {
@@ -17,9 +18,10 @@ type App struct {
 	key []byte
 
 	// state
-	state     *unix.State
-	zoneTable *ZoneTable
-	stateLock *sync.RWMutex
+	state            *unix.State
+	zoneTable        *ZoneTable
+	stateLock        *sync.RWMutex
+	checkRouteBuffer *hashmap.HashMap
 
 	// to send messages to the network
 	ipConn *ip.IPConnection
@@ -49,14 +51,15 @@ func NewApp(id int, key []byte) *App {
 	}
 
 	app := App{
-		id:        id,
-		ip:        ip,
-		key:       key,
-		zoneTable: NewZoneTable(),
-		ipConn:    ipConn,
-		sensor:    unix.NewSensorUnix(id),
-		router:    unix.NewRouter(id),
-		stateLock: &sync.RWMutex{},
+		id:               id,
+		ip:               ip,
+		key:              key,
+		zoneTable:        NewZoneTable(),
+		ipConn:           ipConn,
+		sensor:           unix.NewSensorUnix(id),
+		router:           unix.NewRouter(id),
+		stateLock:        &sync.RWMutex{},
+		checkRouteBuffer: &hashmap.HashMap{},
 	}
 
 	app.ui = unix.NewUiUnix(id, app.GetState)
@@ -84,10 +87,8 @@ func (a *App) checkFront() {
 	}
 	if front != nil && front.Speed < mnSpeed {
 		mnSpeed = front.Speed
-		if front.Speed < state.Speed {
-			// send check route to simulator
-			a.sensor.Write(unix.CheckRouteData{Coordinate: front.Position}, unix.CheckRouteEvent)
-		}
+		// send check route to simulator
+		go a.sendCheckRoute(front.Position, front.IP)
 	}
 	if mnSpeed != state.Speed {
 		a.updateSpeed(mnSpeed)
