@@ -21,7 +21,7 @@ export const MapProvider: React.FC = (props) => {
 
   useEffect(() => {
     const { onInit, ...restOptions } = options;
-    if (!initialized && onInit && mapRef.current) {
+    if (onInit && mapRef.current) {
       const map = new mapboxgl.Map({
         ...restOptions,
         container: mapRef.current,
@@ -31,7 +31,7 @@ export const MapProvider: React.FC = (props) => {
         accessToken: restOptions.accessToken,
         unit: 'metric',
         profile: 'mapbox/driving',
-        alternatives: 'true',
+        alternatives: 'false',
         geometries: 'geojson',
         controls: {
           instructions: false,
@@ -45,7 +45,7 @@ export const MapProvider: React.FC = (props) => {
       setInitialized(true);
       onInit(map);
     }
-  }, [map, options, initialized]);
+  }, [options]);
 
   useEffect(() => {
     return () => map?.remove();

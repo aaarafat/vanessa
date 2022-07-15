@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net"
 	"time"
-
-	"github.com/aaarafat/vanessa/apps/network/network/ip"
 )
 
 
@@ -20,9 +18,17 @@ func (a *Aodv) connectedDirectlyTo(destIP net.IP) bool {
 	return exists && route.NoOfHops == 0
 }
 
+func (a *Aodv) connectedTo(destIP net.IP) bool {
+	_, exists := a.routingTable.Get(destIP)
+	return exists
+}
+
 func (a *Aodv) isRREQForMe(rreq *RREQMessage) bool {
-	return rreq.DestinationIP.Equal(a.srcIP) || 
-				(rreq.DestinationIP.Equal(net.ParseIP(ip.RsuIP)) && a.connectedDirectlyTo(net.ParseIP(ip.RsuIP))) 
+	return rreq.DestinationIP.Equal(a.srcIP) 
+}
+
+func (a *Aodv) isRREQForNeighbor(rreq *RREQMessage) bool {
+	return a.connectedTo(rreq.DestinationIP)
 }
 
 func (a *Aodv) inRREQBuffer(destIP net.IP) bool {

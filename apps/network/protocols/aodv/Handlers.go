@@ -7,18 +7,16 @@ import (
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
 )
 
-
 func (a *Aodv) listen(channel *DataLinkLayerChannel) {
-	log.Printf("Listening for AODV packets on channel: %d....\n", channel.IfiIndex)
+	log.Printf("Listening for AODV packets on channel: %s....\n", channel.Ifi.Name)
 	for {
 		payload, addr, err := channel.Read()
 		if err != nil {
 			return
 		}
-		go a.handleMessage(payload, addr, channel.IfiIndex)
+		go a.handleMessage(payload, addr, WLAN0)
 	}
 }
-
 
 func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr, IfiIndex int) {
 	rreq, err := UnmarshalRREQ(payload)
@@ -26,7 +24,7 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr, IfiIndex int) {
 		log.Printf("Failed to unmarshal RREQ: %v\n", err)
 		return
 	}
-	
+
 	if rreq.Invalid(a.seqTable, a.srcIP) {
 		// drop the packet
 		log.Printf("Dropping %s\n", rreq.String())
@@ -40,19 +38,15 @@ func (a *Aodv) handleRREQ(payload []byte, from net.HardwareAddr, IfiIndex int) {
 	// update seq table
 	a.seqTable.Set(rreq.OriginatorIP, rreq.RREQID)
 
-	// check if the RREQ is for me
-	if a.isRREQForMe(rreq) {
-		// update the sequence number if it is not unknown
-		if !rreq.HasFlag(RREQFlagU) {
-			a.updateSeqNum(rreq.DestinationSeqNum)
-		}
+	// check if the RREQ is for me or neighbor
+	if a.isRREQForMe(rreq) || a.isRREQForNeighbor(rreq) {
 		// send a RREP
-		a.SendRREP(rreq.OriginatorIP)
+		a.SendRREPFor(rreq)
 	} else {
 		// increment hop count
 		rreq.HopCount = rreq.HopCount + 1
 		// forward the RREQ
-		a.forwarder.ForwardToAllExcept(rreq.Marshal(), from)
+		a.flooder.ForwardToAllExcept(rreq.Marshal(), from)
 	}
 }
 

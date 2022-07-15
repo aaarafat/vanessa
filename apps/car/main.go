@@ -1,11 +1,15 @@
 package main
 
 import (
+	"encoding/base64"
 	"flag"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"os/signal"
+	"syscall"
+	"time"
 
 	. "github.com/aaarafat/vanessa/apps/car/app"
 )
@@ -24,7 +28,7 @@ func initLogger(debug bool, id int) {
 		os.Exit(1)
 	}
 
-	file, err := os.OpenFile(fmt.Sprintf("/var/log/vanessa/car%d-app.log", id), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(fmt.Sprintf("/var/log/vanessa/car%d.log", id), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		fmt.Printf("Error opening log file: %s\n", err)
 		os.Exit(1)
@@ -35,18 +39,28 @@ func initLogger(debug bool, id int) {
 func main() {
 	var id int
 	var debug bool
+	var keyStr string
 	flag.IntVar(&id, "id", 0, "id of the car")
 	flag.BoolVar(&debug, "debug", false, "debug mode")
+	flag.StringVar(&keyStr, "key", "", "aes key")
 	flag.Parse()
 
 	initLogger(debug, id)
 
-	app := NewApp(id)
+	key := make([]byte, 16)
+	_, err := base64.StdEncoding.Decode(key, []byte(keyStr))
+	if err != nil {
+		log.Fatalf("failed to decode AES key: %v", err)
+	}
+
+	rand.Seed(time.Now().UnixNano())
+
+	app := NewApp(id, key)
 
 	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt)	
-	go func(){
-		<- c
+	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT, syscall.SIGKILL, syscall.SIGSTOP, syscall.SIGHUP)
+	go func() {
+		<-c
 		app.Stop()
 		os.Exit(1)
 	}()

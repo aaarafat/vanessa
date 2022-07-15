@@ -1,9 +1,7 @@
 import React, { useContext, useEffect } from 'react';
-import { CLICK_SOURCE_ID } from './constants';
 import { Coordinates, ICar } from '@vanessa/utils';
 import { MapContext } from '@vanessa/map';
 import styled from 'styled-components';
-import { useParams } from 'react-router-dom';
 
 const Container = styled.div<{ open: boolean }>`
   display: flex;
@@ -11,7 +9,8 @@ const Container = styled.div<{ open: boolean }>`
   top: 0;
   bottom: 0;
   left: ${(props) => (props.open ? 0 : '-100%')};
-  background-color: #010942ed;
+  background-color: #0d0d0df4;
+  font-family: 'Bebas Neue', cursive;
   color: #ffffff;
   z-index: 1 !important;
   padding: 1rem 2rem;
@@ -21,6 +20,26 @@ const Container = styled.div<{ open: boolean }>`
   align-items: stretch;
   transition: left 0.3s ease-in-out;
   flex-direction: column;
+  overflow: auto;
+`;
+
+const CancelButtonContainer = styled.div<{ show: boolean }>`
+  display: ${(props) => (props.show ? 'flex' : 'none')};
+  justify-content: flex-end;
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0.5rem;
+  margin: 3rem 1rem;
+  z-index: 1 !important;
+  cursor: pointer;
+  background-color: #0d0d0df4;
+  border-radius: 100%;
+  color: #ffffff;
+`;
+
+const Label = styled.label`
+  font-size: 1.75rem;
 `;
 
 const Form = styled.form`
@@ -32,23 +51,31 @@ const Form = styled.form`
 const PrimaryButton = styled.button`
   margin: 1rem 0;
   padding: 1rem;
-  background-color: #ccc;
-  color: #000;
+  background-color: #ffc000;
+  color: #ffffff;
+  font-family: 'Bebas Neue', cursive;
   font-weight: bold;
   /* width: 100%; */
-  border-radius: 1.5rem;
+  border-radius: 1px;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
   cursor: pointer;
-  font-size: 1.2rem;
+  font-size: 1.5rem;
   &:disabled {
     cursor: not-allowed;
     opacity: 0.5;
   }
 `;
 
-const SmallButton = styled(PrimaryButton)`
+const SmallButton = styled.button`
   align-self: flex-start;
   border-radius: 50%;
+  font-size: 2rem;
+  color: #ffc000;
+  background: none;
+  font-family: 'Bebas Neue', cursive;
+  font-weight: bold;
+  margin: 1rem 0;
+  padding: 1rem;
   width: 30px;
   height: 30px;
   display: flex;
@@ -61,18 +88,20 @@ const OpenButton = styled(SmallButton)<{ open: boolean }>`
   position: absolute;
   top: 0;
   margin: 3rem;
+  color: #0d0d0d;
   ${(props) => (props.open ? 'display: none;' : '')}
 `;
 
 const Input = styled.input`
   margin: 1rem 0;
   padding: 1rem;
-  background-color: #ccc;
+  background-color: #fff;
   color: #000;
   font-weight: bold;
   /* width: 100%; */
-  border-radius: 1.5rem;
+  border-radius: 1px;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+  font-family: 'Lato', sans-serif;
   font-size: 1.2rem;
 `;
 
@@ -91,9 +120,6 @@ const ControlPanel: React.FC<{
   const [carInputs, setCarInputs] = React.useState<Partial<ICar>>(initialState);
   const [accidentInput, setAccidentInput] = React.useState<Coordinates>();
   const [isOpen, setIsOpen] = React.useState(true);
-  const { id } = useParams<{
-    id: string;
-  }>();
 
   const handleCarInputsChange = (newValue: Partial<ICar>) => {
     setCarInputs((prev) => ({
@@ -107,17 +133,6 @@ const ControlPanel: React.FC<{
       // add directions controller
       map.addControl(mapDirections, 'top-right');
 
-      // add click source on load
-      map.on('load', () => {
-        map.addSource(CLICK_SOURCE_ID, {
-          type: 'geojson',
-          data: {
-            type: 'FeatureCollection',
-            features: [],
-          },
-        });
-      });
-
       mapDirections.on('route', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const directions = (map.getSource('directions') as any)
@@ -128,28 +143,15 @@ const ControlPanel: React.FC<{
           (f: GeoJSON.Feature) => f.properties?.route === 'selected'
         );
 
-        if (feature?.geometry.type === 'LineString') {
-          const [lng, lat] = feature.geometry.coordinates[0] || [];
-          const route = feature?.geometry.coordinates.map(
-            (el: number[]): Coordinates => {
-              return { lng: el[0], lat: el[1] };
-            }
-          );
+        if (feature?.geometry.type !== 'LineString') return;
+        const coordinates = feature.geometry.coordinates;
+        const route: Coordinates[] = coordinates.map(
+          ([lng, lat]: number[]) => ({ lng, lat })
+        );
 
-          handleCarInputsChange({
-            lng,
-            lat,
-            route,
-          });
-
-          // we can create car here
-          (map.getSource(CLICK_SOURCE_ID) as mapboxgl.GeoJSONSource).setData(
-            coordsToFeature({
-              lng,
-              lat,
-            })
-          );
-        }
+        handleCarInputsChange({
+          route,
+        });
       });
 
       mapDirections.on('reset', () => {
@@ -189,7 +191,7 @@ const ControlPanel: React.FC<{
           <SmallButton onClick={() => setIsOpen(false)} type="button">
             {'<'}
           </SmallButton>
-          <label htmlFor="speed">Speed (km/h)</label>
+          <Label htmlFor="speed">Speed (km/h)</Label>
           <Input
             id="speed"
             type="number"
@@ -215,30 +217,28 @@ const ControlPanel: React.FC<{
         <PrimaryButton onClick={onImport}>Import</PrimaryButton>
         <PrimaryButton onClick={onClearMap}>Clear Map</PrimaryButton>
       </Container>
+      <CancelButtonContainer
+        show={!!accidentInput}
+        onClick={() => mapDirections?.reset()}
+      >
+        <svg
+          className="svg-icon"
+          style={{
+            width: '1em',
+            height: '1em',
+            verticalAlign: 'middle',
+            fill: 'currentColor',
+            overflow: 'hidden',
+          }}
+          viewBox="0 0 1024 1024"
+          version="1.1"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path d="M896.211 415.947c0 17.51-14.508 32.018-32.018 32.018L640.07 447.965c-13.008 0-24.514-8.004-29.518-20.011-5.001-11.506-2.5-25.514 7.004-34.519l69.039-69.038C639.57 280.873 577.536 255.859 512 255.859c-141.078 0-256.141 115.063-256.141 256.141 0 141.077 115.063 256.141 256.141 256.141 79.544 0 153.084-36.02 202.111-99.555 2.5-3.502 7.004-5.503 11.506-6.003 4.502 0 9.004 1.501 12.506 4.502l68.539 69.038c6.002 5.503 6.002 15.008 1 21.512C734.621 845.684 626.563 896.211 512 896.211c-211.616 0-384.211-172.595-384.211-384.211S300.384 127.789 512 127.789c98.553 0 194.105 39.521 264.645 106.058l65.035-64.535c9.006-9.505 23.014-12.007 35.02-7.004 11.508 5.002 19.512 16.509 19.512 29.516L896.212 415.947z" />
+        </svg>
+      </CancelButtonContainer>
     </>
   );
 };
-
-function coordsToFeature({
-  lng,
-  lat,
-}: {
-  lng: number;
-  lat: number;
-}): GeoJSON.FeatureCollection {
-  return {
-    type: 'FeatureCollection',
-    features: [
-      {
-        type: 'Feature',
-        geometry: {
-          type: 'Point',
-          coordinates: [+lng, +lat],
-        },
-        properties: {},
-      },
-    ],
-  };
-}
 
 export default ControlPanel;

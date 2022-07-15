@@ -2,8 +2,9 @@ import styled from 'styled-components';
 
 import { Route } from 'react-router-dom';
 import { Simulation } from './simulation';
-import { Provider } from 'react-redux';
-import { store } from './store';
+import { useContext } from 'react';
+import { SocketContext, socketEvents } from '../context';
+import { useEffect } from 'react';
 
 const StyledApp = styled.div`
   margin: 0;
@@ -16,12 +17,10 @@ const StyledApp = styled.div`
 
 export function App() {
   return (
-    <Provider store={store}>
-      <StyledApp>
-        <Route path="/:id?" exact render={() => <Simulation />} />
-        {/* END: routes */}
-      </StyledApp>
-    </Provider>
+    <StyledApp>
+      <Route path="/" exact render={() => <Simulation />} />
+      {/* END: routes */}
+    </StyledApp>
   );
 }
 

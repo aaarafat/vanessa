@@ -9,23 +9,23 @@ import (
 
 type Router struct {
 	id int
+
+	conn *net.UnixConn
 }
 
 func NewRouter(id int) *Router {
 	return &Router{id: id}
 }
 
-
-func (r *Router) reader(conn net.Conn) {
-	for {
-		data := make([]byte, 1024)
-		n, err := conn.Read(data)
-		if err != nil {
-			log.Printf("Error reading from connection: %v", err)
-			continue
-		}
-		log.Printf("Received from router: %s", string(data[:n]))
+func (r *Router) Read() ([]byte, error) {
+	data := make([]byte, 1500)
+	n, err := r.conn.Read(data)
+	if err != nil {
+		log.Printf("Error reading from connection: %v", err)
+		return nil, err
 	}
+	log.Printf("Received from router data with size %d", n)
+	return data[:n], nil
 }
 
 func (r *Router) Start() {
@@ -33,23 +33,27 @@ func (r *Router) Start() {
 	err := os.RemoveAll(socketAddress)
 	if err != nil {
 		log.Printf("Error: %v", err)
-		os.Exit(1)
+		return
 	}
 
 	addr, err := net.ResolveUnixAddr("unixgram", socketAddress)
 	if err != nil {
 		log.Printf("Failed to resolve: %v\n", err)
-		os.Exit(1)
+		return
 	}
 
 	conn, err := net.ListenUnixgram("unixgram", addr)
 	if err != nil {
 		log.Printf("Failed to resolve: %v\n", err)
-		os.Exit(1)
+		return
 	}
-	defer conn.Close()
 
+	r.conn = conn
 	log.Printf("Listening to %s ..\n", socketAddress)
+}
 
-	r.reader(conn)
+func (r *Router) Close() {
+	if r.conn != nil {
+		r.conn.Close()
+	}
 }

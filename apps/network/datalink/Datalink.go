@@ -1,8 +1,10 @@
 package datalink
 
 import (
+	"errors"
 	"log"
 	"net"
+	"strings"
 
 	"github.com/mdlayher/ethernet"
 	"github.com/mdlayher/packet"
@@ -12,23 +14,26 @@ type DataLinkLayerChannel struct {
 	source    net.HardwareAddr
 	etherType Ethertype
 	channel   *packet.Conn
-	IfiIndex 	int
+	IfiIndex  int
+	Ifi       net.Interface
 }
 
 type Ethertype int
 
 const (
 	// VEtherType is the EtherType used by the Vanessa test.
-	VEtherType = 0x7031
-	VNDEtherType = 0x7032   // for neighbor discovery
-	VAODVEtherType = 0x7033 // for AODV protocol
-	VIEtherType = 0x7034   // for contacting infrastructure
-	VDATAEtherType = 0x7035   // for sending and receiving IP data packets
+	VEtherType        = 0x7031
+	VNDEtherType      = 0x7032 // for neighbor discovery
+	VAODVEtherType    = 0x7033 // for AODV protocol
+	VIEtherType       = 0x7034 // for contacting infrastructure
+	VDATAEtherType    = 0x7035 // for sending and receiving IP data packets
+	VRSUARPType       = 0x7036 // for cars to send heartbeats to infrastructure
+	VDATAFLDEtherType = 0x7036 // to send data packets to with flooder
 
 )
 
-func newDataLinkLayerChannel(ether Ethertype , ifi net.Interface, ifiIndex int) (*DataLinkLayerChannel, error) {
-
+func newDataLinkLayerChannel(ether Ethertype, ifi net.Interface, ifiIndex int) (*DataLinkLayerChannel, error) {
+	log.Printf("connecting to: %s\n", ifi.Name)
 	// Open a raw socket using same EtherType as our frame.
 	c, err := packet.Listen(&ifi, packet.Raw, int(ether), nil)
 	if err != nil {
@@ -40,7 +45,8 @@ func newDataLinkLayerChannel(ether Ethertype , ifi net.Interface, ifiIndex int) 
 		etherType: ether, // Set the channel type
 		channel:   c,
 		source:    ifi.HardwareAddr, // Identify the car as the sender.
-		IfiIndex: ifiIndex,
+		IfiIndex:  ifiIndex,
+		Ifi:       ifi,
 	}, nil
 
 }
@@ -51,7 +57,7 @@ func NewDataLinkLayerChannel(ether Ethertype) (*DataLinkLayerChannel, error) {
 		return nil, err
 	}
 	ifi := interfaces[1]
-	return newDataLinkLayerChannel(ether,ifi,1)
+	return newDataLinkLayerChannel(ether, ifi, 1)
 }
 
 func NewDataLinkLayerChannelWithInterface(ether Ethertype, index int) (*DataLinkLayerChannel, error) {
@@ -61,12 +67,21 @@ func NewDataLinkLayerChannelWithInterface(ether Ethertype, index int) (*DataLink
 		return nil, err
 	}
 	ifi := interfaces[index]
-	println("connecting to:",ifi.Name)
+	return newDataLinkLayerChannel(ether, ifi, index)
+}
+
+func NewDataLinkLayerChannelWithInterfaceName(ether Ethertype, ifiName string) (*DataLinkLayerChannel, error) {
+	interfaces, err := net.Interfaces()
 	if err != nil {
-		log.Printf("failed to open interface: %v", err)
+		log.Fatalf("failed to open interface: %v", err)
 		return nil, err
 	}
-	return newDataLinkLayerChannel(ether,ifi,index)
+	for i, ifi := range interfaces {
+		if strings.Contains(ifi.Name, ifiName) {
+			return newDataLinkLayerChannel(ether, ifi, i)
+		}
+	}
+	return nil, errors.New("interface not found")
 }
 
 func (d *DataLinkLayerChannel) SendTo(payload []byte, destination net.HardwareAddr) {

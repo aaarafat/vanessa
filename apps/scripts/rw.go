@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"strings"
 
 	. "github.com/aaarafat/vanessa/apps/network/datalink"
 )
@@ -48,7 +49,7 @@ func main() {
 			}
 
 			log.Println(mac.String())
-			drsu.SendTo([]byte("a7a"), mac)
+			drsu.SendTo([]byte("Test from car"), mac)
 		case 3:
 			mac, err := net.ParseMAC(message)
 			if err != nil {
@@ -57,6 +58,15 @@ func main() {
 
 			log.Println(mac.String())
 			d.SendTo([]byte("unicast"), mac)
+		case 4:
+			interfaces, _ := net.Interfaces()
+			addresses, _ := interfaces[2].Addrs()
+	
+			address := addresses[0]
+			s :=strings.Split(address.String(), "/")[0]
+			log.Println(s)
+			drsu.Broadcast([]byte(s))
 		}
+		
 	}
 }

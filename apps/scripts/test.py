@@ -6,6 +6,7 @@ import sys
 
 from mininet.node import Controller
 from mn_wifi.node import UserAP
+from mininet.node import UserSwitch
 from mininet.log import setLogLevel, info
 from mn_wifi.link import wmediumd, adhoc
 from mn_wifi.cli import CLI
@@ -29,7 +30,7 @@ PORT = 65432
 
 "Create a network."
 net = Mininet_wifi(link=wmediumd, wmediumd_mode=interference,
-                   autoAssociation=True, controller=Controller, accessPoint=UserAP)
+                   autoAssociation=True, controller=Controller, accessPoint=UserAP, switch=UserSwitch)
 stations = {}
 kwargs = dict()
 
@@ -37,11 +38,11 @@ kwargs = dict()
 info("*** Creating nodes\n")
 
 #kwargs['range'] = 100
-stations["car1"] = net.addStation('car1', position="50, 100, 0", wlans=1, bgscan_threshold=-60,
+stations["car1"] = net.addStation('car1', position="50, 150, 0", wlans=2, bgscan_threshold=-60,
                                   s_inverval=5, l_interval=10)
-stations["car2"] = net.addStation('car2', position="100, 100, 0", wlans=2, bgscan_threshold=-60,
+stations["car2"] = net.addStation('car2', position="250, 150, 0", wlans=2, bgscan_threshold=-60,
                                   s_inverval=5, l_interval=10)
-stations["car3"] = net.addStation('car3', position="140, 100, 0", wlans=1, bgscan_threshold=-60,
+stations["car3"] = net.addStation('car3', position="450, 150, 0", wlans=2, bgscan_threshold=-60,
                                   s_inverval=5, l_interval=10)
 
 
@@ -50,15 +51,15 @@ def topology(args):
 
     net.setPropagationModel(model="logDistance", exp=4)
     ap1 = net.addAccessPoint('rsu1', ssid='VANESSA', mode='g', channel='1',
-                             failMode="standalone", position='50,50,0', range=100,
+                             failMode="standalone", position='50,200,0', range=100,
                              ip=f'10.1.0.1/16', cls=UserAP, inNamespace=True)
 
     ap2 = net.addAccessPoint('rsu2', ssid='VANESSA', mode='g', channel='1',
-                             failMode="standalone", position='0,50,0', range=100,
+                             failMode="standalone", position='250,200,0', range=100,
                              ip=f'10.1.0.2/16', cls=UserAP, inNamespace=True)
 
     ap3 = net.addAccessPoint('rsu3', ssid='VANESSA', mode='g', channel='1',
-                             failMode="standalone", position='75,100,0', range=100,
+                             failMode="standalone", position='450,200,0', range=100,
                              ip=f'10.1.0.3/16', cls=UserAP, inNamespace=True)
     c1 = net.addController('c1')
     info("*** Configuring wifi nodes\n")
@@ -78,14 +79,20 @@ def topology(args):
     net.addLink(stations["car1"], cls=adhoc, intf='car1-wlan0',
                 ssid='adhocNet', mode='g', channel=5,
                 ht_cap='HT40+',  **kwargs)
+    stations["car1"].setIP('10.0.1.1/24',
+                  intf='car1-wlan1')
     net.addLink(stations["car2"], cls=adhoc, intf='car2-wlan0',
                 ssid='adhocNet', mode='g', channel=5,
                 ht_cap='HT40+',  **kwargs)
+    stations["car2"].setIP('10.0.1.2/24',
+                  intf='car2-wlan1')
     net.addLink(stations["car3"], cls=adhoc, intf='car3-wlan0',
                 ssid='adhocNet', mode='g', channel=5,
                 ht_cap='HT40+', **kwargs)
+    stations["car3"].setIP('10.0.1.3/24',
+                  intf='car3-wlan1')
 
-    s0 = net.addSwitch("s0")
+    s0 = net.addSwitch("s0",cls=UserSwitch, inNamespace=True)
 
     net.addLink(s0, ap1)
     net.addLink(s0, ap2)

@@ -7,42 +7,31 @@ import (
 	"strings"
 )
 
-
-func CreateChannel(eth Ethertype, ifiIndex int) (*DataLinkLayerChannel, error) {
-	interfaces, err := net.Interfaces()
-	if err != nil {
-		log.Fatalf("failed to open interface: %v", err)
-		return nil, err
-	}
-	ifi := interfaces[ifiIndex]
-	return newDataLinkLayerChannel(eth,ifi,ifiIndex)
-}
-
-
-func getRSU(intfName string) (string, string){
+func getRSU(intfName string) (string, string) {
 
 	out, err := exec.Command("iw", "dev", intfName, "link").Output()
 	if err != nil {
-		log.Panic(err)
+		log.Println(err)
+		return "", ""
 	}
 	cmdOut := string(out)
 	// println(cmdOut)
-	rsuMAC := "" 
+	rsuMAC := ""
 	SSID := ""
 	if strings.Contains(cmdOut, "Not connected") {
 		println(intfName, "is not associated")
 	} else {
 		println(intfName, "is associated")
-		arr := strings.Fields(cmdOut) 
-		rsuMAC = arr[2] 
-		for ind, v := range arr {    
-			if strings.Contains(v, "ssid_"){
+		arr := strings.Fields(cmdOut)
+		rsuMAC = arr[2]
+		for ind, v := range arr {
+			if strings.Contains(v, "ssid_") {
 				println(ind, v)
 				SSID = v
 				println("mac:", rsuMAC)
 				break
 			}
-  		}
+		}
 	}
 	return rsuMAC, SSID
 }

@@ -18,8 +18,8 @@ type Logger struct {
 var logger Logger
 
 type Position struct {
-	Lat float64
-	Lng float64
+	Lat float64 `json:"lat"`
+	Lng float64 `json:"lng"`
 }
 
 type DestinationReachedData struct {

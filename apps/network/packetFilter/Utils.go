@@ -9,7 +9,6 @@ import (
 	"strings"
 )
 
-
 func AddDefaultGateway() error {
 	cmd := exec.Command("route", "add", "default", "gw", "localhost")
 	std, err := cmd.CombinedOutput()
@@ -23,11 +22,11 @@ func DeleteDefaultGateway() {
 	cmd := exec.Command("route", "del", "default", "gw", "localhost")
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Panic("couldn't remove default gateway, err: ", err, ",stderr: ", string(stdoutStderr))
+		log.Println("couldn't remove default gateway, err: ", err, ",stderr: ", string(stdoutStderr))
 	}
 	log.Println("remove default gateway")
 }
-func ChainNFQUEUE() error{
+func ChainNFQUEUE() error {
 	cmd := exec.Command("iptables", "-t", "filter", "-A", "OUTPUT", "-j", "NFQUEUE", "-w", "--queue-num", "0")
 	std, err := cmd.CombinedOutput()
 	if err != nil {
@@ -41,7 +40,7 @@ func DeleteIPTablesRule() {
 	cmd := exec.Command("iptables", "-t", "filter", "-D", "OUTPUT", "-j", "NFQUEUE", "-w")
 	stdoutStderr, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Panic("couldn't remove iptables rule, err: ", err, ",stderr: ", string(stdoutStderr))
+		log.Println("couldn't remove iptables rule, err: ", err, ",stderr: ", string(stdoutStderr))
 	}
 	log.Println("remove NFQUEUE rule to OUTPUT chain in iptables")
 }
@@ -53,13 +52,13 @@ func MyIP(ifi *net.Interface) (net.IP, bool, error) {
 		return nil, false, err
 	}
 	address := addresses[0]
-	s :=strings.Split(address.String(), "/")[0]
+	s := strings.Split(address.String(), "/")[0]
 	ip := net.ParseIP(s)
-	if ip.To4()!= nil {
-		return ip,false,nil
-	} else if ip.To16()!=nil {
-		return ip,true,nil
-	}else {
+	if ip.To4() != nil {
+		return ip, false, nil
+	} else if ip.To16() != nil {
+		return ip, true, nil
+	} else {
 		return nil, false, fmt.Errorf("IP can't be resolved")
 	}
 }
