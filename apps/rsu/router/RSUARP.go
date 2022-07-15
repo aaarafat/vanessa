@@ -19,7 +19,7 @@ const (
 	UPDATED_ENTRY ARPEntryState = 2
 )
 
-const lifeTimeMS = 10000
+const lifeTimeMS = 1500
 
 type RSUARP struct {
 	table map[string]RARPEntry
