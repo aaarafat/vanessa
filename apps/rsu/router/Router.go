@@ -119,7 +119,7 @@ func (r *Router) SendToALLWLANInterface(data []byte, originatorIP string) int {
 		log.Printf("Sending to: %s  mac: %s", eip, entry.MAC)
 		packet := ip.NewIPPacket(data, r.ip, net.ParseIP(eip))
 		bytes := ip.MarshalIPPacket(packet)
-		ip.UpdateChecksum(bytes)
+		ip.UpdateChecksum(bytes, packet.Header.LengthInBytes())
 		r.wlanChannel.SendTo(bytes, entry.MAC)
 		sentPackets++
 	}
@@ -128,7 +128,7 @@ func (r *Router) SendToALLWLANInterface(data []byte, originatorIP string) int {
 
 func (r *Router) BroadcastETH(packet *IPPacket) {
 	bytes := ip.MarshalIPPacket(packet)
-	ip.Update(bytes)
+	ip.Update(bytes, packet.Header.LengthInBytes())
 	r.ethChannel.Broadcast(bytes)
 }
 

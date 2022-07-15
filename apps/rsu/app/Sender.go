@@ -9,6 +9,7 @@ import (
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 	"github.com/aaarafat/vanessa/libs/crypto"
+	. "github.com/aaarafat/vanessa/libs/vector"
 )
 
 func (a *App) sendToALLWLANInterface(data []byte, ip string) {
@@ -18,7 +19,7 @@ func (a *App) sendToALLWLANInterface(data []byte, ip string) {
 
 func (a *App) sendPacketToWLAN(packet *ip.IPPacket, to net.IP) {
 	bytes := ip.MarshalIPPacket(packet)
-	ip.UpdateChecksum(bytes)
+	ip.UpdateChecksum(bytes, packet.Header.LengthInBytes())
 	a.router.SendToWLANInterface(bytes, to.String())
 	a.state.SentPacket(1, 1)
 }

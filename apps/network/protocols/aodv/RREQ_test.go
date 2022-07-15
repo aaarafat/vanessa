@@ -4,6 +4,7 @@ import (
 	"net"
 	"testing"
 
+	. "github.com/aaarafat/vanessa/apps/network/protocols"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -49,11 +50,10 @@ func TestRREQInvalid(t *testing.T) {
 	assert.True(t, rreq.Invalid(seqTable, srcIP))
 }
 
-
 func TestRREQFlag(t *testing.T) {
 	t.Log("Testing RREQ flag")
 	rreq := createRREQ()
-	
+
 	rreq.SetFlag(RREQFlagJ)
 	assert.True(t, rreq.HasFlag(RREQFlagJ))
 
@@ -62,7 +62,7 @@ func TestRREQFlag(t *testing.T) {
 
 	rreq.SetFlag(RREQFlagG)
 	assert.True(t, rreq.HasFlag(RREQFlagG))
-	
+
 	rreq.SetFlag(RREQFlagD)
 	assert.True(t, rreq.HasFlag(RREQFlagD))
 

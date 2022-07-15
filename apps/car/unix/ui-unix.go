@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	. "github.com/aaarafat/vanessa/apps/network/network/messages"
+	. "github.com/aaarafat/vanessa/libs/vector"
 	"gopkg.in/antage/eventsource.v1"
 )
 
@@ -19,13 +19,24 @@ type Coordinate struct {
 }
 
 type State struct {
-	Id               int        `json:"id"`
-	Speed            int        `json:"speed"`
-	Route            []Position `json:"route"`
-	Lat              float64    `json:"lat"`
-	Lng              float64    `json:"lng"`
-	ObstacleDetected bool       `json:"obstacleDetected"`
-	Obstacles        []Position `json:"obstacles"`
+	Id                 int        `json:"id"`
+	Speed              uint32     `json:"speed"`
+	Route              []Position `json:"route"`
+	Lat                float64    `json:"lat"`
+	Lng                float64    `json:"lng"`
+	ObstacleDetected   bool       `json:"obstacleDetected"`
+	Obstacles          []Position `json:"obstacles"`
+	MaxSpeed           uint32     `json:"maxSpeed"`
+	Direction          Vector     `json:"direction"`
+	DestinationReached bool       `json:"destinationReached"`
+}
+
+func (s *State) GetPosition() Position {
+	return Position{Lng: s.Lng, Lat: s.Lat}
+}
+
+func (s *State) String() string {
+	return fmt.Sprintf("State{Id: %d, Speed: %d, Route: %v, Lat: %f, Lng: %f, ObstacleDetected: %t, Obstacles: %v, MaxSpeed: %d, Direction: %v}", s.Id, s.Speed, s.Route, s.Lat, s.Lng, s.ObstacleDetected, s.Obstacles, s.MaxSpeed, s.Direction)
 }
 
 type UiUnix struct {

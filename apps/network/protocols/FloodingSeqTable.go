@@ -1,4 +1,4 @@
-package aodv
+package protocols
 
 import (
 	"fmt"
@@ -14,11 +14,11 @@ type VFloodingSeqTable struct {
 
 type VSeqEntry struct {
 	seqNum uint32
-	age *time.Timer
+	age    *time.Timer
 }
 
 const (
-	DefaultSeqEntryAge = 5 // seconds
+	DefaultSeqEntryAge = 2 // 2 seconds
 )
 
 func NewVFloodingSeqTable() *VFloodingSeqTable {
@@ -37,14 +37,13 @@ func (f *VFloodingSeqTable) key(destination net.IP, seq uint32) string {
 }
 
 func (f *VFloodingSeqTable) get(destination net.IP, seq uint32) (*VSeqEntry, bool) {
-	item, exists := f.table.Get(f.key(destination, seq)) 
+	item, exists := f.table.Get(f.key(destination, seq))
 	if exists {
 		entry := item.(VSeqEntry)
 		return &entry, true
 	}
 	return nil, false
 }
-
 
 func (f *VFloodingSeqTable) Set(destination net.IP, seq uint32) {
 	item, exists := f.get(destination, seq)
@@ -56,10 +55,10 @@ func (f *VFloodingSeqTable) Set(destination net.IP, seq uint32) {
 	callback := func() {
 		f.table.Del(f.key(destination, seq))
 	}
-	timer := time.AfterFunc(time.Second * DefaultSeqEntryAge, callback)
+	timer := time.AfterFunc(time.Second*DefaultSeqEntryAge, callback)
 	entry := VSeqEntry{
 		seqNum: seq,
-		age: timer,
+		age:    timer,
 	}
 	f.table.Set(f.key(destination, seq), entry)
 }

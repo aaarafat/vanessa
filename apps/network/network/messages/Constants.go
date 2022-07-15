@@ -1,54 +1,10 @@
 package messages
 
 import (
-	"encoding/binary"
-	"math"
 	"net"
+
+	. "github.com/aaarafat/vanessa/libs/vector"
 )
-
-type Position struct {
-	Lat float64 `json:"lat"`
-	Lng float64 `json:"lng"`
-}
-
-func Float64FromBytes(bytes []byte) float64 {
-	bits := binary.LittleEndian.Uint64(bytes)
-	float := math.Float64frombits(bits)
-	return float
-}
-
-func Float64bytes(float float64) []byte {
-	bits := math.Float64bits(float)
-	bytes := make([]byte, 8)
-	binary.LittleEndian.PutUint64(bytes, bits)
-	return bytes
-}
-
-// Postion to byte array marashalling
-func (p Position) Marshal() []byte {
-	return append(Float64bytes(p.Lat), Float64bytes(p.Lng)...)
-}
-
-// Position from byte array unmarshalling
-func UnmarshalPosition(data []byte) Position {
-	return Position{
-		Lat: Float64FromBytes(data[:8]),
-		Lng: Float64FromBytes(data[8:]),
-	}
-}
-
-// Unmarshal the payload into a list of positions
-func UnmarshalPositions(payload []byte, len int) []Position {
-	var list []Position
-	for i := 0; i < len; i++ {
-		pos := Position{
-			Lat: Float64FromBytes(payload[i*16 : i*16+8]),
-			Lng: Float64FromBytes(payload[i*16+8 : i*16+16]),
-		}
-		list = append(list, pos)
-	}
-	return list
-}
 
 // Heart beat message from car to the associated RSU
 type VHBeatMessage struct {
@@ -106,8 +62,17 @@ type VZoneMessage struct {
 	OriginatorIP net.IP
 	// Position of the obstacle
 	Position Position
-	// Max Distance from the originator
-	MaxDistance float64
+	// Speed of the vehicle
+	Speed uint32
+}
+
+type VSpeedMessage struct {
+	// Type
+	Type uint8
+	// The IP address of the node that originated the speed alert.
+	OriginatorIP net.IP
+	// Speed of the vehicle
+	Speed uint32
 }
 
 const (
@@ -116,7 +81,8 @@ const (
 	VOREQMessageLen          = 6
 	VOREPMessageLen          = 2
 	VPathDiscoveryMessageLen = 5
-	VZoneMessageLen          = 29
+	VZoneMessageLen          = 25
+	VSpeedMessageLen         = 9
 )
 
 const (
@@ -126,4 +92,5 @@ const (
 	VOREPType          uint8 = 4
 	VPathDiscoveryType uint8 = 5
 	VZoneType          uint8 = 6
+	VSpeedType         uint8 = 7
 )

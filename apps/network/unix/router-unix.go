@@ -8,16 +8,11 @@ import (
 )
 
 type RouterSocket struct {
-	id   int
-	conn net.Conn
+	id int
 }
 
 func NewRouterSocket(id int) *RouterSocket {
-	conn, err := initSocket(id)
-	if err != nil {
-		return nil
-	}
-	return &RouterSocket{id: id, conn: conn}
+	return &RouterSocket{id: id}
 }
 
 func initSocket(id int) (net.Conn, error) {
@@ -34,19 +29,14 @@ func initSocket(id int) (net.Conn, error) {
 }
 
 func (a *RouterSocket) Write(data []byte) {
-	if a.conn == nil {
+	conn, err := initSocket(a.id)
+	if err != nil {
 		return
 	}
-	n, err := a.conn.Write(data)
+	n, err := conn.Write(data)
 	if err != nil {
 		log.Printf("Error: %v\n", err)
 		return
 	}
 	log.Printf("Sent %d bytes to the Car Router\n", n)
-}
-
-func (a *RouterSocket) Close() {
-	if a.conn != nil {
-		a.conn.Close()
-	}
 }

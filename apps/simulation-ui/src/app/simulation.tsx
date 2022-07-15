@@ -154,6 +154,7 @@ export const Simulation: React.FC = () => {
     });
 
     car.on('move', () => socketEvents.sendCarLocation(car));
+    car.on('change-speed', () => socketEvents.addCar(car));
     car.on('obstacle-detected', (obstacle: Coordinates) =>
       socketEvents.obstacleDetected(car, obstacle)
     );

@@ -5,10 +5,10 @@ import (
 	"net"
 
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
-	"github.com/aaarafat/vanessa/apps/network/network/messages"
 	. "github.com/aaarafat/vanessa/apps/rsu/router"
 	. "github.com/aaarafat/vanessa/apps/rsu/state"
 	"github.com/aaarafat/vanessa/apps/rsu/unix"
+	. "github.com/aaarafat/vanessa/libs/vector"
 )
 
 type App struct {
@@ -46,7 +46,7 @@ func (a *App) GetUiState() *unix.UiState {
 		return &unix.UiState{
 			Id:               a.id,
 			ARP:              []unix.UiARPEntry{},
-			Obstacles:        []messages.Position{},
+			Obstacles:        []Position{},
 			ReceivedFromRsus: 0,
 			SentToRsus:       0,
 			ReceivedFromCars: 0,

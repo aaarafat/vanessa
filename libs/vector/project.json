@@ -1,0 +1,14 @@
+{
+  "root": "libs/vector",
+  "projectType": "library",
+  "sourceRoot": "libs/vector",
+  "targets": {
+    "test": {
+      "executor": "@nx-go/nx-go:test"
+    },
+    "lint": {
+      "executor": "@nx-go/nx-go:lint"
+    }
+  },
+  "tags": []
+}

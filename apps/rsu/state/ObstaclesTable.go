@@ -3,7 +3,7 @@ package state
 import (
 	"log"
 
-	. "github.com/aaarafat/vanessa/apps/network/network/messages"
+	. "github.com/aaarafat/vanessa/libs/vector"
 )
 
 type ObstaclesTable struct {

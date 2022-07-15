@@ -10,6 +10,7 @@ type IFlooder interface {
 	ForwardTo(payload []byte, addr net.HardwareAddr)
 	ForwardToAll(payload []byte)
 	ForwardToAllExcept(payload []byte, addr net.HardwareAddr)
+	ForwardToAllExceptIP(payload []byte, ip net.IP)
 }
 
 type Flooder struct {

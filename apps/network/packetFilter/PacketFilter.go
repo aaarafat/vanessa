@@ -8,7 +8,6 @@ import (
 
 	"github.com/AkihiroSuda/go-netfilter-queue"
 	. "github.com/aaarafat/vanessa/apps/network/network"
-	"github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/apps/network/network/ip"
 	"github.com/aaarafat/vanessa/apps/network/unix"
 )
@@ -112,21 +111,22 @@ func (pf *PacketFilter) StealPacket() {
 					return
 				}
 
+				log.Printf("Received packet size %d from %s\n", len(packetBytes), packet.Header.SrcIP)
+
 				if pf.srcIP.Equal(packet.Header.DestIP) {
 					pf.dataCallback(packetBytes, packet.Header.SrcIP)
 
 					// TODO : grpc call to the router to process the packet
-				} else if packet.Header.DestIP.Equal(net.ParseIP(ip.BroadcastIP)) {
+				} else if packet.Header.DestIP.Equal(net.ParseIP(BroadcastIP)) {
 					if !pf.srcIP.Equal(packet.Header.SrcIP) {
 						pf.dataCallback(packetBytes, packet.Header.SrcIP)
+						return // don't forward the packet to the router
 					}
-
-					Update(packetBytes)
 
 					log.Printf("Sending packet size %d to %s\n", len(packetBytes), packet.Header.DestIP)
 					pf.networkLayer.SendBroadcast(packetBytes, packet.Header.SrcIP)
 				} else {
-					Update(packetBytes)
+					Update(packetBytes, packet.Header.LengthInBytes())
 
 					log.Printf("Sending packet size %d to %s\n", len(packetBytes), packet.Header.DestIP)
 					pf.networkLayer.SendUnicast(packetBytes, packet.Header.DestIP)
@@ -138,7 +138,7 @@ func (pf *PacketFilter) StealPacket() {
 
 func (pf *PacketFilter) Start() {
 	log.Printf("Starting PacketFilter for IP: %s.....\n", pf.srcIP)
-	go pf.networkLayer.Start()
+	pf.networkLayer.Start()
 
 	pf.StealPacket()
 }
@@ -149,7 +149,6 @@ func (pf *PacketFilter) Close() {
 	DeleteDefaultGateway()
 
 	pf.nfq.Close()
-	pf.routerSocket.Close()
 	pf.networkLayer.Close()
 
 	log.Printf("PacketFilter for IP: %s closed\n", pf.srcIP)

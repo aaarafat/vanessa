@@ -4,9 +4,9 @@ import (
 	"log"
 	"net"
 
-	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 	. "github.com/aaarafat/vanessa/apps/rsu/router"
 	"github.com/aaarafat/vanessa/apps/rsu/unix"
+	. "github.com/aaarafat/vanessa/libs/vector"
 )
 
 type State struct {

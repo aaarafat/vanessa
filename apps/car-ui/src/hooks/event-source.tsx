@@ -25,6 +25,10 @@ interface ObstaclesReceivedData {
   obstacle_coordinates: Coordinates[];
 }
 
+interface ChangeSpeedData {
+  speed: number;
+}
+
 export const useEventSource = () => {
   const [eventSource, setEventSource] = useState<EventSource | null>(null);
   const { car } = useAppSelector((state) => state.car);
@@ -64,6 +68,12 @@ export const useEventSource = () => {
       );
       dispatch(addObstacles(obstacles));
       dispatch(addMessage('Obstacles received'));
+    });
+
+    eventSource.addEventListener('change-speed', ({ data: message }) => {
+      const json: ChangeSpeedData = JSON.parse(message).data;
+      car?.setSpeed(json.speed);
+      dispatch(addMessage(`Speed changed to ${json.speed}`));
     });
 
     return () => eventSource.close();

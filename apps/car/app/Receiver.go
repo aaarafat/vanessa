@@ -50,14 +50,10 @@ func (a *App) handleMessage(bytes []byte) {
 			return
 		}
 		log.Printf("VZone message received: %s", msg.String())
-		// Calculate distance between my position and the zone
-		dist := distancePosition(msg.Position, a.GetPosition())
-		// If the distance is less than the max distance, then I am in the zone
-		// and forward it again to router
-		log.Printf("Distance: %f", dist)
-		if dist <= msg.MaxDistance {
-			log.Printf("Car with ip: %s  in my zone", msg.OriginatorIP)
-			a.ipConn.Forward(bytes)
+		state := a.GetState()
+		entry := a.zoneTable.Set(msg.OriginatorIP, msg.Speed, msg.Position, state.GetPosition(), state.Direction)
+		if a.zoneTable.IsFront(entry) && entry.Speed < a.GetState().Speed {
+			a.updateSpeed(entry.Speed)
 		}
 
 	case VPathDiscoveryType:
@@ -71,6 +67,15 @@ func (a *App) handleMessage(bytes []byte) {
 			data := NewVOREQMessage(a.ip, a.GetState().Obstacles).Marshal()
 			a.sendToRouter(data, net.ParseIP(ip.RsuIP))
 		}
+
+	case VSpeedType:
+		msg, err := UnmarshalVSpeed(data)
+		if err != nil {
+			log.Printf("Error decoding VSpeed message: %v", err)
+			return
+		}
+		log.Printf("VSpeed message received: %s", msg.String())
+		a.updateSpeed(msg.Speed)
 
 	default:
 		log.Printf("Unknown message type: %d", mType)

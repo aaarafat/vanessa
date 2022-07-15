@@ -76,11 +76,7 @@ export class Car {
     this.speed = this.carSpeed;
     this.obstacleDetected = false;
     this.route = car.route || [];
-    this.routeIndex =
-      this.lat === this.route[this.route.length - 1].lat &&
-      this.lng === this.route[this.route.length - 1].lng
-        ? this.route.length
-        : 0;
+    this.routeIndex = car.destinationReached ? this.route.length : 0;
     this.originalDirections = turf.lineString(
       this.route.map((r: Coordinates) => [r.lng, r.lat])
     );
@@ -108,7 +104,7 @@ export class Car {
     } else {
       this.focused = true;
       this.obstacleDetected = car.obstacleDetected || false;
-      if (this.obstacleDetected) this.speed = 0;
+      if (this.obstacleDetected || car.destinationReached) this.speed = 0;
       this.map.panTo([this.lng, this.lat]);
     }
   }
@@ -459,6 +455,10 @@ export class Car {
     this.map.on('click', this.sourceId, this.onClick);
   };
 
+  public setSpeed = (speed: number) => {
+    this.speed = speed;
+  };
+
   private onClick = () => {
     if (this.popup) {
       this.popup.remove();
@@ -514,6 +514,7 @@ export class Car {
       el.onclick = () => {
         this.stopped = true;
         this.speed = 0;
+        this.emit('change-speed', this);
         this.updatePopupProps();
       };
   }
@@ -527,6 +528,7 @@ export class Car {
       el.onclick = () => {
         this.stopped = false;
         this.speed = this.carSpeed;
+        this.emit('change-speed', this);
         this.updatePopupProps();
       };
   }
@@ -606,6 +608,7 @@ export class Car {
       | 'focus'
       | 'move'
       | 'popup:close'
+      | 'change-speed'
       | 'obstacle-detected'
       | 'destination-reached',
     handler: any
@@ -621,6 +624,7 @@ export class Car {
       | 'focus'
       | 'move'
       | 'popup:close'
+      | 'change-speed'
       | 'obstacle-detected'
       | 'destination-reached',
     handler: (...args: any) => void
@@ -636,6 +640,7 @@ export class Car {
       | 'focus'
       | 'move'
       | 'popup:close'
+      | 'change-speed'
       | 'obstacle-detected'
       | 'destination-reached',
     ...args: any[]

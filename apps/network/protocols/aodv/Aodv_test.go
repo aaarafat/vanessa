@@ -14,15 +14,12 @@ type MockFlooder struct {
 	mock.Mock
 }
 
-func (f *MockFlooder) ForwardTo(payload []byte, addr net.HardwareAddr) {
-
-}
+func (f *MockFlooder) ForwardTo(payload []byte, addr net.HardwareAddr) {}
 func (f *MockFlooder) ForwardToAll(payload []byte) {
 	f.Called()
 }
-func (f *MockFlooder) ForwardToAllExcept(payload []byte, addr net.HardwareAddr) {
-
-}
+func (f *MockFlooder) ForwardToAllExcept(payload []byte, addr net.HardwareAddr) {}
+func (f *MockFlooder) ForwardToAllExceptIP(payload []byte, ip net.IP)           {}
 
 func createAodv() *Aodv {
 	return &Aodv{
