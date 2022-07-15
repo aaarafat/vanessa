@@ -3,8 +3,11 @@ package app
 import (
 	"encoding/json"
 	"log"
+	"net"
+	"reflect"
 
 	"github.com/aaarafat/vanessa/apps/car/unix"
+	"github.com/aaarafat/vanessa/libs/vector"
 )
 
 func (a *App) startSocketHandlers() {
@@ -97,6 +100,38 @@ func (a *App) updateLocationHandler() {
 				}
 
 				go a.updatePosition(updateLocation.Coordinates)
+			}
+		}
+	}()
+}
+
+func (a *App) CheckRouteResponseHandler() {
+	checkRouteResponseChannel := make(chan json.RawMessage)
+	checkRouteResponseSubscriber := &unix.Subscriber{Messages: &checkRouteResponseChannel}
+	a.sensor.Subscribe(unix.CheckRouteResponseEvent, checkRouteResponseSubscriber)
+
+	go func() {
+		for {
+			select {
+			case data := <-*checkRouteResponseSubscriber.Messages:
+				var checkRouteResponse unix.CheckRouteResponseData
+				err := json.Unmarshal(data, &checkRouteResponse)
+				if err != nil {
+					log.Printf("Error decoding check-route-response data: %v", err)
+					return
+				}
+
+				go func() {
+					for item := range a.checkRouteBuffer.Iter() {
+						pos := item.Value.(vector.Position)
+						ip := item.Key.(string)
+						if reflect.DeepEqual(pos, checkRouteResponse.Coordinates) {
+							a.checkRouteBuffer.Del(item.Key)
+							a.zoneTable.Ignore(net.ParseIP(ip))
+							return
+						}
+					}
+				}()
 			}
 		}
 	}()
