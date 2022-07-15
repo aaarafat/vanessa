@@ -17,6 +17,7 @@ const (
 	UpdateLocationEvent     Event = "update-location"      // from simulator to car when location is changed
 	CheckRouteEvent         Event = "check-route"          // from car to simulator when route is checked
 	CheckRouteResponseEvent Event = "check-route-response" // from simulator to car when route is checked
+	StateEvent              Event = "state"                // from car to ui
 )
 
 type CheckRouteResponseData struct {

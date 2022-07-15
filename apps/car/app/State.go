@@ -41,7 +41,7 @@ func (a *App) initState(speed uint32, route []Position, pos Position) {
 	log.Printf("Car state initialized  state:  %s\n", a.state.String())
 
 	go func() {
-		a.ui.Write(unix.SpeedData{Speed: int(speed)}, string(unix.ChangeSpeedEvent))
+		a.ui.Write(*a.GetState(), string(unix.StateEvent))
 	}()
 }
 
