@@ -330,7 +330,7 @@ def recieve_from_car(car_socket, id):
         conn, _ = server.accept()
         print(f"Listening on {car_socket}")
         while running and id in stations_car:
-            data = conn.recv(1024)
+            data = conn.recv(1500)
             if not data:
                 continue
             data_json = json.loads(data)
@@ -353,8 +353,7 @@ def send_to_car(car_socket, payload):
             return
         print(f'retrying to send car {car_socket}')
         time.sleep(0.5)
-        send_to_car(car_socket, payload)
-        pass
+        return send_to_car(car_socket, payload)
 
 
 def run_socket():

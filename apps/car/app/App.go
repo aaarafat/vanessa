@@ -69,7 +69,7 @@ func NewApp(id int, key []byte) *App {
 func (a *App) printZone() {
 	for {
 		a.zoneTable.Print()
-		time.Sleep(time.Second * 5)
+		time.Sleep(time.Second * 2)
 	}
 }
 
@@ -79,11 +79,11 @@ func (a *App) checkZone() {
 		front := a.zoneTable.GetInFrontOfMe()
 		mnSpeed := a.GetState().MaxSpeed
 		for _, entry := range front {
-			if entry.Speed > mnSpeed {
+			if entry.Speed < mnSpeed {
 				mnSpeed = entry.Speed
 			}
 		}
-		a.updateSpeed(mnSpeed)
+		go a.updateSpeed(mnSpeed)
 
 		// check back
 		back := a.zoneTable.GetBehindMe()
@@ -106,6 +106,7 @@ func (a *App) Run() {
 	go a.sendZoneMsg()
 	go a.ui.Start()
 	go a.printZone()
+	go a.checkZone()
 
 	log.Printf("App %d started", a.id)
 }

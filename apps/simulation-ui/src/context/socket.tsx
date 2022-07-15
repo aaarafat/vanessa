@@ -37,8 +37,11 @@ export const SocketProvider: React.FC<React.ReactNode> = ({ children }) => {
     });
 
     socket.on('change-speed', (message: ChangeSpeedEvent) => {
+      console.log('change-speed', message);
+
       const car = cars.find((c) => c.id === message.id);
       car?.setSpeed(message.data.speed);
+      // socket.emit('change-speed', message);
     });
 
     return () => {

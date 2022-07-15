@@ -5,6 +5,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/aaarafat/vanessa/apps/car/unix"
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/apps/network/network/messages"
 	"github.com/aaarafat/vanessa/libs/crypto"
@@ -61,4 +62,10 @@ func (a *App) sendToRouterWithOptions(data []byte, destIP net.IP, options []byte
 	packetBytes := ip.MarshalIPPacket(packet)
 
 	a.ipConn.Forward(packetBytes)
+}
+
+func (a *App) sendSpeed(speed uint32) {
+	if a.GetState().Speed != speed {
+		a.sensor.Write(unix.SpeedData{Speed: int(speed)}, unix.ChangeSpeedEvent)
+	}
 }

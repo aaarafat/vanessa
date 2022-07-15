@@ -26,7 +26,7 @@ type ZoneTableEntry struct {
 
 const (
 	ZoneTable_UPDATE_INTERVAL_MS = ZONE_MSG_INTERVAL_MS * 3
-	MAX_ANGLE_DEG                = 30
+	MAX_ANGLE_DEG                = 10
 )
 
 func NewZoneTable() *ZoneTable {
@@ -50,7 +50,7 @@ func NewZoneTableEntry(ip net.IP, speed uint32, pos, myPos Position, myDir Vecto
 	return entry
 }
 
-func (zt *ZoneTable) Set(ip net.IP, speed uint32, pos, myPos Position, myDir Vector) {
+func (zt *ZoneTable) Set(ip net.IP, speed uint32, pos, myPos Position, myDir Vector) *ZoneTableEntry {
 	entry, exists := zt.Get(ip)
 	if exists {
 		log.Printf("ZoneTable: entry already exists for %s\n", ip.String())
@@ -65,6 +65,7 @@ func (zt *ZoneTable) Set(ip net.IP, speed uint32, pos, myPos Position, myDir Vec
 
 		zt.table.Set(ip.String(), *entry)
 		log.Printf("ZoneTable: updated entry for %s\n", ip.String())
+		return entry
 	} else {
 		log.Printf("ZoneTable: adding entry for %s\n", ip.String())
 		entry := NewZoneTableEntry(ip, speed, pos, myPos, myDir)
@@ -76,6 +77,7 @@ func (zt *ZoneTable) Set(ip net.IP, speed uint32, pos, myPos Position, myDir Vec
 		zt.table.Set(ip.String(), *entry)
 
 		log.Printf("ZoneTable: added entry for %s\n", ip.String())
+		return entry
 	}
 }
 
@@ -88,12 +90,19 @@ func (zt *ZoneTable) Get(ip net.IP) (*ZoneTableEntry, bool) {
 	return &ztEntry, exists
 }
 
+func (zt *ZoneTable) IsFront(entry *ZoneTableEntry) bool {
+	return math.Abs(entry.Angle) <= ToRadians(MAX_ANGLE_DEG)
+}
+
+func (zt *ZoneTable) IsBehind(entry *ZoneTableEntry) bool {
+	return math.Abs(entry.Angle) >= ToRadians(180-MAX_ANGLE_DEG)
+}
+
 func (zt *ZoneTable) GetInFrontOfMe() []*ZoneTableEntry {
 	var entries []*ZoneTableEntry
-	angleRad := ToRadians(MAX_ANGLE_DEG)
 	for item := range zt.table.Iter() {
 		itemEntry := item.Value.(ZoneTableEntry)
-		if math.Abs(itemEntry.Angle) <= angleRad {
+		if zt.IsFront(&itemEntry) {
 			entries = append(entries, &itemEntry)
 		}
 	}
@@ -102,10 +111,9 @@ func (zt *ZoneTable) GetInFrontOfMe() []*ZoneTableEntry {
 
 func (zt *ZoneTable) GetBehindMe() []*ZoneTableEntry {
 	var entries []*ZoneTableEntry
-	angleRad := ToRadians(180 - MAX_ANGLE_DEG)
 	for item := range zt.table.Iter() {
 		itemEntry := item.Value.(ZoneTableEntry)
-		if math.Abs(itemEntry.Angle) >= angleRad {
+		if zt.IsBehind(&itemEntry) {
 			entries = append(entries, &itemEntry)
 		}
 	}

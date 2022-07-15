@@ -6,6 +6,9 @@ import (
 	"log"
 	"net"
 	"os"
+	"time"
+
+	"github.com/cenkalti/backoff/v4"
 )
 
 type Subscriber struct {
@@ -15,11 +18,13 @@ type Subscriber struct {
 type SensorUnix struct {
 	id     int
 	server *net.UnixListener
+	conn   *net.Conn
 	topics map[Event][]*Subscriber
 }
 
 func NewSensorUnix(id int) *SensorUnix {
-	return &SensorUnix{id: id, topics: make(map[Event][]*Subscriber)}
+	unix := &SensorUnix{id: id, topics: make(map[Event][]*Subscriber)}
+	return unix
 }
 
 func (u *SensorUnix) Subscribe(topic Event, subscriber *Subscriber) {
@@ -91,39 +96,54 @@ func (unix *SensorUnix) reader(d *json.Decoder) {
 			return
 		}
 		unix.publish(UpdateLocationEvent, m["data"])
+
+	case ChangeSpeedEvent:
+		var p SpeedData
+		err := json.Unmarshal(m["data"], &p)
+		if err != nil {
+			log.Printf("Error: %v", err)
+			return
+		}
+		unix.publish(ChangeSpeedEvent, m["data"])
 	}
 }
 
 func (unix *SensorUnix) Write(message any, event Event) {
-	log.Printf("Writing to socket...\n")
-	conn, err := unix.initUnixWriteSocket()
-	if err != nil {
-		log.Printf("Error: %v\n", err)
-		return
-	}
-	defer conn.Close()
+	backoff.Retry(func() error {
+		log.Printf("Writing to socket...\n")
+		if unix.conn == nil {
+			err := unix.initUnixWriteSocket()
+			if err != nil {
+				return err
+			}
+		}
 
-	err = json.NewEncoder(conn).Encode(map[string]interface{}{
-		"id":   unix.id,
-		"type": event,
-		"data": message,
-	})
-	if err != nil {
-		log.Printf("Error: %v\n", err)
-		return
-	}
+		err := json.NewEncoder(*unix.conn).Encode(map[string]interface{}{
+			"id":   unix.id,
+			"type": event,
+			"data": message,
+		})
+		if err != nil {
+			log.Printf("Error: %v\n", err)
+			unix.initUnixWriteSocket()
+			return err
+		}
+
+		return nil
+	}, backoff.WithMaxRetries(backoff.NewConstantBackOff(100*time.Millisecond), 10))
 }
 
-func (unix *SensorUnix) initUnixWriteSocket() (net.Conn, error) {
+func (unix *SensorUnix) initUnixWriteSocket() error {
 	addr := fmt.Sprintf("/tmp/car%dwrite.socket", unix.id)
 	log.Printf("Connecting to %s\n", addr)
 	conn, err := net.Dial("unix", addr)
 	if err != nil {
 		log.Printf("Error: %v\n", err)
-		return nil, err
+		return err
 	}
+	unix.conn = &conn
 	log.Printf("Connected\n")
-	return conn, nil
+	return nil
 }
 
 func (unix *SensorUnix) Start() {
@@ -164,7 +184,9 @@ func (unix *SensorUnix) Start() {
 	}()
 }
 
-
 func (u *SensorUnix) Close() {
 	u.server.Close()
+	if u.conn != nil {
+		(*u.conn).Close()
+	}
 }

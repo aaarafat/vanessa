@@ -51,7 +51,10 @@ func (a *App) handleMessage(bytes []byte) {
 		}
 		log.Printf("VZone message received: %s", msg.String())
 		state := a.GetState()
-		a.zoneTable.Set(msg.OriginatorIP, msg.Speed, msg.Position, state.GetPosition(), state.Direction)
+		entry := a.zoneTable.Set(msg.OriginatorIP, msg.Speed, msg.Position, state.GetPosition(), state.Direction)
+		if a.zoneTable.IsFront(entry) && entry.Speed < a.GetState().Speed {
+			a.updateSpeed(entry.Speed)
+		}
 
 	case VPathDiscoveryType:
 		msg, err := UnmarshalVPathDiscovery(data)

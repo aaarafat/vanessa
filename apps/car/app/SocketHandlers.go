@@ -12,6 +12,7 @@ func (a *App) startSocketHandlers() {
 	a.obstacleHandler()
 	a.destinationReachedHandler()
 	a.updateLocationHandler()
+	a.changeSpeedHandler()
 }
 
 func (a *App) addCarHandler() {
@@ -97,6 +98,28 @@ func (a *App) updateLocationHandler() {
 				}
 
 				go a.updatePosition(updateLocation.Coordinates)
+			}
+		}
+	}()
+}
+
+func (a *App) changeSpeedHandler() {
+	changeSpeedChannel := make(chan json.RawMessage)
+	changeSpeedSubscriber := &unix.Subscriber{Messages: &changeSpeedChannel}
+	a.sensor.Subscribe(unix.ChangeSpeedEvent, changeSpeedSubscriber)
+
+	go func() {
+		for {
+			select {
+			case data := <-*changeSpeedSubscriber.Messages:
+				var speed unix.SpeedData
+				err := json.Unmarshal(data, &speed)
+				if err != nil {
+					log.Printf("Error decoding update-location data: %v", err)
+					return
+				}
+
+				go a.updateSpeed(uint32(speed.Speed))
 			}
 		}
 	}()

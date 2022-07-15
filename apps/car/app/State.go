@@ -36,9 +36,7 @@ func (a *App) initState(speed uint32, route []Position, pos Position) {
 		a.state.Route = route
 		a.state.Lat = pos.Lat
 		a.state.Lng = pos.Lng
-		if a.state.MaxSpeed < speed {
-			a.state.MaxSpeed = speed
-		}
+		a.state.MaxSpeed = speed
 	}
 
 	log.Printf("Car state initialized  state:  %s\n", a.state.String())
@@ -47,13 +45,18 @@ func (a *App) initState(speed uint32, route []Position, pos Position) {
 func (a *App) updateSpeed(speed uint32) {
 	a.stateLock.Lock()
 	defer a.stateLock.Unlock()
-	if a.state == nil {
+	if a.state == nil || a.state.Speed == speed {
 		return
 	}
+	if a.state.MaxSpeed < speed {
+		a.state.MaxSpeed = speed
+	}
 	a.state.Speed = speed
-	log.Printf("Speed updated: %d", speed)
 
-	// TODO: send speed to sensor
+	go func() {
+		a.sensor.Write(unix.SpeedData{Speed: int(speed)}, unix.ChangeSpeedEvent)
+	}()
+	log.Printf("Speed updated: %d", speed)
 }
 
 func (a *App) updatePosition(pos Position) {
@@ -114,6 +117,7 @@ func (a *App) destinationReached(pos Position) {
 		return
 	}
 	a.state.DestinationReached = true
+	a.state.MaxSpeed = 0
 	log.Printf("Destination reached")
 
 	go func() {
