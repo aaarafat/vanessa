@@ -22,6 +22,8 @@ const carDefaultProps: CarProps = {
   </ul>`,
 };
 
+type ExportableCar = Omit<ICar, 'map' | 'port'> & { type: 'car' };
+
 /**
  * Car Class
  */
@@ -30,6 +32,7 @@ export class Car {
   public lat: number;
   public lng: number;
   public carSpeed: number;
+  private exportable: ExportableCar;
   public route: Coordinates[];
   public originalDirections: GeoJSON.Feature;
 
@@ -92,6 +95,15 @@ export class Car {
     this.draw();
     this.attachHandlers();
 
+    this.exportable = {
+      id: this.id,
+      route: this.route,
+      speed: this.carSpeed,
+      lng: this.lng,
+      lat: this.lat,
+      type: 'car',
+    };
+
     this.prevTime = Date.now();
 
     if (displayOnly) {
@@ -142,7 +154,13 @@ export class Car {
         source: this.sourceId,
         type: 'circle',
         paint: {
-          'circle-radius': 10,
+          'circle-radius': {
+            base: 1.5,
+            stops: [
+              [12, 4],
+              [18, 17],
+            ],
+          },
           'circle-color': '#007cbf',
         },
       })
@@ -171,7 +189,13 @@ export class Car {
           },
           paint: {
             'line-color': '#807515',
-            'line-width': 12,
+            'line-width': {
+              base: 1.5,
+              stops: [
+                [12, 6],
+                [18, 19],
+              ],
+            },
           },
         },
         'first-layer'
@@ -472,7 +496,11 @@ export class Car {
   };
 
   public setSpeed = (speed: number) => {
-    this.carSpeed = speed;
+    if (speed <= 0) {
+      this.stopped = true;
+    } else {
+      this.carSpeed = speed;
+    }
     this.updatePopupProps();
   };
 
@@ -673,14 +701,7 @@ export class Car {
   }
 
   public export() {
-    return {
-      id: this.id,
-      route: this.route,
-      speed: this.carSpeed,
-      lng: this.route[0].lng,
-      lat: this.route[0].lat,
-      type: 'car',
-    };
+    return this.exportable;
   }
 
   public remove() {
