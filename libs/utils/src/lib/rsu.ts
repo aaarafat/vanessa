@@ -123,6 +123,11 @@ export class RSU {
   };
 
   private onClick = () => {
+    if (this.popup) {
+      this.popup.remove();
+      this.popup = null;
+    }
+
     this.popup = new mapboxgl.Popup()
       .setLngLat(this.coordinates as mapboxgl.LngLatLike)
       .setHTML(this.description)
@@ -206,6 +211,7 @@ export class RSU {
 
   public remove() {
     this.popup?.remove();
+    this.popup = null;
 
     this.map.removeLayer(this.sourceId);
     this.map.removeSource(this.sourceId);
@@ -213,7 +219,7 @@ export class RSU {
     this.map.removeLayer(this.clickableSourceId);
     this.map.removeSource(this.clickableSourceId);
 
-    this.map.off('click', this.sourceId, this.onClick);
+    this.map.off('click', this.clickableSourceId, this.onClick);
     this.handlers = {};
   }
 }
