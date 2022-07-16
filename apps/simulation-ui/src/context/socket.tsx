@@ -49,7 +49,7 @@ export const SocketProvider: React.FC<React.ReactNode> = ({ children }) => {
     });
 
     socket.on('move', (message: any) => {
-      console.log('move', message);
+      cars.find((c) => c.id === message.id)?.startMovement();
     });
 
     return () => {

@@ -413,6 +413,7 @@ a.mapboxgl-ctrl-logo {
   display: flex;
   will-change: transform;
   pointer-events: none;
+  opacity: 0.85;
 }
 .mapboxgl-popup-content a {
   color: #0078a0;
