@@ -1,94 +1,200 @@
+<h1 align='center'>VANESSA</h1>
 
+![Vanessa_logo](https://user-images.githubusercontent.com/35429211/179373701-b637b68a-8799-42aa-862a-b5d4ce94292a.png)
 
-# Vanessa
+> VANESSA is a Vehicular Ad-hoc Network (VANET) solution for road safety
 
-This project was generated using [Nx](https://nx.dev).
+## 📝 Table of Contents
 
-<p style="text-align: center;"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="450"></p>
+<!--ts-->
 
-🔎 **Smart, Fast and Extensible Build System**
+- [📝 Table of Contents](#-table-of-contents)
+- [Problem Statement](#problem-statement)
+- [Motivation](#motivation)
+- [System Architecture](#system-architecture)
+- [Prerequisites](#prerequisites)
+- [Environment setup](#environment-setup)
+- [Running the project](#running-the-project)
+- [How to use](#how-to-use)
+  - [The simulator](#the-simulator)
+  - [Car UI](#car-ui)
+  - [RSU UI](#rsu-ui)
+- [Contributing](#contributing)
+- [Contributers](#contributers)
 
-## Adding capabilities to your workspace
+<!--te-->
 
-Nx supports many plugins which add capabilities for developing different types of applications and different tools.
+## Problem Statement
 
-These capabilities include generating applications, libraries, etc as well as the devtools to test, and build projects as well.
+<a name="problem-statement"></a>
 
-Below are our core plugins:
+VANESSA aims to build an efficient and scalable VANET system with protocols that can be used in a wide variety of applications. We used known methods in literature and built on them to meet scalability and efficiency requirements that can be run on any Unix-like system
 
-- [React](https://reactjs.org)
-  - `npm install --save-dev @nrwl/react`
-- Web (no framework frontends)
-  - `npm install --save-dev @nrwl/web`
-- [Angular](https://angular.io)
-  - `npm install --save-dev @nrwl/angular`
-- [Nest](https://nestjs.com)
-  - `npm install --save-dev @nrwl/nest`
-- [Express](https://expressjs.com)
-  - `npm install --save-dev @nrwl/express`
-- [Node](https://nodejs.org)
-  - `npm install --save-dev @nrwl/node`
+## Motivation
 
-There are also many [community plugins](https://nx.dev/community) you could add.
+<a name="motv"></a>
 
-## Generate an application
+Vehicular Ad-hoc Networks (VANETs) is a rising and active research field that has drawn the attention of many researchers and companies around the globe. The network architecture is continuously and rapidly changing. So, due to frequent disconnection, finding the best routing protocols that can handle such dynamicity is very challenging.
 
-Run `nx g @nrwl/react:app my-app` to generate an application.
+## System Architecture
 
-> You can use any of the plugins above to generate applications as well.
+<a name="sys-arch"></a>
 
-When using Nx, you can create multiple applications and libraries in the same workspace.
+![UI-ARCH](https://user-images.githubusercontent.com/35429211/179374062-feb498c0-3b0d-466b-946d-541ac33f8e9f.png)
 
-## Generate a library
+## Prerequisites
 
-Run `nx g @nrwl/react:lib my-lib` to generate a library.
+<a name="prereq"></a>
 
-> You can also use any of the plugins above to generate libraries as well.
+- Python3 & pip
+- Go
+- Socat
+- Node JS & npm
+- A web browser
 
-Libraries are shareable across libraries and applications. They can be imported from `@vanessa/mylib`.
+## Environment setup
 
-## Development server
+<a name="env"></a>
 
-Run `nx serve my-app` for a dev server. Navigate to http://localhost:4200/. The app will automatically reload if you change any of the source files.
+- #### Clone the repo
+  ```sh
+  $ git clone https://github.com/aaarafat/vanessa.git
+  ```
+- #### Install mininet wifi
 
-## Code scaffolding
+  ```sh
+  $ sudo ./scripts/install-mnwifi.sh
+  ```
 
-Run `nx g @nrwl/react:component my-component --project=my-app` to generate a new component.
+- #### Install dependencies
+  ```sh
+  $ sudo ./scripts/install-dep.sh
+  ```
 
-## Build
+## Running the project
 
-Run `nx build my-app` to build the project. The build artifacts will be stored in the `dist/` directory. Use the `--prod` flag for a production build.
+- #### Build
 
-## Running unit tests
+  ```sh
+  $ ./scripts/build.sh
+  ```
 
-Run `nx test my-app` to execute the unit tests via [Jest](https://jestjs.io).
+- #### Running the emulation
 
-Run `nx affected:test` to execute the unit tests affected by a change.
+  ```sh
+  $ sudo ./scripts/run-emulation.sh
+  ```
 
-## Running end-to-end tests
+- #### Running the simulation
 
-Run `nx e2e my-app` to execute the end-to-end tests via [Cypress](https://www.cypress.io).
+  ```sh
+  $ npm run simulation
+  ```
 
-Run `nx affected:e2e` to execute the end-to-end tests affected by a change.
+  You can access it on `localhost:4200`
 
-## Understand your workspace
+- #### Running the Car UI
 
-Run `nx graph` to see a diagram of the dependencies of your projects.
+  ```sh
+  $ npm run car
+  ```
 
-## Further help
+  You can access it on `localhost:4201`
 
-Visit the [Nx Documentation](https://nx.dev) to learn more.
+- #### Running the RSU UI
+  ```sh
+  $ npm run rsu
+  ```
+  You can access it on `localhost:4202`
 
+## How to use
 
+### The simulator
 
-## ☁ Nx Cloud
+Once we open the simulator, we will see the following
+![image](https://user-images.githubusercontent.com/35429211/179374369-57fcbd00-a6b7-4a5d-ba8e-2f76b911833a.png)
 
-### Distributed Computation Caching & Distributed Task Execution
+We can do the following
 
-<p style="text-align: center;"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-cloud-card.png"></p>
+- Click on any point at the map to add an initial point
+- Export the current state by clicking on Export
+- Import an exported file by clicking on Import
+- Clear the map by clicking on clear
 
-Nx Cloud pairs with Nx in order to enable you to build and test code more rapidly, by up to 10 times. Even teams that are new to Nx can connect to Nx Cloud and start saving time instantly.
+![image](https://user-images.githubusercontent.com/35429211/179374411-f7fc84a8-fb35-48d0-9758-8bb32438e7dc.png)
 
-Teams using Nx gain the advantage of building full-stack applications with their preferred framework alongside Nx’s advanced code generation and project dependency graph, plus a unified experience for both frontend and backend developers.
+we have the following options:
 
-Visit [Nx Cloud](https://nx.app/) to learn more.
+- Add accident on that selected location by clicking on Add Accident on the left-side bar
+- Cancel the point by clicking on the rewind button on the top right corner
+- Add another point to make a route in order to add a car
+
+![image](https://user-images.githubusercontent.com/35429211/179374451-03dfc3f1-3c2b-48c8-bae4-81b10b7eb612.png)
+
+Now that we have added 2 points and constructed a route
+We can add a car or we can still cancel it.
+
+We can adjust the car speed by updating the input shown in the figure below. And then we can add a car by pressing on Add Car button
+
+![image](https://user-images.githubusercontent.com/35429211/179374485-351386c9-c9df-40a9-bf48-cf33ce4a92d9.png)
+
+shows a running simulation containing 2 cars pointed at by 1 and an obstacle pointed at by 2. Also, The RSUs ranges are indicated by the circles pointed at by 3
+
+![image](https://user-images.githubusercontent.com/35429211/179374563-f75f5096-da5f-4dda-9794-461661702231.png)
+
+We can click on any of the added car to show its information and show its current route
+
+![image](https://user-images.githubusercontent.com/35429211/179374584-7e53f162-87ad-494e-a4ac-1168a8282f11.png)
+
+we can see the range of this car and its speed and its port that we will use to login in into its UI.
+
+### Car UI
+
+Once we open the Car UI, we will be asked to enter the port of the car we want to
+
+![image](https://user-images.githubusercontent.com/35429211/179374601-04e8a88d-553c-4758-8ea0-a2744e5222e9.png)
+
+By entering the port that we can get from the simulator we will enter the car UI
+
+![image](https://user-images.githubusercontent.com/35429211/179374614-0f9b0cf7-d18a-4e9f-9ab2-aaa697e1c196.png)
+
+In Car UI, we are shown the current location of the selected car and we can see the messages that it received on the right-side bar.
+
+### RSU UI
+
+Just like the car we will enter the RSU port in the beginning
+
+![image](https://user-images.githubusercontent.com/35429211/179374632-218684b4-b7d6-465f-8123-27dd99fd0f16.png)
+
+And once we enter it, we will be shown the RSU UI, in which we can observe its current state. We can see the Total packets it sent or received
+
+![image](https://user-images.githubusercontent.com/35429211/179374648-13c0e79c-0b14-4ced-890f-8380e3f29432.png)
+
+Also, we can see its ARP table and the list of all obstacles reported by the cars to the RSUs
+
+![image](https://user-images.githubusercontent.com/35429211/179374667-52ba937c-7451-489b-a868-fde0355f0c66.png)
+
+![image](https://user-images.githubusercontent.com/35429211/179374674-af7c73d9-9ce3-4461-ba3f-186cef9ce2f5.png)
+
+![image](https://user-images.githubusercontent.com/35429211/179374680-447f4b5c-4d33-4e75-ad3f-6785fea16bcd.png)
+
+## Contributing
+
+Contributions are what make the open source community such an amazing place to be learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b AmazingFeature-Feat`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin AmazingFeature-Feat`)
+5. Open a Pull Request
+
+## Contributers
+
+<table>
+  <tr>
+    <td align="center"><a href="https://github.com/fuboki10"><img src="https://avatars.githubusercontent.com/u/35429211?s=460&v=4" width="100px;" alt=""/><br /><sub><b>Abdelrahman Tarek</b></sub></a><br /></td>
+    <td align="center"><a href="https://github.com/D4rk1n"><img src="https://avatars.githubusercontent.com/u/44725090?s=460&v=4" width="100px;" alt=""/><br /><sub><b>Abdelrahman Arafat</b></sub></a><br /></td>
+    <td align="center"><a href="https://github.com/Hassan950"><img src="https://avatars.githubusercontent.com/u/42610032?s=460&v=4" width="100px;" alt=""/><br /><sub><b>Hassan Mohamed</b></sub></a><br /></td>
+    <td align="center"><a href="https://github.com/lido22"><img src="https://avatars.githubusercontent.com/u/42592954?v=4" width="100px;" alt=""/><br /><sub><b>Ahmed Walid</b></sub></a><br /></td>
+  </tr>
+ </table>
