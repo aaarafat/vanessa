@@ -59,14 +59,14 @@ func (a *Aodv) GetRoute(destIP net.IP) (*VRoute, bool) {
 	item, ok := a.routingTable.Get(destIP)
 	if ok {
 		// check if hop count is 0
-		if item.NoOfHops == 0 {
+		/*if item.NoOfHops == 0 {
 			// check in neighbor table
-			if _, ok := a.neighborTables[item.IfiIndex].Get(destIP.String()); !ok {
+			if _, ok := a.neighborTables[item.IfiIndex].Get(item.NextHop.String()); !ok {
 				// send RERR
 				go a.SendRERR(destIP, item.SeqNum)
 				return nil, false
 			}
-		}
+		}*/
 
 		return NewVRoute(item.Destination, item.NextHop, item.IfiIndex, int(item.NoOfHops)), true
 	}

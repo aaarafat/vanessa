@@ -29,6 +29,7 @@ type State struct {
 	MaxSpeed           uint32     `json:"maxSpeed"`
 	Direction          Vector     `json:"direction"`
 	DestinationReached bool       `json:"destinationReached"`
+	Stopped            bool       `json:"stopped"`
 }
 
 func (s *State) GetPosition() Position {

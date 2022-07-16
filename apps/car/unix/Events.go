@@ -46,6 +46,7 @@ type AddCarData struct {
 	Coordinates Position   `json:"coordinates"`
 	Route       []Position `json:"route"`
 	Speed       int        `json:"speed"`
+	Stopped     bool       `json:"stopped"`
 }
 
 type UpdateLocationData struct {

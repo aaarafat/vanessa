@@ -64,7 +64,7 @@ func NewApp(id int, key []byte) *App {
 
 	app.ui = unix.NewUiUnix(id, app.GetState)
 
-	app.initState(0, []Position{}, Position{Lng: 0, Lat: 0})
+	app.initState(0, []Position{}, Position{Lng: 0, Lat: 0}, false)
 
 	return &app
 }
