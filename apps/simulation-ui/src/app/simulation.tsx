@@ -79,9 +79,7 @@ export const Simulation: React.FC = () => {
         setMapLoaded(true);
         socket.once('cleared', () => {
           rsusData.forEach((r) => {
-            const rsu = new RSU({ ...r, map, port: rsuPortsCounter++ });
-            dispatch(addRSU(rsu));
-            socketEvents.addRSU(rsu);
+            handleAddRSU(r);
           });
           setLoading(false);
         });
@@ -166,6 +164,22 @@ export const Simulation: React.FC = () => {
     mapDirections.reset();
   };
 
+  const handleAddRSU = (rsuInputs: Partial<IRSU>) => {
+    if (!map) return;
+    const rsu = new RSU({ ...rsuInputs, map, port: rsuPortsCounter++ });
+
+    rsu.on('click', () => {
+      mapDirections.reset();
+      mapDirections.freeze();
+    });
+    rsu.on('popup:close', () => {
+      mapDirections.unfreeze();
+    });
+
+    dispatch(addRSU(rsu));
+    socketEvents.addRSU(rsu);
+  };
+
   const handleExport = () => {
     const info: Array<any> = [
       {
@@ -246,9 +260,7 @@ export const Simulation: React.FC = () => {
           ...item,
         });
       } else if (item.type === 'rsu') {
-        const rsu = new RSU({ ...item, map, port: rsuPortsCounter++ });
-        dispatch(addRSU(rsu));
-        socketEvents.addRSU(rsu);
+        handleAddRSU(item);
       } else if (item.type === 'obstacles') {
         setObstacles(
           item.coordinates.map((c: turf.Position) => createFeaturePoint(c))
