@@ -54,8 +54,11 @@ export class Directions extends MapboxDirections {
 
   _isPointOnCar(point: mapboxgl.Point) {
     const features = this._map.queryRenderedFeatures(point, {
-      // click is on car or rsu
-      filter: ['==', '$type', 'Point'],
+      filter: [
+        'any',
+        ['in', 'Car', ['get', 'title']],
+        ['in', 'RSU', ['get', 'title']],
+      ],
     });
 
     return features?.length;

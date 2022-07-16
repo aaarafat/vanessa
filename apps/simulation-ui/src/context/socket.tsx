@@ -75,6 +75,7 @@ export const socketEvents = {
       speed: car.speed,
       stopped: car.stopped,
     };
+    // console.log('add', message);
     socket.emit('add-car', message);
   },
   updateCar: (car: Omit<ICar, 'map'>) => {
@@ -89,6 +90,7 @@ export const socketEvents = {
       speed: car.speed,
       stopped: car.stopped,
     };
+    // console.log('update', message);
     socket.emit('add-car', message);
   },
   destinationReached: (car: Car) => {
