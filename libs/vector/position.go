@@ -59,6 +59,7 @@ func UnmarshalPositions(payload []byte, len int) []Position {
 }
 
 // Distance returns the distance between two points on the Earth in meter.
+// https://www.geeksforgeeks.org/program-distance-two-points-earth/
 func (p *Position) Distance(p2 *Position) float64 {
 	latRad1 := ToRadians(p.Lat)
 	latRad2 := ToRadians(p2.Lat)

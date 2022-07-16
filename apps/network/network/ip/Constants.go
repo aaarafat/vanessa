@@ -6,5 +6,6 @@ const (
 )
 
 const (
-	PacketTimeoutMS = 1000 // 1 second
+	PacketTimeoutMS     = 1000 // 1 second
+	CHECKSUM_BLOCK_SIZE = 2
 )
