@@ -90,6 +90,34 @@ func (a *Aodv) handleRERR(payload []byte, from net.HardwareAddr, IfiIndex int) {
 
 	log.Printf("Interface %d: Received: %s\n", IfiIndex, rerr.String())
 
+	// get all unreachable destinations
+	unreachable := make([]RERRUnreachableDestination, 0)
+	for _, dest := range rerr.UnreachableDestinations {
+		entry, exists := a.routingTable.Get(dest.IP)
+		if exists && entry.NextHop.String() == from.String() && entry.SeqNum <= dest.SeqNum {
+			unreachable = append(unreachable, dest)
+		}
+	}
+
+	if len(unreachable) == 0 {
+		return
+	}
+
+	localRepair := rerr.HasFlag(RERRFlagN)
+
+	// delete from the routing table
+	for _, dest := range unreachable {
+		if !localRepair {
+			a.routingTable.Del(dest.IP)
+		}
+		// send RREQ to local repair
+		a.SendRREQ(dest.IP)
+	}
+
+	rerr = NewRERRMessage(unreachable)
+	rerr.SetFlag(RERRFlagN) // set N flag because we performed a local repair
+	log.Printf("Sending: %s\n", rerr.String())
+	a.flooder.ForwardToAllExcept(rerr.Marshal(), from)
 }
 
 func (a *Aodv) handleMessage(payload []byte, from net.HardwareAddr, IfiIndex int) {
@@ -101,7 +129,7 @@ func (a *Aodv) handleMessage(payload []byte, from net.HardwareAddr, IfiIndex int
 	case RREPType:
 		a.handleRREP(payload, from, IfiIndex)
 	case RERRType:
-		log.Printf("RERR is not implemented yet\n")
+		a.handleRERR(payload, from, IfiIndex)
 	default:
 		log.Println("Unknown message type: ", msgType)
 	}

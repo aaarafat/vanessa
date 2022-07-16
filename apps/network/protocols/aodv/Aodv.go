@@ -143,16 +143,19 @@ func (a *Aodv) SendRERR(nextHop net.HardwareAddr) {
 		}
 	}
 
+	if len(unreachable) == 0 {
+		return
+	}
+
 	// delete from routing table
-	for _, item := range a.routingTable.Items() {
-		if item.NextHop.String() == nextHop.String() {
-			a.routingTable.Del(item.Destination)
-			// send RREQ to local repair
-			a.SendRREQ(item.Destination)
-		}
+	for _, dest := range unreachable {
+		a.routingTable.Del(dest.IP)
+		// send RREQ to local repair
+		a.SendRREQ(dest.IP)
 	}
 
 	rerr := NewRERRMessage(unreachable)
+	rerr.SetFlag(RERRFlagN) // set N flag because we performed a local repair
 	log.Printf("Sending: %s\n", rerr.String())
 	a.flooder.ForwardToAll(rerr.Marshal())
 }

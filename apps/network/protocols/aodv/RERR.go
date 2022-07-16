@@ -75,6 +75,25 @@ func UnmarshalRERR(data []byte) (*RERRMessage, error) {
 	return RERR, nil
 }
 
+func (rerr *RERRMessage) SetFlag(flag uint16) *RERRMessage {
+	rerr.Flags |= flag
+	return rerr
+}
+
+func (rerr *RERRMessage) ClearFlag(flag uint16) *RERRMessage {
+	rerr.Flags &= ^flag
+	return rerr
+}
+
+func (rerr *RERRMessage) ToggleFlag(flag uint16) *RERRMessage {
+	rerr.Flags ^= flag
+	return rerr
+}
+
+func (rerr *RERRMessage) HasFlag(flag uint16) bool {
+	return rerr.Flags&flag != 0
+}
+
 func (d *RERRUnreachableDestination) String() string {
 	return fmt.Sprintf("%s:%d", d.IP, d.SeqNum)
 }

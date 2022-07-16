@@ -19,6 +19,8 @@ const (
 
 	RREPFlagR uint16 = 1 << 0
 	RREPFlagA uint16 = 1 << 1
+
+	RERRFlagN uint16 = 1 << 0
 )
 
 // Lengths
