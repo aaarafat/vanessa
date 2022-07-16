@@ -96,6 +96,7 @@ export class Car {
 
     if (displayOnly) {
       this.focused = true;
+      this.initiated = true;
       this.obstacleDetected = car.obstacleDetected || false;
       this.map.panTo([this.lng, this.lat]);
     } else {
@@ -271,6 +272,16 @@ export class Car {
 
   public updateObstacleDetectedFromData = () => {
     this.updateFromData('obstacle-detected');
+  };
+
+  public updateRouteFromData = (route: Coordinates[]) => {
+    this.route = route;
+    this.originalDirections = turf.lineString(
+      this.route.map((r: Coordinates) => [r.lng, r.lat])
+    );
+    this.routeSource?.setData(
+      turf.featureCollection([this.originalDirections])
+    );
   };
 
   private updateFromData(

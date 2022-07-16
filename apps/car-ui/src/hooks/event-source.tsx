@@ -29,6 +29,12 @@ interface ChangeSpeedData {
   speed: number;
 }
 
+interface StateData {
+  coordinates?: Coordinates;
+  speed?: number;
+  route?: Coordinates[];
+}
+
 export const useEventSource = () => {
   const [eventSource, setEventSource] = useState<EventSource | null>(null);
   const { car } = useAppSelector((state) => state.car);
@@ -74,6 +80,21 @@ export const useEventSource = () => {
       const json: ChangeSpeedData = JSON.parse(message).data;
       car?.setSpeed(json.speed);
       dispatch(addMessage(`Speed changed to ${json.speed}`));
+    });
+
+    eventSource.addEventListener('state', ({ data: message }) => {
+      if (!car) return;
+      const json: StateData = JSON.parse(message).data;
+      json.coordinates && car.updateLocationFromData(json.coordinates);
+      json.speed && car.setSpeed(json.speed);
+      if (json.route) {
+        car.updateRouteFromData(json.route);
+        dispatch(addMessage('Reroute received'));
+      }
+    });
+
+    eventSource.addEventListener('refresh', ({ data: message }) => {
+      window.location.reload();
     });
 
     return () => eventSource.close();
