@@ -114,6 +114,10 @@ func (a *App) Run() {
 	go a.printZone()
 	go a.checkZone()
 
+	//! Wait 2 seconds until the router is started
+	time.Sleep(time.Second * 2)
+	a.sensor.Write("", unix.MoveEvent)
+
 	log.Printf("App %d started", a.id)
 }
 
