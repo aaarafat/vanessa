@@ -30,7 +30,6 @@ export class Car {
   public lat: number;
   public lng: number;
   public carSpeed: number;
-  public speed: number;
   public route: Coordinates[];
   public originalDirections: GeoJSON.Feature;
 
@@ -58,7 +57,7 @@ export class Car {
   private animationFrame: number;
   private removed = false;
   private focused: boolean;
-  private stopped = false;
+  public stopped = false;
 
   public port: number;
 
@@ -73,7 +72,6 @@ export class Car {
     this.lng = car.lng || car.route?.[0].lng || 0;
     this.prevCoordinates = this.coordinates;
     this.carSpeed = car.speed ?? 10;
-    this.speed = this.carSpeed;
     this.obstacleDetected = false;
     this.route = car.route || [];
     this.routeIndex = car.destinationReached ? this.route.length : 0;
@@ -90,10 +88,6 @@ export class Car {
 
     this.port = car.port || -1;
 
-    if (this.arrived) {
-      this.speed = 0;
-    }
-
     this.draw();
     this.attachHandlers();
 
@@ -104,7 +98,6 @@ export class Car {
     } else {
       this.focused = true;
       this.obstacleDetected = car.obstacleDetected || false;
-      if (this.obstacleDetected || car.destinationReached) this.speed = 0;
       this.map.panTo([this.lng, this.lat]);
     }
   }
@@ -115,6 +108,11 @@ export class Car {
 
   public get arrived(): boolean {
     return this.routeIndex === this.route.length;
+  }
+
+  public get speed(): number {
+    if (this.arrived || this.obstacleDetected || this.stopped) return 0;
+    return this.carSpeed;
   }
 
   public draw(): void {
@@ -273,13 +271,11 @@ export class Car {
       case 'destination-reached':
         this.lat = data.lat ?? this.lat;
         this.lng = data.lng ?? this.lng;
-        this.speed = 0;
         this.routeIndex = this.route.length;
         this.updatePopupProps();
         break;
       case 'obstacle-detected':
         this.obstacleDetected = true;
-        this.speed = 0;
         this.updatePopupProps();
         break;
       case 'update-location':
@@ -329,7 +325,6 @@ export class Car {
 
   private willUpdate() {
     if (this.arrived) {
-      this.speed = 0;
       this.updatePopupProps();
       this.emit('destination-reached');
       return false;
@@ -369,7 +364,6 @@ export class Car {
     const intersections = turf.lineIntersect(sensorRange, obstacles).features;
     if (intersections.length) {
       this.obstacleDetected = true;
-      this.speed = 0;
       const point = turf.nearestPoint(intersections[0], obstaclesPoints)
         .geometry.coordinates;
       this.emit('obstacle-detected', { lng: point[0], lat: point[1] });
@@ -456,7 +450,8 @@ export class Car {
   };
 
   public setSpeed = (speed: number) => {
-    this.speed = speed;
+    this.carSpeed = speed;
+    this.updatePopupProps();
   };
 
   private onClick = () => {
@@ -513,7 +508,6 @@ export class Car {
     if (el)
       el.onclick = () => {
         this.stopped = true;
-        this.speed = 0;
         this.emit('change-speed', this);
         this.updatePopupProps();
       };
@@ -527,7 +521,6 @@ export class Car {
     if (el)
       el.onclick = () => {
         this.stopped = false;
-        this.speed = this.carSpeed;
         this.emit('change-speed', this);
         this.updatePopupProps();
       };

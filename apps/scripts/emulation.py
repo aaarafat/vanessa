@@ -321,9 +321,9 @@ def recieve_from_car(car_socket, id):
         server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         server.bind(car_socket)
         server.listen(1)
-        conn, _ = server.accept()
         print(f"Listening on {car_socket}")
         while running and id in stations_car:
+            conn, _ = server.accept()
             data = conn.recv(1500)
             if not data:
                 continue

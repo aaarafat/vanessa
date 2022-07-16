@@ -38,8 +38,6 @@ func (a *App) initState(speed uint32, route []Position, pos Position, stopped bo
 			Stopped:            stopped,
 		}
 	} else {
-		a.state.Direction = NewUnitVector(a.state.GetPosition(), pos)
-		a.state.Speed = speed
 		a.state.Route = route
 		a.state.Lat = pos.Lat
 		a.state.Lng = pos.Lng

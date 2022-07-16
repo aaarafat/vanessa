@@ -23,7 +23,7 @@ import {
   unfocusCar,
 } from './store/simulationSlice';
 import { useHistory, useParams } from 'react-router-dom';
-import MessagesViewer from './messages-viewer';
+import MessagesViewer from './change-speed';
 import { CAR_PORT_INIT, RSU_PORT_INIT } from '@vanessa/utils';
 
 const spin = keyframes`
@@ -146,9 +146,11 @@ export const Simulation: React.FC = () => {
     car.on('click', () => {
       mapDirections.reset();
       mapDirections.freeze();
+      dispatch(focusCar(car.id));
     });
     car.on('popup:close', () => {
       mapDirections.unfreeze();
+      dispatch(unfocusCar());
     });
 
     car.on('move', () => socketEvents.sendCarLocation(car));
