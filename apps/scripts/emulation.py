@@ -281,6 +281,7 @@ def update_car(message):
                 'coordinates': coordinates,
                 'speed': message['speed'],
                 'route': message['route'],
+                'stopped': message['stopped'],
             }
         }
         send_to_car(f"/tmp/car{id}.socket", payload)

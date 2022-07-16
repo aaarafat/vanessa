@@ -91,7 +91,7 @@ func (a *App) checkFront() {
 	}
 	if front != nil && front.Speed < mnSpeed {
 		mnSpeed = front.Speed
-		if mnSpeed < state.Speed {
+		if mnSpeed <= state.Speed && front.ShouldCheckRoute() {
 			// send check route to simulator
 			go a.sendCheckRoute(front.Position, front.IP)
 		}

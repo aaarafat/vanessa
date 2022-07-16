@@ -22,19 +22,21 @@ type ZoneTable struct {
 }
 
 type ZoneTableEntry struct {
-	IP              net.IP
-	Speed           uint32
-	Position        Position
-	Direction       Vector  // pos2 - pos1
-	DirectionFromMe Vector  // how I'm facing the other vehicle (targetPos - myPos)
-	Angle           float64 // angle between MyDirection and DirectionFromMe
-	Ignored         bool
-	timer           *time.Timer
+	IP                     net.IP
+	Speed                  uint32
+	Position               Position
+	Direction              Vector  // pos2 - pos1
+	DirectionFromMe        Vector  // how I'm facing the other vehicle (targetPos - myPos)
+	Angle                  float64 // angle between MyDirection and DirectionFromMe
+	Ignored                bool
+	LastCheckRoutePosition Position
+	timer                  *time.Timer
 }
 
 const (
-	ZoneTable_UPDATE_INTERVAL_MS = ZONE_MSG_INTERVAL_MS * 3
-	MAX_ANGLE_DEG                = 10
+	ZoneTable_UPDATE_INTERVAL_MS         = ZONE_MSG_INTERVAL_MS * 3
+	MAX_ANGLE_DEG                        = 10
+	MAX_CHECK_ROUTE_DISTANCE_M   float64 = 10
 )
 
 type NEAREST_BOOL int
@@ -55,13 +57,14 @@ func NewZoneTable() *ZoneTable {
 
 func NewZoneTableEntry(ip net.IP, speed uint32, pos, myPos Position, myDir Vector) *ZoneTableEntry {
 	entry := &ZoneTableEntry{
-		IP:              ip,
-		Speed:           speed,
-		Position:        pos,
-		Direction:       NewUnitVector(pos, pos),
-		DirectionFromMe: NewUnitVector(myPos, pos),
-		Ignored:         false,
-		timer:           nil,
+		IP:                     ip,
+		Speed:                  speed,
+		Position:               pos,
+		Direction:              NewUnitVector(pos, pos),
+		DirectionFromMe:        NewUnitVector(myPos, pos),
+		Ignored:                false,
+		timer:                  nil,
+		LastCheckRoutePosition: Position{Lng: 0, Lat: 0}, // no check route yet
 	}
 
 	entry.Angle = myDir.Angle(entry.DirectionFromMe)
@@ -76,8 +79,16 @@ func (zt *ZoneTable) Set(ip net.IP, speed uint32, pos, myPos Position, myDir Vec
 		entry.timer.Reset(ZoneTable_UPDATE_INTERVAL_MS * time.Millisecond)
 
 		// update
-		entry.Direction = NewUnitVector(entry.Position, pos)
-		entry.DirectionFromMe = NewUnitVector(myPos, pos)
+		newDirection := NewUnitVector(pos, entry.Position)
+		newDirectionFromMe := NewUnitVector(myPos, pos)
+
+		if newDirection.Lng != 0 || newDirection.Lat != 0 {
+			entry.Direction = newDirection
+		}
+		if newDirectionFromMe.Lng != 0 || newDirectionFromMe.Lat != 0 {
+			entry.DirectionFromMe = newDirectionFromMe
+		}
+
 		entry.Angle = myDir.Angle(entry.DirectionFromMe)
 		entry.Position = pos
 		entry.Speed = speed
@@ -207,10 +218,11 @@ func (zt *ZoneTable) GetNearestBehindFrom(pos *Position) *ZoneTableEntry {
 	return nearest
 }
 
-func (zt *ZoneTable) Ignore(ip net.IP) {
+func (zt *ZoneTable) Ignore(ip net.IP, ignored bool) {
 	entry, exists := zt.Get(ip)
 	if exists {
-		entry.Ignored = true
+		entry.Ignored = ignored
+		entry.LastCheckRoutePosition = entry.Position
 		zt.table.Set(ip.String(), *entry)
 		zt.removeNearestIfEqual(entry)
 		log.Printf("ZoneTable: ignored entry for %s\n", ip.String())
@@ -309,6 +321,10 @@ func (zt *ZoneTable) removeNearestIfEqual(entry *ZoneTableEntry) {
 	} else {
 		zt.nearestBehindLock.RUnlock()
 	}
+}
+
+func (zte *ZoneTableEntry) ShouldCheckRoute() bool {
+	return zte.Position.Distance(&zte.LastCheckRoutePosition) > MAX_CHECK_ROUTE_DISTANCE_M
 }
 
 func (zte *ZoneTableEntry) Print() {

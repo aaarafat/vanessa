@@ -32,6 +32,8 @@ func (a *App) addCarHandler() {
 					return
 				}
 
+				log.Printf("Adding car %v", addCar)
+
 				a.initState(uint32(addCar.Speed), addCar.Route, addCar.Coordinates, addCar.Stopped)
 			}
 		}
@@ -124,9 +126,7 @@ func (a *App) CheckRouteResponseHandler() {
 					ip, exists := a.checkRouteBuffer.GetStringKey(checkRouteResponse.Coordinates.String())
 					if exists {
 						a.checkRouteBuffer.Del(checkRouteResponse.Coordinates.String())
-						if !checkRouteResponse.InRoute {
-							a.zoneTable.Ignore(ip.(net.IP))
-						}
+						a.zoneTable.Ignore(ip.(net.IP), !checkRouteResponse.InRoute)
 					}
 				}()
 			}

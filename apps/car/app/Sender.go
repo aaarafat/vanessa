@@ -79,6 +79,7 @@ func (a *App) sendSpeed(speed uint32) {
 func (a *App) sendCheckRoute(pos Position, ip net.IP) {
 	_, loaded := a.checkRouteBuffer.GetOrInsert(pos.String(), ip)
 	if !loaded {
+		log.Printf("Sending check route : %f  %f", pos.Lng, pos.Lat)
 		a.sensor.Write(unix.CheckRouteData{Coordinate: pos}, unix.CheckRouteEvent)
 	}
 }

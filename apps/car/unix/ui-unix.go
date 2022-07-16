@@ -37,7 +37,7 @@ func (s *State) GetPosition() Position {
 }
 
 func (s *State) String() string {
-	return fmt.Sprintf("State{Id: %d, Speed: %d, Route: %v, Lat: %f, Lng: %f, ObstacleDetected: %t, Obstacles: %v, MaxSpeed: %d, Direction: %v}", s.Id, s.Speed, s.Route, s.Lat, s.Lng, s.ObstacleDetected, s.Obstacles, s.MaxSpeed, s.Direction)
+	return fmt.Sprintf("State{Id: %d, Speed: %d, Route: %v, Lat: %f, Lng: %f, ObstacleDetected: %t, Obstacles: %v, MaxSpeed: %d, Direction: %v, stopped: %v}", s.Id, s.Speed, s.Route, s.Lat, s.Lng, s.ObstacleDetected, s.Obstacles, s.MaxSpeed, s.Direction, s.Stopped)
 }
 
 type UiUnix struct {

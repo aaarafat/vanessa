@@ -52,7 +52,7 @@ func (a *App) handleMessage(bytes []byte) {
 		log.Printf("VZone message received: %s", msg.String())
 		state := a.GetState()
 		entry := a.zoneTable.Set(msg.OriginatorIP, msg.Speed, msg.Position, state.GetPosition(), state.Direction)
-		if a.zoneTable.IsFront(entry) && entry.Speed < state.Speed {
+		if a.zoneTable.IsFront(entry) && entry.Speed < state.Speed && entry.ShouldCheckRoute() {
 			a.updateSpeed(entry.Speed)
 			a.sendCheckRoute(entry.Position, entry.IP)
 		}
@@ -78,7 +78,7 @@ func (a *App) handleMessage(bytes []byte) {
 		log.Printf("VSpeed message received: %s", msg.String())
 		state := a.GetState()
 		entry, exists := a.zoneTable.Get(msg.OriginatorIP)
-		if exists && a.zoneTable.IsFront(entry) && state.Speed > msg.Speed {
+		if exists && a.zoneTable.IsFront(entry) && state.Speed > msg.Speed && entry.ShouldCheckRoute() {
 			a.updateSpeed(msg.Speed)
 			a.sendCheckRoute(entry.Position, entry.IP)
 		}
