@@ -57,6 +57,7 @@ export class Car {
   private animationFrame: number;
   private removed = false;
   private focused: boolean;
+  private initiated = false;
   public stopped = false;
 
   public port: number;
@@ -93,12 +94,12 @@ export class Car {
 
     this.prevTime = Date.now();
 
-    if (!displayOnly) {
-      this.update();
-    } else {
+    if (displayOnly) {
       this.focused = true;
       this.obstacleDetected = car.obstacleDetected || false;
       this.map.panTo([this.lng, this.lat]);
+    } else {
+      this.map.setPaintProperty(this.sourceId, 'circle-color', '#ababab');
     }
   }
 
@@ -250,6 +251,16 @@ export class Car {
    * Update Car
    */
 
+  public startMovement() {
+    if (this.initiated) return;
+    console.log('Car started movement', this.id);
+    this.initiated = true;
+    this.map.setPaintProperty(this.sourceId, 'circle-color', '#007cbf');
+    this.prevTime = Date.now();
+    this.update();
+    this.updatePopupProps();
+  }
+
   public updateLocationFromData = (coordinates: Coordinates) => {
     this.updateFromData('update-location', coordinates);
   };
@@ -290,7 +301,7 @@ export class Car {
   }
 
   private update = () => {
-    if (this.removed) return;
+    if (this.removed || !this.initiated) return;
     this.updateCoordinates();
     this.updateSource();
     this.updateDetails();
@@ -589,6 +600,10 @@ export class Car {
       description += !this.stopped
         ? '<a id="control{id}-stop">Stop</a>'
         : '<a id="control{id}-move">Move</a>';
+    }
+
+    if (!this.initiated) {
+      description += 'Initializing...';
     }
 
     return interpolateString(description, this);
