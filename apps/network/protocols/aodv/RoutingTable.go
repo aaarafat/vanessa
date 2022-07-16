@@ -121,6 +121,17 @@ func (r *VRoutingTable) set(entry *VRoutingTableEntry) (new bool) {
 	return !exists
 }
 
+func (r *VRoutingTable) Items() []*VRoutingTableEntry {
+	entries := make([]*VRoutingTableEntry, r.Len())
+	i := 0
+	for item := range r.table.Iter() {
+		entry := item.Value.(VRoutingTableEntry)
+		entries[i] = &entry
+		i++
+	}
+	return entries
+}
+
 func (r *VRoutingTable) Len() int {
 	return r.table.Len()
 }

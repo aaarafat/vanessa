@@ -81,6 +81,17 @@ func (a *Aodv) handleRREP(payload []byte, from net.HardwareAddr, IfiIndex int) {
 	}
 }
 
+func (a *Aodv) handleRERR(payload []byte, from net.HardwareAddr, IfiIndex int) {
+	rerr, err := UnmarshalRERR(payload)
+	if err != nil {
+		log.Printf("Failed to unmarshal RERR: %v\n", err)
+		return
+	}
+
+	log.Printf("Interface %d: Received: %s\n", IfiIndex, rerr.String())
+
+}
+
 func (a *Aodv) handleMessage(payload []byte, from net.HardwareAddr, IfiIndex int) {
 	msgType := uint8(payload[0])
 	// handle the message

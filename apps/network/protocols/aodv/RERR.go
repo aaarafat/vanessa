@@ -6,6 +6,11 @@ import (
 	"net"
 )
 
+type RERRUnreachableDestination struct {
+	IP     net.IP
+	SeqNum uint32
+}
+
 // https://datatracker.ietf.org/doc/html/rfc3561#section-5.3
 type RERRMessage struct {
 	// Type
@@ -14,30 +19,42 @@ type RERRMessage struct {
 	Flags uint16
 	// The number of unreachable destinations included in the	message; MUST be at least 1.
 	DestCount uint8
-	// The IP address of the node that is the destination of the RREQ.
-	UnreachableDestinationIP net.IP
-	// Destination sequence number
-	UnreachableDestinationSeqNum uint32
+	// Unreachable destinations and their sequence numbers.
+	UnreachableDestinations []RERRUnreachableDestination
 }
 
-func NewRERRMessage(SrcIP, DestIP net.IP, seqNum uint32) *RERRMessage {
+func NewRERRMessage(unreachableDestinations []RERRUnreachableDestination) *RERRMessage {
 	return &RERRMessage{
-		Type:                         RERRType,
-		Flags:                        0,
-		DestCount:                    0,
-		UnreachableDestinationIP:     DestIP,
-		UnreachableDestinationSeqNum: seqNum,
+		Type:                    RERRType,
+		Flags:                   0,
+		DestCount:               uint8(len(unreachableDestinations)),
+		UnreachableDestinations: unreachableDestinations,
 	}
 }
 
+func (d *RERRUnreachableDestination) Marshal() []byte {
+	b := make([]byte, 8)
+	copy(b[0:4], d.IP.To4())
+	binary.LittleEndian.PutUint32(b, uint32(d.SeqNum))
+	return b
+}
+
+func UnmarshalRERRUnreachableDestination(b []byte) *RERRUnreachableDestination {
+	d := RERRUnreachableDestination{}
+	d.IP = net.IPv4(b[0], b[1], b[2], b[3])
+	d.SeqNum = binary.LittleEndian.Uint32(b[4:8])
+	return &d
+}
+
 func (RERR *RERRMessage) Marshal() []byte {
-	bytes := make([]byte, RERRMessageLen)
+	bytes := make([]byte, RERRMessageLen+RERR.DestCount*8)
 
 	bytes[0] = byte(RERR.Type)
 	binary.LittleEndian.PutUint16(bytes[1:], RERR.Flags)
 	bytes[3] = byte(RERR.DestCount)
-	copy(bytes[4:8], RERR.UnreachableDestinationIP.To4())
-	binary.LittleEndian.PutUint32(bytes[8:], RERR.UnreachableDestinationSeqNum)
+	for i := 0; i < int(RERR.DestCount); i++ {
+		copy(bytes[4+i*8:], RERR.UnreachableDestinations[i].Marshal())
+	}
 
 	return bytes
 }
@@ -51,13 +68,23 @@ func UnmarshalRERR(data []byte) (*RERRMessage, error) {
 	RERR.Type = uint8(data[0])
 	RERR.Flags = binary.LittleEndian.Uint16(data[1:3])
 	RERR.DestCount = data[3]
-	RERR.UnreachableDestinationIP = net.IPv4(data[4], data[5], data[6], data[7])
-	RERR.UnreachableDestinationSeqNum = binary.LittleEndian.Uint32(data[8:12])
+	for i := 0; i < int(RERR.DestCount); i++ {
+		RERR.UnreachableDestinations = append(RERR.UnreachableDestinations, *UnmarshalRERRUnreachableDestination(data[4+i*8:]))
+	}
 
 	return RERR, nil
 }
 
+func (d *RERRUnreachableDestination) String() string {
+	return fmt.Sprintf("%s:%d", d.IP, d.SeqNum)
+}
+
 func (RERR *RERRMessage) String() string {
-	return fmt.Sprintf("RERR: Type=%d, Flags=%d, DestCount=%d, DestinationSeqNum=%d, DestinationIP=%s",
-		RERR.Type, RERR.Flags, RERR.DestCount, RERR.UnreachableDestinationSeqNum, RERR.UnreachableDestinationIP.String())
+	str := fmt.Sprintf("RERR: Type=%d, Flags=%d, DestCount=%d, ", RERR.Type, RERR.Flags, RERR.DestCount)
+
+	for i := 0; i < int(RERR.DestCount); i++ {
+		str += fmt.Sprintf("%s ", RERR.UnreachableDestinations[i].String())
+	}
+
+	return str
 }
