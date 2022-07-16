@@ -315,6 +315,26 @@ def update_locations(message):
             print(e)
 
 
+@sio.on('check-route-response')
+def check_route_response(message):
+    try:
+        id = message['id']
+        if id not in stations_car:
+            raise Exception("Car not found")
+
+        payload = {
+            'type': 'check-route-response',
+            'data': {
+                'coordinates': message['coordinates'],
+                'in_route': message['in_route'],
+            }
+        }
+        send_to_car(f"/tmp/car{id}.socket", payload)
+    except Exception as e:
+        if running:
+            print(e)
+
+
 def recieve_from_car(car_socket, id):
     global running
     try:

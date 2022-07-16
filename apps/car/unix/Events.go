@@ -25,12 +25,12 @@ const (
 type RefreshData = State
 
 type CheckRouteResponseData struct {
-	Coordinates Position `json:"coordinate"`
+	Coordinates Position `json:"coordinates"`
 	InRoute     bool     `json:"in_route"`
 }
 
 type CheckRouteData struct {
-	Coordinate Position `json:"coordinate"`
+	Coordinate Position `json:"coordinates"`
 }
 
 type DestinationReachedData struct {

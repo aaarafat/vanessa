@@ -13,6 +13,7 @@ func (a *App) startSocketHandlers() {
 	a.obstacleHandler()
 	a.destinationReachedHandler()
 	a.updateLocationHandler()
+	a.CheckRouteResponseHandler()
 }
 
 func (a *App) addCarHandler() {

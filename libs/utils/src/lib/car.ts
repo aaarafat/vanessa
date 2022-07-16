@@ -437,7 +437,7 @@ export class Car {
     return data.routes[0].geometry.coordinates;
   };
 
-  private checkObstaclesOnRoute = (obstacles: turf.Feature<turf.Point>[]) => {
+  public checkObstaclesOnRoute = (obstacles: turf.Feature<turf.Point>[]) => {
     const obstaclesFeatures = getObstacleFeatures(obstacles);
 
     const routeSlice = this.route

@@ -1,4 +1,10 @@
-import { Car, Coordinates, ICar, RSU } from '@vanessa/utils';
+import {
+  Car,
+  Coordinates,
+  createFeaturePoint,
+  ICar,
+  RSU,
+} from '@vanessa/utils';
 import React, { createContext, useEffect } from 'react';
 import io, { Socket } from 'socket.io-client';
 import { useAppSelector } from '../app/store';
@@ -16,6 +22,14 @@ type ChangeSpeedEvent = {
   id: number;
   data: {
     speed: number;
+  };
+};
+
+type CheckRouteEvent = {
+  type: 'check-route';
+  id: number;
+  data: {
+    coordinates: Coordinates;
   };
 };
 
@@ -44,8 +58,16 @@ export const SocketProvider: React.FC<React.ReactNode> = ({ children }) => {
       // socket.emit('change-speed', message);
     });
 
-    socket.on('check-route', (message: any) => {
+    socket.on('check-route', (message: CheckRouteEvent) => {
       console.log('check-route', message);
+      const car = cars.find((c) => c.id === message.id);
+      if (!car) return;
+      const coordinates = message.data.coordinates;
+      const isInRoute = car?.checkObstaclesOnRoute([
+        createFeaturePoint(coordinates),
+      ]);
+      console.log(isInRoute);
+      socketEvents.sendCheckRouteResponse(car, coordinates, isInRoute);
     });
 
     socket.on('move', (message: any) => {
@@ -119,6 +141,18 @@ export const socketEvents = {
         !(data.id === message.id && type === 'update-location')
     );
     socket.emit('update-location', message);
+  },
+  sendCheckRouteResponse: (
+    car: Car,
+    coordinates: Coordinates,
+    isInRoute: boolean
+  ) => {
+    const message = {
+      id: car.id,
+      coordinates,
+      in_route: isInRoute,
+    };
+    socket.emit('check-route-response', message);
   },
   addRSU: (rsu: RSU) => {
     const message = {
