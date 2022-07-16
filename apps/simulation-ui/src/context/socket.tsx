@@ -1,4 +1,4 @@
-import { Car, Coordinates, RSU } from '@vanessa/utils';
+import { Car, Coordinates, ICar, RSU } from '@vanessa/utils';
 import React, { createContext, useEffect } from 'react';
 import io, { Socket } from 'socket.io-client';
 import { useAppSelector } from '../app/store';
@@ -73,6 +73,21 @@ export const socketEvents = {
       port: car.port,
       route: car.route,
       speed: car.speed,
+      stopped: car.stopped,
+    };
+    socket.emit('add-car', message);
+  },
+  updateCar: (car: Omit<ICar, 'map'>) => {
+    const message = {
+      id: car.id,
+      coordinates: {
+        lat: car.lat,
+        lng: car.lng,
+      },
+      port: car.port,
+      route: car.route,
+      speed: car.speed,
+      stopped: car.stopped,
     };
     socket.emit('add-car', message);
   },

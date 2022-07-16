@@ -6,7 +6,7 @@ export interface SimulationState {
   rsus: RSU[];
   cars: Car[];
   rsusData: Partial<IRSU>[];
-  focusedCar: number | null;
+  focusedCar: Car | null;
   carsReceivedMessages: Record<string, any>;
 }
 
@@ -69,6 +69,7 @@ export const simulationSlice = createSlice({
       const { rsus, cars } = state;
       const { removeRSUs } = action.payload;
       // cars.forEach((car) => car.remove());
+      state.focusedCar = null;
       cars.splice(0, cars.length);
       if (removeRSUs) {
         // rsus.forEach((rsu) => rsu.remove());
@@ -76,12 +77,10 @@ export const simulationSlice = createSlice({
       }
     },
     focusCar: (state, action: PayloadAction<number>) => {
-      state.cars.forEach((car) => car.hide());
-      state.cars[action.payload].show(true);
-      state.focusedCar = state.cars[action.payload].id;
+      state.focusedCar =
+        state.cars.find((car) => car.id === action.payload) || null;
     },
     unfocusCar: (state) => {
-      state.cars.forEach((car) => car.show());
       state.focusedCar = null;
     },
     addMessage: (
