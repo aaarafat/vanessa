@@ -80,6 +80,10 @@ func (a *App) checkFront() {
 	state := a.GetState()
 	pos := state.GetPosition()
 	mnSpeed := state.MaxSpeed
+	if state.Stopped || state.DestinationReached || state.ObstacleDetected {
+		a.updateSpeed(0)
+		return
+	}
 	front := a.zoneTable.GetNearestFrontFrom(&pos)
 	if front != nil {
 		log.Printf("App %d: Front ", a.id)
