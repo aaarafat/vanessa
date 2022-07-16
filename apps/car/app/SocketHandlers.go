@@ -123,7 +123,9 @@ func (a *App) CheckRouteResponseHandler() {
 					ip, exists := a.checkRouteBuffer.GetStringKey(checkRouteResponse.Coordinates.String())
 					if exists {
 						a.checkRouteBuffer.Del(checkRouteResponse.Coordinates.String())
-						a.zoneTable.Ignore(ip.(net.IP))
+						if !checkRouteResponse.InRoute {
+							a.zoneTable.Ignore(ip.(net.IP))
+						}
 					}
 				}()
 			}
