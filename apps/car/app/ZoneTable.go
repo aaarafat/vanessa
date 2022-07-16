@@ -79,7 +79,7 @@ func (zt *ZoneTable) Set(ip net.IP, speed uint32, pos, myPos Position, myDir Vec
 		entry.timer.Reset(ZoneTable_UPDATE_INTERVAL_MS * time.Millisecond)
 
 		// update
-		newDirection := NewUnitVector(pos, entry.Position)
+		newDirection := NewUnitVector(entry.Position, pos)
 		newDirectionFromMe := NewUnitVector(myPos, pos)
 
 		if newDirection.Lng != 0 || newDirection.Lat != 0 {
