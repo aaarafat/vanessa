@@ -23,6 +23,7 @@ export class RSU {
   public clickableSourceId: string;
   private map: mapboxgl.Map;
   private popup: mapboxgl.Popup | null;
+  private removed = false;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private handlers: Record<string, ((...arg: any) => void)[]>;
@@ -36,7 +37,7 @@ export class RSU {
     this.clickableSourceId = `rsu-clickable-${this.id}`;
     this.lat = rsu.lat || 0;
     this.lng = rsu.lng || 0;
-    this.radius = rsu.radius || 10;
+    this.radius = rsu.radius || 500;
     this.map = rsu.map;
 
     this.popup = null;
@@ -58,7 +59,7 @@ export class RSU {
     const center = turf.point([this.lng, this.lat]);
     const options = {
       steps: 80,
-      units: 'kilometers' as turf.Units,
+      units: 'meters' as turf.Units,
       properties: { ...this.props },
     };
 
@@ -108,6 +109,18 @@ export class RSU {
     });
   }
 
+  public setRadius(radius: number) {
+    this.radius = radius;
+    if (!this.removed) {
+      this.map.removeLayer(this.sourceId);
+      this.map.removeSource(this.sourceId);
+
+      this.map.removeLayer(this.clickableSourceId);
+      this.map.removeSource(this.clickableSourceId);
+    }
+    this.draw();
+  }
+
   private get props(): RSUProps {
     return {
       ...rsuDefaultProps,
@@ -122,7 +135,9 @@ export class RSU {
     this.map.on('click', this.clickableSourceId, this.onClick);
   };
 
-  private onClick = () => {
+  private onClick = (e: mapboxgl.MapMouseEvent) => {
+    if (e?.originalEvent.defaultPrevented) return;
+    e?.originalEvent.preventDefault();
     if (this.popup) {
       this.popup.remove();
       this.popup = null;
@@ -210,6 +225,8 @@ export class RSU {
   }
 
   public remove() {
+    if (this.removed) return;
+    this.removed = true;
     this.popup?.remove();
     this.popup = null;
 

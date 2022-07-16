@@ -461,7 +461,10 @@ export class Car {
     return data.routes[0].geometry.coordinates;
   };
 
-  public checkObstaclesOnRoute = (obstacles: turf.Feature<turf.Point>[]) => {
+  public checkObstaclesOnRoute = (
+    obstacles: turf.Feature<turf.Point>[],
+    slice = false
+  ) => {
     const obstaclesFeatures = getObstacleFeatures(obstacles);
 
     const routeSlice = this.route
@@ -469,10 +472,13 @@ export class Car {
       .map((c) => [c.lng, c.lat]);
     if (routeSlice.length < 1) return false;
 
-    const remainingRoute = turf.lineString([
-      [this.lng, this.lat],
-      ...routeSlice,
-    ]);
+    let remainingRoute = turf.lineString([[this.lng, this.lat], ...routeSlice]);
+
+    if (slice) {
+      remainingRoute = turf.lineSliceAlong(remainingRoute, 0, 100, {
+        units: 'meters',
+      });
+    }
 
     if (!turf.booleanDisjoint(remainingRoute, obstaclesFeatures as any)) {
       return true;
@@ -504,7 +510,9 @@ export class Car {
     this.updatePopupProps();
   };
 
-  private onClick = () => {
+  private onClick = (e?: mapboxgl.MapMouseEvent) => {
+    if (e?.originalEvent.defaultPrevented) return;
+    e?.originalEvent.preventDefault();
     if (this.popup) {
       this.popup.remove();
       this.popup = null;

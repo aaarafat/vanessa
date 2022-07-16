@@ -20,11 +20,13 @@ import {
   addRSU,
   clearState,
   focusCar,
+  focusRSU,
   unfocusCar,
+  unfocusRSU,
 } from './store/simulationSlice';
-import { useHistory, useParams } from 'react-router-dom';
-import MessagesViewer from './change-speed';
+import ChangeSpeed from './change-speed';
 import { CAR_PORT_INIT, RSU_PORT_INIT } from '@vanessa/utils';
+import ChangeRange from './change-range';
 
 const spin = keyframes`
   0% {
@@ -173,9 +175,11 @@ export const Simulation: React.FC = () => {
     rsu.on('click', () => {
       mapDirections.reset();
       mapDirections.freeze();
+      dispatch(focusRSU(rsu.id));
     });
     rsu.on('popup:close', () => {
       mapDirections.unfreeze();
+      dispatch(unfocusRSU());
     });
 
     dispatch(addRSU(rsu));
@@ -282,12 +286,20 @@ export const Simulation: React.FC = () => {
         <Map />
         <ControlPanel
           onAddCar={handleAddCar}
+          onAddRSU={handleAddRSU}
           onAddObstacle={handleAddObstacle}
           onExport={handleExport}
           onImport={handleImport}
-          onClearMap={() => clearMap(false)}
+          onClearMap={() => {
+            setLoading(true);
+            clearMap(true);
+            socket?.once('cleared', () => {
+              setLoading(false);
+            });
+          }}
         />
-        <MessagesViewer />
+        <ChangeSpeed />
+        <ChangeRange />
       </div>
     </>
   );

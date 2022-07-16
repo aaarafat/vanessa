@@ -7,6 +7,7 @@ export interface SimulationState {
   cars: Car[];
   rsusData: Partial<IRSU>[];
   focusedCar: Car | null;
+  focusedRSU: RSU | null;
   carsReceivedMessages: Record<string, any>;
 }
 
@@ -16,25 +17,26 @@ const initialState: SimulationState = {
       id: 1,
       lng: 31.213,
       lat: 30.0252,
-      radius: 0.25,
+      radius: 250,
     },
     {
       id: 2,
       lng: 31.2029,
       lat: 30.0269,
-      radius: 0.5,
+      radius: 500,
     },
     {
       id: 3,
       lng: 31.2129,
       lat: 30.0185,
-      radius: 0.5,
+      radius: 500,
     },
   ],
   rsus: [],
   cars: [],
   carsReceivedMessages: {},
   focusedCar: null,
+  focusedRSU: null,
 };
 
 export const simulationSlice = createSlice({
@@ -83,6 +85,13 @@ export const simulationSlice = createSlice({
     unfocusCar: (state) => {
       state.focusedCar = null;
     },
+    focusRSU: (state, action: PayloadAction<number>) => {
+      state.focusedRSU =
+        state.rsus.find((rsu) => rsu.id === action.payload) || null;
+    },
+    unfocusRSU: (state) => {
+      state.focusedRSU = null;
+    },
     addMessage: (
       state,
       action: PayloadAction<{ id: number; message: any }>
@@ -102,6 +111,8 @@ export const {
   clearState,
   focusCar,
   unfocusCar,
+  focusRSU,
+  unfocusRSU,
   addMessage,
 } = simulationSlice.actions;
 

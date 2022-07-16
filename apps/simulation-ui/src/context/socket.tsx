@@ -63,9 +63,10 @@ export const SocketProvider: React.FC<React.ReactNode> = ({ children }) => {
       const car = cars.find((c) => c.id === message.id);
       if (!car) return;
       const coordinates = message.data.coordinates;
-      const isInRoute = car?.checkObstaclesOnRoute([
-        createFeaturePoint(coordinates),
-      ]);
+      const isInRoute = car?.checkObstaclesOnRoute(
+        [createFeaturePoint(coordinates)],
+        true
+      );
       console.log(isInRoute);
       socketEvents.sendCheckRouteResponse(car, coordinates, isInRoute);
     });
@@ -158,7 +159,7 @@ export const socketEvents = {
     const message = {
       id: rsu.id,
       coordinates: rsu.coordinates,
-      range: rsu.radius * 1000,
+      range: rsu.radius,
       port: rsu.port,
     };
     socket.emit('add-rsu', message);

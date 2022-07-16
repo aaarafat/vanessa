@@ -57,7 +57,7 @@ server_socket.bind((HOST, PORT))
 sio = SocketIO(APP, cors_allowed_origins="*", async_handlers=False)
 "Create a network."
 net = Mininet_wifi(link=wmediumd, wmediumd_mode=interference,
-                   controller=Controller, accessPoint=UserAP, autoAssociation=True, ac_method='ssf')  # ssf or llf
+                   controller=Controller, accessPoint=UserAP, autoAssociation=True, ac_method=None)  # ssf or llf
 stations = {}
 accessPoints = {}
 car_kwargs = dict(
@@ -180,27 +180,14 @@ def add_rsu(message):
             raise Exception("Pool ran out of stations")
 
         id = message['id']
-        if id not in ap_rsus:
-            rsu = rsus_pool.pop(0)
-            ap_rsus[id] = rsu
-        else:
+        if id in ap_rsus:
             rsu = ap_rsus[id]
+            update_rsu(rsu, message)
+            return
 
-        coordinates = message["coordinates"]
-        rsu_range = message["range"]
-
-        position = to_grid(coordinates)
-        try:
-            rsu.setRange(rsu_range)
-        except:
-            #! IMPORTANT
-            pass
-        try:
-            rsu.setPosition(position)
-        except:
-            #! IMPORTANT
-            pass
-        print(position)
+        rsu = rsus_pool.pop(0)
+        ap_rsus[id] = rsu
+        update_rsu(rsu, message)
 
         port = message['port']
 
@@ -211,6 +198,23 @@ def add_rsu(message):
     except Exception as e:
         if running:
             print(e)
+
+
+def update_rsu(rsu, message):
+    coordinates = message["coordinates"]
+    rsu_range = message["range"]
+    position = to_grid(coordinates)
+    try:
+        rsu.setRange(rsu_range)
+    except:
+        #! IMPORTANT
+        pass
+    try:
+        rsu.setPosition(position)
+    except:
+        #! IMPORTANT
+        pass
+    print(position)
 
 
 @sio.on('add-car')

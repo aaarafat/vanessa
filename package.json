@@ -14,7 +14,7 @@
     "affected:build": "nx affected:build",
     "dep-graph": "nx dep-graph",
     "format": "nx format:write",
-    "emulation": "sudo python apps/scripts/emulation.py",
+    "emulation": "sudo python apps/emulation/emulation.py",
     "build:network": "go build -o dist/apps/network apps/network/main.go",
     "simulation": "npm start simulation-ui -- --port 4200",
     "car": "npm start car-ui -- --port 4201",
