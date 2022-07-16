@@ -19,6 +19,7 @@ const (
 	CheckRouteResponseEvent Event = "check-route-response" // from simulator to car when route is checked
 	StateEvent              Event = "state"                // from car to ui
 	RefreshEvent            Event = "refresh"              // from car to ui
+	MoveEvent               Event = "move"                 // from car to simulator when car is initiated to move
 )
 
 type RefreshData = State

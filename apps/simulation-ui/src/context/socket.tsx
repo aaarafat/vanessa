@@ -48,9 +48,15 @@ export const SocketProvider: React.FC<React.ReactNode> = ({ children }) => {
       console.log('check-route', message);
     });
 
+    socket.on('move', (message: any) => {
+      console.log('move', message);
+    });
+
     return () => {
       socket.off('reroute');
       socket.off('change-speed');
+      socket.off('check-route');
+      socket.off('move');
     };
   }, [cars]);
 
