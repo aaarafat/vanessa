@@ -89,6 +89,8 @@ func (a *Aodv) handleMessage(payload []byte, from net.HardwareAddr, IfiIndex int
 		a.handleRREQ(payload, from, IfiIndex)
 	case RREPType:
 		a.handleRREP(payload, from, IfiIndex)
+	case RERRType:
+		log.Printf("RERR is not implemented yet\n")
 	default:
 		log.Println("Unknown message type: ", msgType)
 	}

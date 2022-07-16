@@ -20,13 +20,13 @@ type RERRMessage struct {
 	UnreachableDestinationSeqNum uint32
 }
 
-func NewRERRMessage(SrcIP, DestIP net.IP) *RERRMessage {
+func NewRERRMessage(SrcIP, DestIP net.IP, seqNum uint32) *RERRMessage {
 	return &RERRMessage{
 		Type:                         RERRType,
 		Flags:                        0,
 		DestCount:                    0,
 		UnreachableDestinationIP:     DestIP,
-		UnreachableDestinationSeqNum: 0,
+		UnreachableDestinationSeqNum: seqNum,
 	}
 }
 

@@ -58,6 +58,16 @@ func NewAodv(srcIP net.IP, ifiName string, neighborTables map[int]*VNeighborTabl
 func (a *Aodv) GetRoute(destIP net.IP) (*VRoute, bool) {
 	item, ok := a.routingTable.Get(destIP)
 	if ok {
+		// check if hop count is 0
+		if item.NoOfHops == 0 {
+			// check in neighbor table
+			if _, ok := a.neighborTables[item.IfiIndex].Get(destIP.String()); !ok {
+				// send RERR
+				go a.SendRERR(destIP, item.SeqNum)
+				return nil, false
+			}
+		}
+
 		return NewVRoute(item.Destination, item.NextHop, item.IfiIndex, int(item.NoOfHops)), true
 	}
 
@@ -119,6 +129,12 @@ func (a *Aodv) SendRREPFor(rreq *RREQMessage) {
 	// broadcast the RREP
 	log.Printf("Sending: %s\n", rrep.String())
 	a.Send(rrep.Marshal(), rrep.OriginatorIP)
+}
+
+func (a *Aodv) SendRERR(destination net.IP, seqNum uint32) {
+	rerr := NewRERRMessage(a.srcIP, destination, seqNum)
+	log.Printf("Sending: %s\n", rerr.String())
+	a.flooder.ForwardToAll(rerr.Marshal())
 }
 
 func (a *Aodv) updateRSU() {
