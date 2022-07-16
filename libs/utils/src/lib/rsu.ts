@@ -20,7 +20,7 @@ export class RSU {
   public lng: number;
   public radius: number;
   public sourceId: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  public clickableSourceId: string;
   private map: mapboxgl.Map;
   private popup: mapboxgl.Popup | null;
 
@@ -33,6 +33,7 @@ export class RSU {
   constructor(rsu: PartialExcept<IRSU, 'map'>) {
     this.id = rsu.id || Date.now();
     this.sourceId = `rsu-${this.id}`;
+    this.clickableSourceId = `rsu-clickable-${this.id}`;
     this.lat = rsu.lat || 0;
     this.lng = rsu.lng || 0;
     this.radius = rsu.radius || 10;
@@ -67,22 +68,44 @@ export class RSU {
       data,
     };
 
-    this.map
-      .addSource(this.sourceId, geojson)
-      .getSource(this.sourceId) as mapboxgl.GeoJSONSource;
+    this.map.addSource(this.sourceId, geojson);
 
-    this.map
-      .addLayer({
-        id: this.sourceId,
-        source: this.sourceId,
-        type: 'line',
-        paint: {
-          'line-color': '#ff0000',
-          'line-opacity': 0.5,
-          'line-width': 2,
+    this.map.addLayer({
+      id: this.sourceId,
+      source: this.sourceId,
+      type: 'line',
+      paint: {
+        'line-color': '#ff0000',
+        'line-opacity': 0.5,
+        'line-width': 2,
+      },
+    });
+
+    const g: mapboxgl.GeoJSONSourceRaw = {
+      type: 'geojson',
+      data: {
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [this.lng, this.lat],
         },
-      })
-      .getLayer(this.sourceId) as mapboxgl.LineLayer;
+        properties: {
+          ...this.props,
+        },
+      },
+    };
+
+    this.map.addSource(this.clickableSourceId, g);
+
+    this.map.addLayer({
+      id: this.clickableSourceId,
+      source: this.clickableSourceId,
+      type: 'circle',
+      paint: {
+        'circle-radius': 10,
+        'circle-color': '#ff0000',
+      },
+    });
   }
 
   private get props(): RSUProps {
@@ -96,10 +119,15 @@ export class RSU {
   }
 
   private attachHandlers = () => {
-    this.map.on('click', this.sourceId, this.onClick);
+    this.map.on('click', this.clickableSourceId, this.onClick);
   };
 
   private onClick = () => {
+    if (this.popup) {
+      this.popup.remove();
+      this.popup = null;
+    }
+
     this.popup = new mapboxgl.Popup()
       .setLngLat(this.coordinates as mapboxgl.LngLatLike)
       .setHTML(this.description)
@@ -131,8 +159,12 @@ export class RSU {
   }
 
   private get description() {
-    const description =
+    let description =
       '<h1 class="mapboxgl-popup-title">RSU</h1>' + this.props.description;
+
+    if (this.port > 0) {
+      description += `<p>Port: ${this.port}</p>`;
+    }
     return interpolateString(description, this);
   }
 
@@ -178,8 +210,17 @@ export class RSU {
   }
 
   public remove() {
+    this.popup?.remove();
+    this.popup = null;
+
     this.map.removeLayer(this.sourceId);
     this.map.removeSource(this.sourceId);
+
+    this.map.removeLayer(this.clickableSourceId);
+    this.map.removeSource(this.clickableSourceId);
+
+    this.map.off('click', this.clickableSourceId, this.onClick);
+    this.handlers = {};
   }
 }
 
