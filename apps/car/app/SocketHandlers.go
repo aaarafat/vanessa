@@ -4,10 +4,8 @@ import (
 	"encoding/json"
 	"log"
 	"net"
-	"reflect"
 
 	"github.com/aaarafat/vanessa/apps/car/unix"
-	"github.com/aaarafat/vanessa/libs/vector"
 )
 
 func (a *App) startSocketHandlers() {
@@ -122,14 +120,10 @@ func (a *App) CheckRouteResponseHandler() {
 				}
 
 				go func() {
-					for item := range a.checkRouteBuffer.Iter() {
-						pos := item.Value.(vector.Position)
-						ip := item.Key.(string)
-						if reflect.DeepEqual(pos, checkRouteResponse.Coordinates) {
-							a.checkRouteBuffer.Del(item.Key)
-							a.zoneTable.Ignore(net.ParseIP(ip))
-							return
-						}
+					ip, exists := a.checkRouteBuffer.GetStringKey(checkRouteResponse.Coordinates.String())
+					if exists {
+						a.checkRouteBuffer.Del(checkRouteResponse.Coordinates.String())
+						a.zoneTable.Ignore(ip.(net.IP))
 					}
 				}()
 			}
