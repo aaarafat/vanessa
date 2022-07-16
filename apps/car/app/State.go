@@ -58,7 +58,12 @@ func (a *App) updateSpeed(speed uint32) {
 	if a.state == nil || a.state.Speed == speed || speed > a.state.MaxSpeed {
 		return
 	}
+
 	a.state.Speed = speed
+
+	if a.state.Stopped || a.state.DestinationReached || a.state.ObstacleDetected {
+		a.state.Speed = 0
+	}
 
 	go func() {
 		a.sendSpeed(speed)

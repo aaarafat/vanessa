@@ -31,7 +31,7 @@ func (a *App) addCarHandler() {
 					return
 				}
 
-				a.initState(uint32(addCar.Speed), addCar.Route, addCar.Coordinates)
+				a.initState(uint32(addCar.Speed), addCar.Route, addCar.Coordinates, addCar.Stopped)
 			}
 		}
 	}()
