@@ -59,14 +59,14 @@ func (a *Aodv) GetRoute(destIP net.IP) (*VRoute, bool) {
 	item, ok := a.routingTable.Get(destIP)
 	if ok {
 		// check if hop count is 0
-		/*if item.NoOfHops == 0 {
+		if item.NoOfHops == 0 {
 			// check in neighbor table
 			if _, ok := a.neighborTables[item.IfiIndex].Get(item.NextHop.String()); !ok {
 				// send RERR
-				go a.SendRERR(destIP, item.SeqNum)
+				go a.SendRERR(item.NextHop)
 				return nil, false
 			}
-		}*/
+		}
 
 		return NewVRoute(item.Destination, item.NextHop, item.IfiIndex, int(item.NoOfHops)), true
 	}
@@ -131,8 +131,31 @@ func (a *Aodv) SendRREPFor(rreq *RREQMessage) {
 	a.Send(rrep.Marshal(), rrep.OriginatorIP)
 }
 
-func (a *Aodv) SendRERR(destination net.IP, seqNum uint32) {
-	rerr := NewRERRMessage(a.srcIP, destination, seqNum)
+func (a *Aodv) SendRERR(nextHop net.HardwareAddr) {
+	// get all unreachable destinations
+	unreachable := make([]RERRUnreachableDestination, 0)
+	for _, item := range a.routingTable.Items() {
+		if item.NextHop.String() == nextHop.String() {
+			unreachable = append(unreachable, RERRUnreachableDestination{
+				IP:     item.Destination,
+				SeqNum: item.SeqNum,
+			})
+		}
+	}
+
+	if len(unreachable) == 0 {
+		return
+	}
+
+	// delete from routing table
+	for _, dest := range unreachable {
+		a.routingTable.Del(dest.IP)
+		// send RREQ to local repair
+		a.SendRREQ(dest.IP)
+	}
+
+	rerr := NewRERRMessage(unreachable)
+	rerr.SetFlag(RERRFlagN) // set N flag because we performed a local repair
 	log.Printf("Sending: %s\n", rerr.String())
 	a.flooder.ForwardToAll(rerr.Marshal())
 }

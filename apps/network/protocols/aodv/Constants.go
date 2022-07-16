@@ -19,13 +19,15 @@ const (
 
 	RREPFlagR uint16 = 1 << 0
 	RREPFlagA uint16 = 1 << 1
+
+	RERRFlagN uint16 = 1 << 0
 )
 
 // Lengths
 const (
 	RREQMessageLen = 24
 	RREPMessageLen = 20
-	RERRMessageLen = 12
+	RERRMessageLen = 4
 	DataMessageLen = 16
 )
 
