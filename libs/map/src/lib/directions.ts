@@ -59,6 +59,7 @@ export class Directions extends MapboxDirections {
         ['in', 'Car', ['get', 'title']],
         ['in', 'RSU', ['get', 'title']],
       ],
+      validate: false,
     });
 
     return features?.length;

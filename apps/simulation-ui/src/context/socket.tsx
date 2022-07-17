@@ -95,8 +95,8 @@ export const socketEvents = {
       coordinates: car.coordinates,
       port: car.port,
       route: car.route,
-      speed: car.speed,
-      stopped: car.stopped,
+      speed: car.carSpeed,
+      stopped: car.manualStop,
     };
     // console.log('add', message);
     socket.emit('add-car', message);
@@ -159,7 +159,7 @@ export const socketEvents = {
     const message = {
       id: rsu.id,
       coordinates: rsu.coordinates,
-      range: rsu.radius,
+      range: rsu.range,
       port: rsu.port,
     };
     socket.emit('add-rsu', message);

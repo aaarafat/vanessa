@@ -76,8 +76,8 @@ const ChangeSpeedForm: React.FC = () => {
       ...focusedCar.coordinates,
       port: focusedCar.port,
       route: focusedCar.route,
-      speed: speed,
-      stopped: focusedCar.stopped,
+      speed,
+      stopped: focusedCar.manualStop,
     };
     socketEvents.updateCar(msg);
   };
