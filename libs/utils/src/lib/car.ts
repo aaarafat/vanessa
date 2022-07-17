@@ -509,8 +509,10 @@ export class Car {
   };
 
   public setSpeed = (speed: number) => {
-    if (speed <= 0 && !this.manualStop) {
-      this.autoStop = true;
+    if (speed <= 0) {
+      if (!this.manualStop) {
+        this.autoStop = true;
+      }
     } else {
       this.autoStop = false;
       this.carSpeed = speed;
@@ -574,7 +576,7 @@ export class Car {
     if (el)
       el.onclick = () => {
         this.manualStop = true;
-        this.emit('change-speed', this);
+        this.emit('change-stop', this);
         this.updatePopupProps();
       };
   }
@@ -587,7 +589,7 @@ export class Car {
     if (el)
       el.onclick = () => {
         this.manualStop = false;
-        this.emit('change-speed', this);
+        this.emit('change-stop', this);
         this.updatePopupProps();
       };
   }
@@ -677,6 +679,7 @@ export class Car {
       | 'move'
       | 'popup:close'
       | 'change-speed'
+      | 'change-stop'
       | 'obstacle-detected'
       | 'destination-reached',
     handler: any
@@ -693,6 +696,7 @@ export class Car {
       | 'move'
       | 'popup:close'
       | 'change-speed'
+      | 'change-stop'
       | 'obstacle-detected'
       | 'destination-reached',
     handler: (...args: any) => void
@@ -709,6 +713,7 @@ export class Car {
       | 'move'
       | 'popup:close'
       | 'change-speed'
+      | 'change-stop'
       | 'obstacle-detected'
       | 'destination-reached',
     ...args: any[]

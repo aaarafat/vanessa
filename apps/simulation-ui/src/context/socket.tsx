@@ -116,6 +116,13 @@ export const socketEvents = {
     // console.log('update', message);
     socket.emit('add-car', message);
   },
+  changeStop: (car: Car) => {
+    const message = {
+      id: car.id,
+      stop: car.manualStop,
+    };
+    socket.emit('change-stop', message);
+  },
   destinationReached: (car: Car) => {
     const message = {
       id: car.id,
