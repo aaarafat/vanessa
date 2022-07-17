@@ -18,6 +18,7 @@ export interface ICar extends ICommon {
   route: Coordinates[];
   obstacleDetected?: boolean;
   destinationReached?: boolean;
+  stopped?: boolean;
 }
 export interface IRSU extends ICommon {
   radius: number;

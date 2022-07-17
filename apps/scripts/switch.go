@@ -35,7 +35,6 @@ func BroadcastToInterfaces(payload []byte, from int) {
 	}
 }
 
-
 func initLogger(debug bool) {
 	log.SetPrefix("[vanessa]")
 	log.SetFlags(log.LstdFlags | log.Lshortfile)

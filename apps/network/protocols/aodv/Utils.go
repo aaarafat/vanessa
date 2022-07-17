@@ -6,7 +6,6 @@ import (
 	"time"
 )
 
-
 func (a *Aodv) updateSeqNum(newSeqNum uint32) {
 	if newSeqNum > a.seqNum {
 		a.seqNum = newSeqNum
@@ -24,7 +23,7 @@ func (a *Aodv) connectedTo(destIP net.IP) bool {
 }
 
 func (a *Aodv) isRREQForMe(rreq *RREQMessage) bool {
-	return rreq.DestinationIP.Equal(a.srcIP) 
+	return rreq.DestinationIP.Equal(a.srcIP)
 }
 
 func (a *Aodv) isRREQForNeighbor(rreq *RREQMessage) bool {
@@ -40,6 +39,6 @@ func (a *Aodv) addToRREQBuffer(rreq *RREQMessage) {
 	callback := func() {
 		a.rreqBuffer.Del(fmt.Sprintf("%s-%d", rreq.DestinationIP.String(), rreq.RREQID))
 	}
-	timer := time.AfterFunc(time.Millisecond * time.Duration(PATH_DISCOVERY_TIME_MS), callback)
+	timer := time.AfterFunc(time.Millisecond*time.Duration(PATH_DISCOVERY_TIME_MS), callback)
 	a.rreqBuffer.Set(fmt.Sprintf("%s-%d", rreq.DestinationIP.String(), a.rreqID), *timer)
 }

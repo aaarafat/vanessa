@@ -2,6 +2,7 @@ package vector
 
 import (
 	"encoding/binary"
+	"fmt"
 	"math"
 )
 
@@ -58,6 +59,7 @@ func UnmarshalPositions(payload []byte, len int) []Position {
 }
 
 // Distance returns the distance between two points on the Earth in meter.
+// https://www.geeksforgeeks.org/program-distance-two-points-earth/
 func (p *Position) Distance(p2 *Position) float64 {
 	latRad1 := ToRadians(p.Lat)
 	latRad2 := ToRadians(p2.Lat)
@@ -72,4 +74,8 @@ func (p *Position) Distance(p2 *Position) float64 {
 	ans = 2 * math.Asin(math.Sqrt(ans))
 
 	return ans * EARTH_RADIUS_METER
+}
+
+func (p *Position) String() string {
+	return fmt.Sprintf("%f, %f", p.Lat, p.Lng)
 }

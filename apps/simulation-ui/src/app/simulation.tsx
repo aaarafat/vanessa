@@ -20,11 +20,13 @@ import {
   addRSU,
   clearState,
   focusCar,
+  focusRSU,
   unfocusCar,
+  unfocusRSU,
 } from './store/simulationSlice';
-import { useHistory, useParams } from 'react-router-dom';
-import MessagesViewer from './messages-viewer';
+import ChangeSpeed from './change-speed';
 import { CAR_PORT_INIT, RSU_PORT_INIT } from '@vanessa/utils';
+import ChangeRange from './change-range';
 
 const spin = keyframes`
   0% {
@@ -79,9 +81,7 @@ export const Simulation: React.FC = () => {
         setMapLoaded(true);
         socket.once('cleared', () => {
           rsusData.forEach((r) => {
-            const rsu = new RSU({ ...r, map, port: rsuPortsCounter++ });
-            dispatch(addRSU(rsu));
-            socketEvents.addRSU(rsu);
+            handleAddRSU(r);
           });
           setLoading(false);
         });
@@ -148,9 +148,11 @@ export const Simulation: React.FC = () => {
     car.on('click', () => {
       mapDirections.reset();
       mapDirections.freeze();
+      dispatch(focusCar(car.id));
     });
     car.on('popup:close', () => {
       mapDirections.unfreeze();
+      dispatch(unfocusCar());
     });
 
     car.on('move', () => socketEvents.sendCarLocation(car));
@@ -164,6 +166,24 @@ export const Simulation: React.FC = () => {
     socketEvents.addCar(car);
 
     mapDirections.reset();
+  };
+
+  const handleAddRSU = (rsuInputs: Partial<IRSU>) => {
+    if (!map) return;
+    const rsu = new RSU({ ...rsuInputs, map, port: rsuPortsCounter++ });
+
+    rsu.on('click', () => {
+      mapDirections.reset();
+      mapDirections.freeze();
+      dispatch(focusRSU(rsu.id));
+    });
+    rsu.on('popup:close', () => {
+      mapDirections.unfreeze();
+      dispatch(unfocusRSU());
+    });
+
+    dispatch(addRSU(rsu));
+    socketEvents.addRSU(rsu);
   };
 
   const handleExport = () => {
@@ -246,9 +266,7 @@ export const Simulation: React.FC = () => {
           ...item,
         });
       } else if (item.type === 'rsu') {
-        const rsu = new RSU({ ...item, map, port: rsuPortsCounter++ });
-        dispatch(addRSU(rsu));
-        socketEvents.addRSU(rsu);
+        handleAddRSU(item);
       } else if (item.type === 'obstacles') {
         setObstacles(
           item.coordinates.map((c: turf.Position) => createFeaturePoint(c))
@@ -268,12 +286,20 @@ export const Simulation: React.FC = () => {
         <Map />
         <ControlPanel
           onAddCar={handleAddCar}
+          onAddRSU={handleAddRSU}
           onAddObstacle={handleAddObstacle}
           onExport={handleExport}
           onImport={handleImport}
-          onClearMap={() => clearMap(false)}
+          onClearMap={() => {
+            setLoading(true);
+            clearMap(true);
+            socket?.once('cleared', () => {
+              setLoading(false);
+            });
+          }}
         />
-        <MessagesViewer />
+        <ChangeSpeed />
+        <ChangeRange />
       </div>
     </>
   );

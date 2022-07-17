@@ -1,5 +1,5 @@
 import React, { useContext, useEffect } from 'react';
-import { Coordinates, ICar } from '@vanessa/utils';
+import { Coordinates, ICar, IRSU } from '@vanessa/utils';
 import { MapContext } from '@vanessa/map';
 import styled from 'styled-components';
 
@@ -112,10 +112,18 @@ const initialState = {
 const ControlPanel: React.FC<{
   onAddObstacle: (coordinates: Coordinates | null) => void;
   onAddCar: (carInputs: Partial<ICar>) => void;
+  onAddRSU: (rsuInput: Partial<IRSU>) => void;
   onExport: () => void;
   onImport: () => void;
   onClearMap: () => void;
-}> = ({ onAddObstacle, onAddCar, onExport, onImport, onClearMap }) => {
+}> = ({
+  onAddObstacle,
+  onAddCar,
+  onAddRSU,
+  onExport,
+  onImport,
+  onClearMap,
+}) => {
   const { map, mapRef, mapDirections } = useContext(MapContext);
   const [carInputs, setCarInputs] = React.useState<Partial<ICar>>(initialState);
   const [accidentInput, setAccidentInput] = React.useState<Coordinates>();
@@ -204,6 +212,15 @@ const ControlPanel: React.FC<{
           />
           <PrimaryButton disabled={!carInputs.route}>Add Car</PrimaryButton>
         </Form>
+        <PrimaryButton
+          disabled={!accidentInput}
+          onClick={() => {
+            onAddRSU(accidentInput || {});
+            mapDirections.reset();
+          }}
+        >
+          Add RSU
+        </PrimaryButton>
         <PrimaryButton
           disabled={!accidentInput}
           onClick={() => {

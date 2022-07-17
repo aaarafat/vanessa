@@ -7,19 +7,20 @@ require (
 	github.com/fsnotify/fsnotify v1.5.4
 	github.com/mattn/go-sqlite3 v1.14.13
 	github.com/mdlayher/packet v1.0.0
+	github.com/zenazn/pkcs7pad v0.0.0-20170308005700-253a5b1f0e03
 	gopkg.in/antage/eventsource.v1 v1.0.0-20150318155416-803f4c5af225
 )
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dchest/siphash v1.1.0 // indirect
+	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/google/gopacket v1.1.19 // indirect
 	github.com/josharian/native v1.0.0 // indirect
 	github.com/mdlayher/socket v0.2.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.4.0 // indirect
 	github.com/stretchr/testify v1.8.0 // indirect
-	github.com/zenazn/pkcs7pad v0.0.0-20170308005700-253a5b1f0e03 // indirect
 	golang.org/x/net v0.0.0-20220531201128-c960675eff93 // indirect
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a // indirect
@@ -32,12 +33,11 @@ require (
 	github.com/mdlayher/ethernet v0.0.0-20220221185849-529eae5b6118
 	google.golang.org/grpc v1.47.0
 	google.golang.org/grpc/examples v0.0.0-20220602231701-13b378bc4585
-	google.golang.org/protobuf v1.28.0 // indirect
+	google.golang.org/protobuf v1.28.0
 )
 
 require (
 	github.com/cenkalti/backoff/v4 v4.1.3
-	github.com/golang/protobuf v1.5.2
 	google.golang.org/genproto v0.0.0-20200806141610-86f49bd18e98 // indirect
 	protos v0.0.0-00010101000000-000000000000
 )

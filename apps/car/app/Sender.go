@@ -66,12 +66,20 @@ func (a *App) sendToRouterWithOptions(data []byte, destIP net.IP, options []byte
 
 func (a *App) sendSpeed(speed uint32) {
 	a.sensor.Write(unix.SpeedData{Speed: int(speed)}, unix.ChangeSpeedEvent)
+	a.ui.Write(unix.SpeedData{Speed: int(speed)}, string(unix.ChangeSpeedEvent))
 
-	entries := a.zoneTable.GetBehindMe()
-	for _, entry := range entries {
-		if entry.Speed > speed {
-			// send slow down
-			a.sendToRouter(NewVSpeedMessage(a.ip, speed).Marshal(), entry.IP)
-		}
+	pos := a.state.GetPosition()
+	behind := a.zoneTable.GetNearestBehindFrom(&pos)
+	if behind != nil && behind.Speed > speed {
+		// send slow down
+		a.sendToRouter(NewVSpeedMessage(a.ip, speed).Marshal(), behind.IP)
+	}
+}
+
+func (a *App) sendCheckRoute(pos Position, ip net.IP) {
+	_, loaded := a.checkRouteBuffer.GetOrInsert(pos.String(), ip)
+	if !loaded {
+		log.Printf("Sending check route : %f  %f", pos.Lng, pos.Lat)
+		a.sensor.Write(unix.CheckRouteData{Coordinate: pos}, unix.CheckRouteEvent)
 	}
 }

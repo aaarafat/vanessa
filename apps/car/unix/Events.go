@@ -7,15 +7,31 @@ import (
 type Event string
 
 const (
-	DestinationReachedEvent Event = "destination-reached"
-	ObstacleDetectedEvent   Event = "obstacle-detected"  // from sensor
-	ObstacleReceivedEvent   Event = "obstacle-received"  // from router
-	ObstaclesReceivedEvent  Event = "obstacles-received" // from RSU
-	RerouteEvent            Event = "reroute"
-	ChangeSpeedEvent        Event = "change-speed"
-	AddCarEvent             Event = "add-car"
-	UpdateLocationEvent     Event = "update-location"
+	DestinationReachedEvent Event = "destination-reached"  // from simulator to car ui when destination is reached
+	ObstacleDetectedEvent   Event = "obstacle-detected"    // from simulator to car
+	ObstacleReceivedEvent   Event = "obstacle-received"    // from car to ui and simulator when obstacle are received from other rsu
+	ObstaclesReceivedEvent  Event = "obstacles-received"   // from car to ui and simulator when obstacles are received from other rsu
+	RerouteEvent            Event = "reroute"              // from car to simulator when reroute is requested
+	ChangeSpeedEvent        Event = "change-speed"         // from car to simulator when speed is changed
+	AddCarEvent             Event = "add-car"              // from simulator to car when car is added, rerouted and speed is changed
+	UpdateLocationEvent     Event = "update-location"      // from simulator to car when location is changed
+	CheckRouteEvent         Event = "check-route"          // from car to simulator when route is checked
+	CheckRouteResponseEvent Event = "check-route-response" // from simulator to car when route is checked
+	StateEvent              Event = "state"                // from car to ui
+	RefreshEvent            Event = "refresh"              // from car to ui
+	MoveEvent               Event = "move"                 // from car to simulator when car is initiated to move
 )
+
+type RefreshData = State
+
+type CheckRouteResponseData struct {
+	Coordinates Position `json:"coordinates"`
+	InRoute     bool     `json:"in_route"`
+}
+
+type CheckRouteData struct {
+	Coordinate Position `json:"coordinates"`
+}
 
 type DestinationReachedData struct {
 	Coordinates Position `json:"coordinates"`
@@ -30,6 +46,7 @@ type AddCarData struct {
 	Coordinates Position   `json:"coordinates"`
 	Route       []Position `json:"route"`
 	Speed       int        `json:"speed"`
+	Stopped     bool       `json:"stopped"`
 }
 
 type UpdateLocationData struct {
@@ -46,6 +63,12 @@ type ObstaclesReceivedData struct {
 
 type SpeedData struct {
 	Speed int `json:"speed"`
+}
+
+type StateData struct {
+	Coordinates Position   `json:"coordinates"`
+	Speed       int        `json:"speed"`
+	Route       []Position `json:"route"`
 }
 
 func FormatObstacles(pos []Position) ObstaclesReceivedData {

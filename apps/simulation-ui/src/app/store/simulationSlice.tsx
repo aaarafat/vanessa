@@ -6,7 +6,8 @@ export interface SimulationState {
   rsus: RSU[];
   cars: Car[];
   rsusData: Partial<IRSU>[];
-  focusedCar: number | null;
+  focusedCar: Car | null;
+  focusedRSU: RSU | null;
   carsReceivedMessages: Record<string, any>;
 }
 
@@ -16,25 +17,26 @@ const initialState: SimulationState = {
       id: 1,
       lng: 31.213,
       lat: 30.0252,
-      radius: 0.25,
+      radius: 250,
     },
     {
       id: 2,
       lng: 31.2029,
       lat: 30.0269,
-      radius: 0.5,
+      radius: 500,
     },
     {
       id: 3,
       lng: 31.2129,
       lat: 30.0185,
-      radius: 0.5,
+      radius: 500,
     },
   ],
   rsus: [],
   cars: [],
   carsReceivedMessages: {},
   focusedCar: null,
+  focusedRSU: null,
 };
 
 export const simulationSlice = createSlice({
@@ -69,6 +71,7 @@ export const simulationSlice = createSlice({
       const { rsus, cars } = state;
       const { removeRSUs } = action.payload;
       // cars.forEach((car) => car.remove());
+      state.focusedCar = null;
       cars.splice(0, cars.length);
       if (removeRSUs) {
         // rsus.forEach((rsu) => rsu.remove());
@@ -76,13 +79,18 @@ export const simulationSlice = createSlice({
       }
     },
     focusCar: (state, action: PayloadAction<number>) => {
-      state.cars.forEach((car) => car.hide());
-      state.cars[action.payload].show(true);
-      state.focusedCar = state.cars[action.payload].id;
+      state.focusedCar =
+        state.cars.find((car) => car.id === action.payload) || null;
     },
     unfocusCar: (state) => {
-      state.cars.forEach((car) => car.show());
       state.focusedCar = null;
+    },
+    focusRSU: (state, action: PayloadAction<number>) => {
+      state.focusedRSU =
+        state.rsus.find((rsu) => rsu.id === action.payload) || null;
+    },
+    unfocusRSU: (state) => {
+      state.focusedRSU = null;
     },
     addMessage: (
       state,
@@ -103,6 +111,8 @@ export const {
   clearState,
   focusCar,
   unfocusCar,
+  focusRSU,
+  unfocusRSU,
   addMessage,
 } = simulationSlice.actions;
 

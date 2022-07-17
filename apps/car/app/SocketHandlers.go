@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"log"
+	"net"
 
 	"github.com/aaarafat/vanessa/apps/car/unix"
 )
@@ -12,7 +13,7 @@ func (a *App) startSocketHandlers() {
 	a.obstacleHandler()
 	a.destinationReachedHandler()
 	a.updateLocationHandler()
-	a.changeSpeedHandler()
+	a.CheckRouteResponseHandler()
 }
 
 func (a *App) addCarHandler() {
@@ -31,7 +32,9 @@ func (a *App) addCarHandler() {
 					return
 				}
 
-				a.initState(uint32(addCar.Speed), addCar.Route, addCar.Coordinates)
+				log.Printf("Adding car %v", addCar)
+
+				a.initState(uint32(addCar.Speed), addCar.Route, addCar.Coordinates, addCar.Stopped)
 			}
 		}
 	}()
@@ -103,23 +106,29 @@ func (a *App) updateLocationHandler() {
 	}()
 }
 
-func (a *App) changeSpeedHandler() {
-	changeSpeedChannel := make(chan json.RawMessage)
-	changeSpeedSubscriber := &unix.Subscriber{Messages: &changeSpeedChannel}
-	a.sensor.Subscribe(unix.ChangeSpeedEvent, changeSpeedSubscriber)
+func (a *App) CheckRouteResponseHandler() {
+	checkRouteResponseChannel := make(chan json.RawMessage)
+	checkRouteResponseSubscriber := &unix.Subscriber{Messages: &checkRouteResponseChannel}
+	a.sensor.Subscribe(unix.CheckRouteResponseEvent, checkRouteResponseSubscriber)
 
 	go func() {
 		for {
 			select {
-			case data := <-*changeSpeedSubscriber.Messages:
-				var speed unix.SpeedData
-				err := json.Unmarshal(data, &speed)
+			case data := <-*checkRouteResponseSubscriber.Messages:
+				var checkRouteResponse unix.CheckRouteResponseData
+				err := json.Unmarshal(data, &checkRouteResponse)
 				if err != nil {
-					log.Printf("Error decoding update-location data: %v", err)
+					log.Printf("Error decoding check-route-response data: %v", err)
 					return
 				}
 
-				go a.updateSpeed(uint32(speed.Speed))
+				go func() {
+					ip, exists := a.checkRouteBuffer.GetStringKey(checkRouteResponse.Coordinates.String())
+					if exists {
+						a.checkRouteBuffer.Del(checkRouteResponse.Coordinates.String())
+						a.zoneTable.Ignore(ip.(net.IP), !checkRouteResponse.InRoute)
+					}
+				}()
 			}
 		}
 	}()

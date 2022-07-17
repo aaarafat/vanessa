@@ -66,7 +66,7 @@ func (sncf *AreaSNCF) Flood(bytes []byte) {
 func (sncf *AreaSNCF) forward(data []byte, fromIP net.IP, fromMac net.HardwareAddr) {
 	seqHeader := UnmarshalSequenceHeader(data[0:4])
 	if sncf.seqTable.Exists(fromIP, seqHeader.SequenceNumber) || sncf.srcIP.Equal(fromIP) {
-		log.Printf("SNCF: duplicate packet from %v", fromIP)
+		log.Printf("ASNCF: duplicate packet from %v", fromIP)
 		return
 	}
 
@@ -125,7 +125,7 @@ func (sncf *AreaSNCF) Read() ([]byte, net.HardwareAddr, error) {
 		return nil, nil, err
 	}
 
-	log.Printf("SNCF: received packet from %v\n", addr)
+	log.Printf("ASNCF: received packet from %v\n", addr)
 
 	packet, err := ip.UnmarshalPacket(data[4:])
 	if err != nil {
@@ -135,7 +135,7 @@ func (sncf *AreaSNCF) Read() ([]byte, net.HardwareAddr, error) {
 
 	seqHeader := UnmarshalSequenceHeader(data[0:4])
 	if sncf.seqTable.Exists(packet.Header.SrcIP, seqHeader.SequenceNumber) || sncf.srcIP.Equal(packet.Header.SrcIP) {
-		log.Printf("SNCF: duplicate packet from %v", packet.Header.SrcIP)
+		log.Printf("ASNCF: duplicate packet from %v", packet.Header.SrcIP)
 		return nil, nil, fmt.Errorf("duplicate packet")
 	}
 

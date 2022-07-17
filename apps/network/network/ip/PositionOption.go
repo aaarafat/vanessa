@@ -12,8 +12,8 @@ const (
 
 type PositionOption struct {
 	Type        uint8
-	Position    Position
-	MaxDistance float64
+	Position    Position // src position
+	MaxDistance float64  // max distance to destination
 }
 
 const (

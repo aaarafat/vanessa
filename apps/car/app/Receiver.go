@@ -52,8 +52,9 @@ func (a *App) handleMessage(bytes []byte) {
 		log.Printf("VZone message received: %s", msg.String())
 		state := a.GetState()
 		entry := a.zoneTable.Set(msg.OriginatorIP, msg.Speed, msg.Position, state.GetPosition(), state.Direction)
-		if a.zoneTable.IsFront(entry) && entry.Speed < a.GetState().Speed {
+		if a.zoneTable.IsFront(entry) && entry.Speed < state.Speed && entry.ShouldCheckRoute() {
 			a.updateSpeed(entry.Speed)
+			a.sendCheckRoute(entry.Position, entry.IP)
 		}
 
 	case VPathDiscoveryType:
@@ -75,7 +76,12 @@ func (a *App) handleMessage(bytes []byte) {
 			return
 		}
 		log.Printf("VSpeed message received: %s", msg.String())
-		a.updateSpeed(msg.Speed)
+		state := a.GetState()
+		entry, exists := a.zoneTable.Get(msg.OriginatorIP)
+		if exists && a.zoneTable.IsFront(entry) && state.Speed > msg.Speed && entry.ShouldCheckRoute() {
+			a.updateSpeed(msg.Speed)
+			a.sendCheckRoute(entry.Position, entry.IP)
+		}
 
 	default:
 		log.Printf("Unknown message type: %d", mType)

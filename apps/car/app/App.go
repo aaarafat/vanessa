@@ -9,6 +9,7 @@ import (
 	"github.com/aaarafat/vanessa/apps/car/unix"
 	"github.com/aaarafat/vanessa/apps/network/network/ip"
 	. "github.com/aaarafat/vanessa/libs/vector"
+	"github.com/cornelk/hashmap"
 )
 
 type App struct {
@@ -17,9 +18,10 @@ type App struct {
 	key []byte
 
 	// state
-	state     *unix.State
-	zoneTable *ZoneTable
-	stateLock *sync.RWMutex
+	state            *unix.State
+	zoneTable        *ZoneTable
+	stateLock        *sync.RWMutex
+	checkRouteBuffer *hashmap.HashMap
 
 	// to send messages to the network
 	ipConn *ip.IPConnection
@@ -49,19 +51,20 @@ func NewApp(id int, key []byte) *App {
 	}
 
 	app := App{
-		id:        id,
-		ip:        ip,
-		key:       key,
-		zoneTable: NewZoneTable(),
-		ipConn:    ipConn,
-		sensor:    unix.NewSensorUnix(id),
-		router:    unix.NewRouter(id),
-		stateLock: &sync.RWMutex{},
+		id:               id,
+		ip:               ip,
+		key:              key,
+		zoneTable:        NewZoneTable(),
+		ipConn:           ipConn,
+		sensor:           unix.NewSensorUnix(id),
+		router:           unix.NewRouter(id),
+		stateLock:        &sync.RWMutex{},
+		checkRouteBuffer: &hashmap.HashMap{},
 	}
 
 	app.ui = unix.NewUiUnix(id, app.GetState)
 
-	app.initState(0, []Position{}, Position{Lng: 0, Lat: 0})
+	app.initState(0, []Position{}, Position{Lng: 0, Lat: 0}, false)
 
 	return &app
 }
@@ -73,18 +76,34 @@ func (a *App) printZone() {
 	}
 }
 
+func (a *App) checkFront() {
+	state := a.GetState()
+	pos := state.GetPosition()
+	mnSpeed := state.MaxSpeed
+	if state.Stopped || state.DestinationReached || state.ObstacleDetected {
+		a.updateSpeed(0)
+		return
+	}
+	front := a.zoneTable.GetNearestFrontFrom(&pos)
+	if front != nil {
+		log.Printf("App %d: Front ", a.id)
+		front.Print()
+	}
+	if front != nil && front.Speed < mnSpeed {
+		mnSpeed = front.Speed
+		if mnSpeed <= state.Speed && front.ShouldCheckRoute() {
+			// send check route to simulator
+			go a.sendCheckRoute(front.Position, front.IP)
+		}
+	}
+	if mnSpeed != state.Speed {
+		a.updateSpeed(mnSpeed)
+	}
+}
+
 func (a *App) checkZone() {
 	for {
-		// check front
-		front := a.zoneTable.GetInFrontOfMe()
-		mnSpeed := a.GetState().MaxSpeed
-		for _, entry := range front {
-			if entry.Speed < mnSpeed {
-				mnSpeed = entry.Speed
-			}
-		}
-		a.updateSpeed(mnSpeed)
-
+		a.checkFront()
 		time.Sleep(ZONE_MSG_INTERVAL_MS * time.Millisecond)
 	}
 }
@@ -100,6 +119,10 @@ func (a *App) Run() {
 	go a.ui.Start()
 	go a.printZone()
 	go a.checkZone()
+
+	//! Wait 2 seconds until the router is started
+	time.Sleep(time.Second * 2)
+	a.sensor.Write("", unix.MoveEvent)
 
 	log.Printf("App %d started", a.id)
 }

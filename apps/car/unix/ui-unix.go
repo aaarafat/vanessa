@@ -29,6 +29,7 @@ type State struct {
 	MaxSpeed           uint32     `json:"maxSpeed"`
 	Direction          Vector     `json:"direction"`
 	DestinationReached bool       `json:"destinationReached"`
+	Stopped            bool       `json:"stopped"`
 }
 
 func (s *State) GetPosition() Position {
@@ -36,7 +37,7 @@ func (s *State) GetPosition() Position {
 }
 
 func (s *State) String() string {
-	return fmt.Sprintf("State{Id: %d, Speed: %d, Route: %v, Lat: %f, Lng: %f, ObstacleDetected: %t, Obstacles: %v, MaxSpeed: %d, Direction: %v}", s.Id, s.Speed, s.Route, s.Lat, s.Lng, s.ObstacleDetected, s.Obstacles, s.MaxSpeed, s.Direction)
+	return fmt.Sprintf("State{Id: %d, Speed: %d, Route: %v, Lat: %f, Lng: %f, ObstacleDetected: %t, Obstacles: %v, MaxSpeed: %d, Direction: %v, stopped: %v}", s.Id, s.Speed, s.Route, s.Lat, s.Lng, s.ObstacleDetected, s.Obstacles, s.MaxSpeed, s.Direction, s.Stopped)
 }
 
 type UiUnix struct {
@@ -100,7 +101,17 @@ func (u *UiUnix) Start() {
 	})
 	http.Handle("/", u.server)
 
+	go func() {
+		time.Sleep(time.Second * 10)
+		// send refresh message to the ui
+		u.Refresh(*u.getState())
+	}()
+
 	log.Fatal(http.Serve(listener, nil))
+}
+
+func (u *UiUnix) Refresh(state State) {
+	u.Write(state, string(RefreshEvent))
 }
 
 func (u *UiUnix) Close() {

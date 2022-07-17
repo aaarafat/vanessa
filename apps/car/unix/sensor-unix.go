@@ -18,7 +18,6 @@ type Subscriber struct {
 type SensorUnix struct {
 	id     int
 	server *net.UnixListener
-	conn   *net.Conn
 	topics map[Event][]*Subscriber
 }
 
@@ -105,27 +104,34 @@ func (unix *SensorUnix) reader(d *json.Decoder) {
 			return
 		}
 		unix.publish(ChangeSpeedEvent, m["data"])
+
+	case CheckRouteResponseEvent:
+		var p CheckRouteResponseData
+		err := json.Unmarshal(m["data"], &p)
+		if err != nil {
+			log.Printf("Error: %v", err)
+			return
+		}
+		unix.publish(CheckRouteResponseEvent, m["data"])
 	}
 }
 
 func (unix *SensorUnix) Write(message any, event Event) {
 	backoff.Retry(func() error {
 		log.Printf("Writing to socket...\n")
-		if unix.conn == nil {
-			err := unix.initUnixWriteSocket()
-			if err != nil {
-				return err
-			}
+		conn, err := unix.initUnixWriteSocket()
+		if err != nil {
+			return err
 		}
+		defer conn.Close()
 
-		err := json.NewEncoder(*unix.conn).Encode(map[string]interface{}{
+		err = json.NewEncoder(conn).Encode(map[string]interface{}{
 			"id":   unix.id,
 			"type": event,
 			"data": message,
 		})
 		if err != nil {
 			log.Printf("Error: %v\n", err)
-			unix.initUnixWriteSocket()
 			return err
 		}
 
@@ -133,17 +139,16 @@ func (unix *SensorUnix) Write(message any, event Event) {
 	}, backoff.WithMaxRetries(backoff.NewConstantBackOff(100*time.Millisecond), 10))
 }
 
-func (unix *SensorUnix) initUnixWriteSocket() error {
+func (unix *SensorUnix) initUnixWriteSocket() (net.Conn, error) {
 	addr := fmt.Sprintf("/tmp/car%dwrite.socket", unix.id)
 	log.Printf("Connecting to %s\n", addr)
 	conn, err := net.Dial("unix", addr)
 	if err != nil {
 		log.Printf("Error: %v\n", err)
-		return err
+		return nil, err
 	}
-	unix.conn = &conn
 	log.Printf("Connected\n")
-	return nil
+	return conn, nil
 }
 
 func (unix *SensorUnix) Start() {
@@ -186,7 +191,4 @@ func (unix *SensorUnix) Start() {
 
 func (u *SensorUnix) Close() {
 	u.server.Close()
-	if u.conn != nil {
-		(*u.conn).Close()
-	}
 }

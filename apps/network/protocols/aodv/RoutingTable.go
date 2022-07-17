@@ -14,12 +14,12 @@ type VRoutingTable struct {
 
 type VRoutingTableEntry struct {
 	Destination net.IP
-	NextHop net.HardwareAddr
-	NoOfHops uint8
-	SeqNum uint32
-	IfiIndex int
-	LifeTime time.Time
-	timer *time.Timer
+	NextHop     net.HardwareAddr
+	NoOfHops    uint8
+	SeqNum      uint32
+	IfiIndex    int
+	LifeTime    time.Time
+	timer       *time.Timer
 }
 
 func NewVRoutingTable() *VRoutingTable {
@@ -28,9 +28,9 @@ func NewVRoutingTable() *VRoutingTable {
 	}
 }
 
-func (r* VRoutingTable) isNewEntry(newEntry *VRoutingTableEntry) bool {
+func (r *VRoutingTable) isNewEntry(newEntry *VRoutingTableEntry) bool {
 	// https://datatracker.ietf.org/doc/html/rfc3561#section-6.2
-	entry, exists := r.Get(newEntry.Destination);
+	entry, exists := r.Get(newEntry.Destination)
 	if exists {
 		if entry.LifeTime.Before(time.Now()) {
 			return true
@@ -50,16 +50,16 @@ func (r* VRoutingTable) isNewEntry(newEntry *VRoutingTableEntry) bool {
 	return true
 }
 
-func (r* VRoutingTable) Update(destIP net.IP, nextHop net.HardwareAddr, hopCount uint8, lifeTime, seqNum uint32, ifiIndex int) {
+func (r *VRoutingTable) Update(destIP net.IP, nextHop net.HardwareAddr, hopCount uint8, lifeTime, seqNum uint32, ifiIndex int) {
 	lifeTimeMS := time.Millisecond * time.Duration(lifeTime)
-		
+
 	newEntry := &VRoutingTableEntry{
 		Destination: destIP,
-		NextHop: nextHop,
-		NoOfHops: hopCount,
-		SeqNum: seqNum,
-		LifeTime: time.Now().Add(lifeTimeMS),
-		IfiIndex: ifiIndex,
+		NextHop:     nextHop,
+		NoOfHops:    hopCount,
+		SeqNum:      seqNum,
+		LifeTime:    time.Now().Add(lifeTimeMS),
+		IfiIndex:    ifiIndex,
 	}
 
 	if r.isNewEntry(newEntry) {
@@ -67,7 +67,7 @@ func (r* VRoutingTable) Update(destIP net.IP, nextHop net.HardwareAddr, hopCount
 	}
 }
 
-func (r* VRoutingTable) Get(destination net.IP) (*VRoutingTableEntry, bool) {
+func (r *VRoutingTable) Get(destination net.IP) (*VRoutingTableEntry, bool) {
 	item, exists := r.table.Get(destination.String())
 	if exists {
 		entry := item.(VRoutingTableEntry)
@@ -76,7 +76,7 @@ func (r* VRoutingTable) Get(destination net.IP) (*VRoutingTableEntry, bool) {
 	return nil, false
 }
 
-func (r* VRoutingTable) Del(ip net.IP) {
+func (r *VRoutingTable) Del(ip net.IP) {
 	item, exists := r.table.Get(ip.String())
 	if exists {
 		// Stop the timer
@@ -86,22 +86,22 @@ func (r* VRoutingTable) Del(ip net.IP) {
 	}
 }
 
-func (r* VRoutingTable) Set(destIP net.IP, nextHop net.HardwareAddr, hopCount uint8, lifeTime, seqNum uint32, ifiIndex int) (new bool) {
+func (r *VRoutingTable) Set(destIP net.IP, nextHop net.HardwareAddr, hopCount uint8, lifeTime, seqNum uint32, ifiIndex int) (new bool) {
 	lifeTimeMS := time.Millisecond * time.Duration(lifeTime)
-		
+
 	newEntry := &VRoutingTableEntry{
 		Destination: destIP,
-		NextHop: nextHop,
-		NoOfHops: hopCount,
-		SeqNum: seqNum,
-		LifeTime: time.Now().Add(lifeTimeMS),
-		IfiIndex: ifiIndex,
+		NextHop:     nextHop,
+		NoOfHops:    hopCount,
+		SeqNum:      seqNum,
+		LifeTime:    time.Now().Add(lifeTimeMS),
+		IfiIndex:    ifiIndex,
 	}
 
 	return r.set(newEntry)
 }
 
-func (r* VRoutingTable) set(entry *VRoutingTableEntry) (new bool) {
+func (r *VRoutingTable) set(entry *VRoutingTableEntry) (new bool) {
 	item, exists := r.table.Get(entry.Destination.String())
 	if exists {
 		// Stop the timer
@@ -115,13 +115,24 @@ func (r* VRoutingTable) set(entry *VRoutingTableEntry) (new bool) {
 	}
 	timer := time.AfterFunc(entry.LifeTime.Sub(time.Now()), callback)
 	entry.timer = timer
-	
+
 	r.table.Set(entry.Destination.String(), *entry)
 
 	return !exists
 }
 
-func (r* VRoutingTable) Len() int {
+func (r *VRoutingTable) Items() []*VRoutingTableEntry {
+	entries := make([]*VRoutingTableEntry, r.Len())
+	i := 0
+	for item := range r.table.Iter() {
+		entry := item.Value.(VRoutingTableEntry)
+		entries[i] = &entry
+		i++
+	}
+	return entries
+}
+
+func (r *VRoutingTable) Len() int {
 	return r.table.Len()
 }
 
@@ -131,8 +142,8 @@ func (r *VRoutingTable) Print() {
 	for item := range r.table.Iter() {
 		itemEntry := item.Value.(VRoutingTableEntry)
 		log.Printf("ip: %s, next hop %s, no hops %d, seq num %d, life time %s\n",
-		itemEntry.Destination.String(), itemEntry.NextHop.String(), 
-		itemEntry.NoOfHops, itemEntry.SeqNum, itemEntry.LifeTime.String())
+			itemEntry.Destination.String(), itemEntry.NextHop.String(),
+			itemEntry.NoOfHops, itemEntry.SeqNum, itemEntry.LifeTime.String())
 	}
 	log.Println()
 }

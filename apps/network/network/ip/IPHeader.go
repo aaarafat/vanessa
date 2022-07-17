@@ -81,12 +81,20 @@ func (h *IPHeader) LengthInBytes() int {
 }
 
 func HeaderChecksum(data []byte, len int) uint16 {
-	// copy data bytes
-	var sum uint32 = 0
-	for i := 0; i < len; i += 2 {
-		sum += uint32(data[i])<<8 | uint32(data[i+1])
+	sum := uint32(0)
+	for i := 0; i < len; i += CHECKSUM_BLOCK_SIZE {
+		cur := uint32(0)
+		for j := i; j < i+CHECKSUM_BLOCK_SIZE && j < len; j++ {
+			cur |= uint32(data[j]) << uint(8*(CHECKSUM_BLOCK_SIZE-1)-8*(j-i))
+		}
+		sum += cur
 	}
-	return ^uint16((sum >> 16) + sum)
+	check := uint16(sum >> 16)
+	carry := uint16(sum & 0xffff)
+	check += carry
+	// do one's complement
+	check = ^check
+	return check
 }
 
 func UpdateChecksum(data []byte, len int) {

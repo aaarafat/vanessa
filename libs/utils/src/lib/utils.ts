@@ -27,6 +27,6 @@ export function getObstacleFeatures(obstacles: turf.Feature<turf.Point>[]) {
     type: 'FeatureCollection',
     features: obstacles,
   };
-  const obstacle = turf.buffer(featureCollection, 2, { units: 'meters' });
+  const obstacle = turf.buffer(featureCollection, 3, { units: 'meters' });
   return obstacle;
 }

@@ -22,6 +22,8 @@ const carDefaultProps: CarProps = {
   </ul>`,
 };
 
+type ExportableCar = Omit<ICar, 'map' | 'port'> & { type: 'car' };
+
 /**
  * Car Class
  */
@@ -30,7 +32,7 @@ export class Car {
   public lat: number;
   public lng: number;
   public carSpeed: number;
-  public speed: number;
+  private exportable: ExportableCar;
   public route: Coordinates[];
   public originalDirections: GeoJSON.Feature;
 
@@ -58,7 +60,8 @@ export class Car {
   private animationFrame: number;
   private removed = false;
   private focused: boolean;
-  private stopped = false;
+  private initiated = false;
+  public stopped = false;
 
   public port: number;
 
@@ -73,7 +76,6 @@ export class Car {
     this.lng = car.lng || car.route?.[0].lng || 0;
     this.prevCoordinates = this.coordinates;
     this.carSpeed = car.speed ?? 10;
-    this.speed = this.carSpeed;
     this.obstacleDetected = false;
     this.route = car.route || [];
     this.routeIndex = car.destinationReached ? this.route.length : 0;
@@ -90,22 +92,27 @@ export class Car {
 
     this.port = car.port || -1;
 
-    if (this.arrived) {
-      this.speed = 0;
-    }
-
     this.draw();
     this.attachHandlers();
 
+    this.exportable = {
+      id: this.id,
+      route: this.route,
+      speed: this.carSpeed,
+      lng: this.lng,
+      lat: this.lat,
+      type: 'car',
+    };
+
     this.prevTime = Date.now();
 
-    if (!displayOnly) {
-      this.update();
-    } else {
+    if (displayOnly) {
       this.focused = true;
+      this.initiated = true;
       this.obstacleDetected = car.obstacleDetected || false;
-      if (this.obstacleDetected || car.destinationReached) this.speed = 0;
       this.map.panTo([this.lng, this.lat]);
+    } else {
+      this.map.setPaintProperty(this.sourceId, 'circle-color', '#ababab');
     }
   }
 
@@ -115,6 +122,11 @@ export class Car {
 
   public get arrived(): boolean {
     return this.routeIndex === this.route.length;
+  }
+
+  public get speed(): number {
+    if (this.arrived || this.obstacleDetected || this.stopped) return 0;
+    return this.carSpeed;
   }
 
   public draw(): void {
@@ -142,7 +154,13 @@ export class Car {
         source: this.sourceId,
         type: 'circle',
         paint: {
-          'circle-radius': 10,
+          'circle-radius': {
+            base: 1.5,
+            stops: [
+              [12, 4],
+              [18, 17],
+            ],
+          },
           'circle-color': '#007cbf',
         },
       })
@@ -171,7 +189,13 @@ export class Car {
           },
           paint: {
             'line-color': '#807515',
-            'line-width': 12,
+            'line-width': {
+              base: 1.5,
+              stops: [
+                [12, 6],
+                [18, 19],
+              ],
+            },
           },
         },
         'first-layer'
@@ -252,6 +276,16 @@ export class Car {
    * Update Car
    */
 
+  public startMovement() {
+    if (this.initiated) return;
+    console.log('Car started movement', this.id);
+    this.initiated = true;
+    this.map.setPaintProperty(this.sourceId, 'circle-color', '#007cbf');
+    this.prevTime = Date.now();
+    this.update();
+    this.updatePopupProps();
+  }
+
   public updateLocationFromData = (coordinates: Coordinates) => {
     this.updateFromData('update-location', coordinates);
   };
@@ -264,6 +298,16 @@ export class Car {
     this.updateFromData('obstacle-detected');
   };
 
+  public updateRouteFromData = (route: Coordinates[]) => {
+    this.route = route;
+    this.originalDirections = turf.lineString(
+      this.route.map((r: Coordinates) => [r.lng, r.lat])
+    );
+    this.routeSource?.setData(
+      turf.featureCollection([this.originalDirections])
+    );
+  };
+
   private updateFromData(
     type: 'destination-reached' | 'obstacle-detected' | 'update-location',
     data: Partial<ICar> = {}
@@ -273,13 +317,11 @@ export class Car {
       case 'destination-reached':
         this.lat = data.lat ?? this.lat;
         this.lng = data.lng ?? this.lng;
-        this.speed = 0;
         this.routeIndex = this.route.length;
         this.updatePopupProps();
         break;
       case 'obstacle-detected':
         this.obstacleDetected = true;
-        this.speed = 0;
         this.updatePopupProps();
         break;
       case 'update-location':
@@ -294,7 +336,7 @@ export class Car {
   }
 
   private update = () => {
-    if (this.removed) return;
+    if (this.removed || !this.initiated) return;
     this.updateCoordinates();
     this.updateSource();
     this.updateDetails();
@@ -329,7 +371,6 @@ export class Car {
 
   private willUpdate() {
     if (this.arrived) {
-      this.speed = 0;
       this.updatePopupProps();
       this.emit('destination-reached');
       return false;
@@ -369,7 +410,6 @@ export class Car {
     const intersections = turf.lineIntersect(sensorRange, obstacles).features;
     if (intersections.length) {
       this.obstacleDetected = true;
-      this.speed = 0;
       const point = turf.nearestPoint(intersections[0], obstaclesPoints)
         .geometry.coordinates;
       this.emit('obstacle-detected', { lng: point[0], lat: point[1] });
@@ -421,7 +461,10 @@ export class Car {
     return data.routes[0].geometry.coordinates;
   };
 
-  private checkObstaclesOnRoute = (obstacles: turf.Feature<turf.Point>[]) => {
+  public checkObstaclesOnRoute = (
+    obstacles: turf.Feature<turf.Point>[],
+    slice = false
+  ) => {
     const obstaclesFeatures = getObstacleFeatures(obstacles);
 
     const routeSlice = this.route
@@ -429,10 +472,13 @@ export class Car {
       .map((c) => [c.lng, c.lat]);
     if (routeSlice.length < 1) return false;
 
-    const remainingRoute = turf.lineString([
-      [this.lng, this.lat],
-      ...routeSlice,
-    ]);
+    let remainingRoute = turf.lineString([[this.lng, this.lat], ...routeSlice]);
+
+    if (slice) {
+      remainingRoute = turf.lineSliceAlong(remainingRoute, 0, 100, {
+        units: 'meters',
+      });
+    }
 
     if (!turf.booleanDisjoint(remainingRoute, obstaclesFeatures as any)) {
       return true;
@@ -456,10 +502,17 @@ export class Car {
   };
 
   public setSpeed = (speed: number) => {
-    this.speed = speed;
+    if (speed <= 0) {
+      this.stopped = true;
+    } else {
+      this.carSpeed = speed;
+    }
+    this.updatePopupProps();
   };
 
-  private onClick = () => {
+  private onClick = (e?: mapboxgl.MapMouseEvent) => {
+    if (e?.originalEvent.defaultPrevented) return;
+    e?.originalEvent.preventDefault();
     if (this.popup) {
       this.popup.remove();
       this.popup = null;
@@ -513,7 +566,6 @@ export class Car {
     if (el)
       el.onclick = () => {
         this.stopped = true;
-        this.speed = 0;
         this.emit('change-speed', this);
         this.updatePopupProps();
       };
@@ -527,7 +579,6 @@ export class Car {
     if (el)
       el.onclick = () => {
         this.stopped = false;
-        this.speed = this.carSpeed;
         this.emit('change-speed', this);
         this.updatePopupProps();
       };
@@ -598,6 +649,10 @@ export class Car {
         : '<a id="control{id}-move">Move</a>';
     }
 
+    if (!this.initiated) {
+      description += 'Initializing...';
+    }
+
     return interpolateString(description, this);
   }
 
@@ -654,14 +709,7 @@ export class Car {
   }
 
   public export() {
-    return {
-      id: this.id,
-      route: this.route,
-      speed: this.carSpeed,
-      lng: this.route[0].lng,
-      lat: this.route[0].lat,
-      type: 'car',
-    };
+    return this.exportable;
   }
 
   public remove() {

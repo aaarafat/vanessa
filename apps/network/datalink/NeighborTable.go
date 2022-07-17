@@ -22,7 +22,7 @@ type VNeighborEntry struct {
 }
 
 const (
-	VNeighborTable_UPDATE_INTERVAL_MS = 6000
+	VNeighborTable_UPDATE_INTERVAL_MS = 1500
 )
 
 func NewVNeighborTable(srcIP net.IP, ifiName string, receiveOnly bool) *VNeighborTable {

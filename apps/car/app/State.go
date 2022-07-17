@@ -2,6 +2,7 @@ package app
 
 import (
 	"log"
+	"reflect"
 
 	"github.com/aaarafat/vanessa/apps/car/unix"
 	. "github.com/aaarafat/vanessa/libs/vector"
@@ -13,10 +14,15 @@ func (a *App) GetState() *unix.State {
 	return a.state
 }
 
-func (a *App) initState(speed uint32, route []Position, pos Position) {
+func (a *App) initState(speed uint32, route []Position, pos Position, stopped bool) {
 	log.Printf("Initializing car state......")
 	a.stateLock.Lock()
 	defer a.stateLock.Unlock()
+	changedRoute := route
+	if a.state != nil && reflect.DeepEqual(a.state.Route, route) {
+		changedRoute = nil
+	}
+
 	if a.state == nil {
 		a.state = &unix.State{
 			Id:                 a.id,
@@ -29,29 +35,37 @@ func (a *App) initState(speed uint32, route []Position, pos Position) {
 			MaxSpeed:           speed,
 			Direction:          NewUnitVector(pos, pos),
 			DestinationReached: false,
+			Stopped:            stopped,
 		}
 	} else {
-		a.state.Direction = NewUnitVector(a.state.GetPosition(), pos)
-		a.state.Speed = speed
 		a.state.Route = route
 		a.state.Lat = pos.Lat
 		a.state.Lng = pos.Lng
-		a.state.MaxSpeed = speed
+		if speed > a.state.MaxSpeed {
+			a.state.MaxSpeed = speed
+		}
+		a.state.Stopped = stopped
 	}
 
 	log.Printf("Car state initialized  state:  %s\n", a.state.String())
+
+	go func() {
+		a.ui.Write(unix.StateData{Coordinates: pos, Route: changedRoute, Speed: int(speed)}, string(unix.StateEvent))
+	}()
 }
 
 func (a *App) updateSpeed(speed uint32) {
 	a.stateLock.Lock()
 	defer a.stateLock.Unlock()
-	if a.state == nil || a.state.Speed == speed {
+	if a.state == nil || a.state.Speed == speed || speed > a.state.MaxSpeed {
 		return
 	}
-	if a.state.MaxSpeed < speed {
-		a.state.MaxSpeed = speed
-	}
+
 	a.state.Speed = speed
+
+	if a.state.Stopped || a.state.DestinationReached || a.state.ObstacleDetected {
+		a.state.Speed = 0
+	}
 
 	go func() {
 		a.sendSpeed(speed)
@@ -65,7 +79,11 @@ func (a *App) updatePosition(pos Position) {
 	if a.state == nil {
 		return
 	}
-	a.state.Direction = NewUnitVector(a.state.GetPosition(), pos)
+	// update direction if the car is moving
+	newdirection := NewUnitVector(a.state.GetPosition(), pos)
+	if newdirection.Lng != 0 || newdirection.Lat != 0 {
+		a.state.Direction = newdirection
+	}
 	a.state.Lat = pos.Lat
 	a.state.Lng = pos.Lng
 	log.Printf("Position updated: lng: %f lat: %f", pos.Lng, pos.Lat)
@@ -78,12 +96,19 @@ func (a *App) addObstacle(pos Position, fromSensor bool) {
 	defer a.stateLock.Unlock()
 	if fromSensor {
 		a.state.ObstacleDetected = true
+		a.state.MaxSpeed = 0
 	}
+	oldLen := len(a.state.Obstacles)
 	a.state.Obstacles = removeDuplicatePositions(append(a.state.Obstacles, pos))
 	log.Printf("Obstacle added: lng: %f lat: %f", pos.Lng, pos.Lat)
 
+	if oldLen == len(a.state.Obstacles) {
+		return
+	}
+
 	go func() {
 		if fromSensor {
+			a.updateSpeed(0)
 			a.sendObstacle(pos)
 			a.ui.Write(unix.ObstacleDetectedData{ObstacleCoordinates: pos}, string(unix.ObstacleDetectedEvent))
 		} else {
@@ -100,8 +125,13 @@ func (a *App) updateObstacles(obstacles []Position) {
 	if a.state == nil || len(obstacles) == 0 {
 		return
 	}
+	oldLen := len(a.state.Obstacles)
 	a.state.Obstacles = removeDuplicatePositions(append(a.state.Obstacles, obstacles...))
 	log.Printf("Obstacles updated: %v", a.state.Obstacles)
+
+	if oldLen == len(a.state.Obstacles) {
+		return
+	}
 
 	go func() {
 		data := unix.FormatObstacles(obstacles)
