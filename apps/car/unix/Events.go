@@ -20,7 +20,12 @@ const (
 	StateEvent              Event = "state"                // from car to ui
 	RefreshEvent            Event = "refresh"              // from car to ui
 	MoveEvent               Event = "move"                 // from car to simulator when car is initiated to move
+	ChangeStopEvent         Event = "change-stop"          // from car to simulator when car is initiated to change stop
 )
+
+type ChangeStopData struct {
+	Stop bool
+}
 
 type RefreshData = State
 

@@ -13,7 +13,8 @@ func (a *App) startSocketHandlers() {
 	a.obstacleHandler()
 	a.destinationReachedHandler()
 	a.updateLocationHandler()
-	a.CheckRouteResponseHandler()
+	a.checkRouteResponseHandler()
+	a.changeStopHandler()
 }
 
 func (a *App) addCarHandler() {
@@ -34,7 +35,7 @@ func (a *App) addCarHandler() {
 
 				log.Printf("Adding car %v", addCar)
 
-				a.initState(uint32(addCar.Speed), addCar.Route, addCar.Coordinates, addCar.Stopped)
+				a.initState(uint32(addCar.Speed), addCar.Route, addCar.Coordinates)
 			}
 		}
 	}()
@@ -106,7 +107,7 @@ func (a *App) updateLocationHandler() {
 	}()
 }
 
-func (a *App) CheckRouteResponseHandler() {
+func (a *App) checkRouteResponseHandler() {
 	checkRouteResponseChannel := make(chan json.RawMessage)
 	checkRouteResponseSubscriber := &unix.Subscriber{Messages: &checkRouteResponseChannel}
 	a.sensor.Subscribe(unix.CheckRouteResponseEvent, checkRouteResponseSubscriber)
@@ -129,6 +130,28 @@ func (a *App) CheckRouteResponseHandler() {
 						a.zoneTable.Ignore(ip.(net.IP), !checkRouteResponse.InRoute)
 					}
 				}()
+			}
+		}
+	}()
+}
+
+func (a *App) changeStopHandler() {
+	changeStopChannel := make(chan json.RawMessage)
+	changeStopSubscriber := &unix.Subscriber{Messages: &changeStopChannel}
+	a.sensor.Subscribe(unix.ChangeStopEvent, changeStopSubscriber)
+
+	go func() {
+		for {
+			select {
+			case data := <-*changeStopSubscriber.Messages:
+				var changeStop unix.ChangeStopData
+				err := json.Unmarshal(data, &changeStop)
+				if err != nil {
+					log.Printf("Error decoding change-stop data: %v", err)
+					return
+				}
+
+				go a.changeStop(changeStop.Stop)
 			}
 		}
 	}()

@@ -14,7 +14,7 @@ func (a *App) GetState() *unix.State {
 	return a.state
 }
 
-func (a *App) initState(speed uint32, route []Position, pos Position, stopped bool) {
+func (a *App) initState(speed uint32, route []Position, pos Position) {
 	log.Printf("Initializing car state......")
 	a.stateLock.Lock()
 	defer a.stateLock.Unlock()
@@ -35,14 +35,13 @@ func (a *App) initState(speed uint32, route []Position, pos Position, stopped bo
 			MaxSpeed:           speed,
 			Direction:          NewUnitVector(pos, pos),
 			DestinationReached: false,
-			Stopped:            stopped,
+			Stopped:            false,
 		}
 	} else {
 		a.state.Route = route
 		a.state.Lat = pos.Lat
 		a.state.Lng = pos.Lng
 		a.state.MaxSpeed = speed
-		a.state.Stopped = stopped
 	}
 
 	log.Printf("Car state initialized  state:  %s\n", a.state.String())
@@ -152,4 +151,15 @@ func (a *App) destinationReached(pos Position) {
 		a.updateSpeed(0)
 		a.ui.Write(unix.DestinationReachedData{Coordinates: pos}, string(unix.DestinationReachedEvent))
 	}()
+}
+
+func (a *App) changeStop(stop bool) {
+	a.stateLock.Lock()
+	defer a.stateLock.Unlock()
+	if a.state == nil {
+		return
+	}
+	a.state.Stopped = stop
+
+	log.Printf("Stop changed: %t", stop)
 }

@@ -113,6 +113,15 @@ func (unix *SensorUnix) reader(d *json.Decoder) {
 			return
 		}
 		unix.publish(CheckRouteResponseEvent, m["data"])
+
+	case ChangeStopEvent:
+		var p ChangeStopData
+		err := json.Unmarshal(m["data"], &p)
+		if err != nil {
+			log.Printf("Error: %v", err)
+			return
+		}
+		unix.publish(ChangeStopEvent, m["data"])
 	}
 }
 
