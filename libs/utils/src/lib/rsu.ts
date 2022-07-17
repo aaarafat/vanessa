@@ -7,7 +7,7 @@ const rsuDefaultProps: RSUProps = {
   title: 'RSU',
   description: `<ul class="popup">
     <li>id: {id}</li>
-    <li>radius: {radius} km</li>
+    <li>radius: {radius} m</li>
   </ul>`,
 };
 
