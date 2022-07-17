@@ -2,11 +2,9 @@ package aodv
 
 // Types
 const (
-	RREQType    uint8 = 1
-	RREPType    uint8 = 2
-	RERRType    uint8 = 3
-	RREPACKType uint8 = 4
-	DataType    uint8 = 5
+	RREQType uint8 = 1
+	RREPType uint8 = 2
+	RERRType uint8 = 3
 )
 
 // Flags
@@ -28,7 +26,6 @@ const (
 	RREQMessageLen = 24
 	RREPMessageLen = 20
 	RERRMessageLen = 4
-	DataMessageLen = 16
 )
 
 // Default values
