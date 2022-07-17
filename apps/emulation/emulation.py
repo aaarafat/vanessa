@@ -127,6 +127,22 @@ def clear(is_mn_down=False):
     print('Done Clearing.')
 
 
+@sio.on('change-stop')
+def change_speed(message):
+    try:
+        id = message['id']
+        payload = {
+            'type': 'change-stop',
+            'data': {
+                'stop': message['stop'],
+            }
+        }
+        send_to_car(f"/tmp/car{id}.socket", payload)
+    except Exception as e:
+        if running:
+            print(e)
+
+
 @sio.on('destination-reached')
 def destination_reached(message):
     try:
