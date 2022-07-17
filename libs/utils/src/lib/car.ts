@@ -509,8 +509,10 @@ export class Car {
   };
 
   public setSpeed = (speed: number) => {
-    if (speed <= 0 && !this.manualStop) {
-      this.autoStop = true;
+    if (speed <= 0) {
+      if (!this.manualStop) {
+        this.autoStop = true;
+      }
     } else {
       this.autoStop = false;
       this.carSpeed = speed;
