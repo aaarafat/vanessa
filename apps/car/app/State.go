@@ -41,9 +41,7 @@ func (a *App) initState(speed uint32, route []Position, pos Position, stopped bo
 		a.state.Route = route
 		a.state.Lat = pos.Lat
 		a.state.Lng = pos.Lng
-		if speed > a.state.MaxSpeed {
-			a.state.MaxSpeed = speed
-		}
+		a.state.MaxSpeed = speed
 		a.state.Stopped = stopped
 	}
 

@@ -6,8 +6,8 @@ import * as turf from '@turf/turf';
 const rsuDefaultProps: RSUProps = {
   title: 'RSU',
   description: `<ul class="popup">
-    <li>id: {id}</li>
-    <li>radius: {radius} m</li>
+    <li>ID: {id}</li>
+    <li>Range: {range} m</li>
   </ul>`,
 };
 
@@ -18,7 +18,7 @@ export class RSU {
   public id: number;
   public lat: number;
   public lng: number;
-  public radius: number;
+  public range: number;
   public sourceId: string;
   public clickableSourceId: string;
   private map: mapboxgl.Map;
@@ -37,7 +37,7 @@ export class RSU {
     this.clickableSourceId = `rsu-clickable-${this.id}`;
     this.lat = rsu.lat || 0;
     this.lng = rsu.lng || 0;
-    this.radius = rsu.radius || 500;
+    this.range = rsu.range || 500;
     this.map = rsu.map;
 
     this.popup = null;
@@ -63,7 +63,7 @@ export class RSU {
       properties: { ...this.props },
     };
 
-    const data = turf.circle(center, this.radius, options);
+    const data = turf.circle(center, this.range, options);
     const geojson: mapboxgl.GeoJSONSourceRaw = {
       type: 'geojson',
       data,
@@ -109,8 +109,8 @@ export class RSU {
     });
   }
 
-  public setRadius(radius: number) {
-    this.radius = radius;
+  public setRange(range: number) {
+    this.range = range;
     if (!this.removed) {
       this.map.removeLayer(this.sourceId);
       this.map.removeSource(this.sourceId);
@@ -119,6 +119,7 @@ export class RSU {
       this.map.removeSource(this.clickableSourceId);
     }
     this.draw();
+    this.updatePopup();
   }
 
   private get props(): RSUProps {
@@ -127,7 +128,7 @@ export class RSU {
       id: this.id,
       lat: this.lat,
       lng: this.lng,
-      radius: this.radius,
+      range: this.range,
     };
   }
 
@@ -155,6 +156,11 @@ export class RSU {
 
     this.smoothlyFlyToRSU(true);
     this.emit('click', this);
+  };
+
+  private updatePopup = () => {
+    if (!this.popup) return;
+    this.popup.setHTML(this.description);
   };
 
   private smoothlyFlyToRSU(now = false) {
@@ -219,7 +225,7 @@ export class RSU {
       id: this.id,
       lng: this.lng,
       lat: this.lat,
-      radius: this.radius,
+      range: this.range,
       type: 'rsu',
     };
   }

@@ -17,8 +17,8 @@ import * as turf from '@turf/turf';
 const carDefaultProps: CarProps = {
   title: 'Car',
   description: `<ul class="popup">
-    <li>id: {id}</li>
-    <li>speed: {speed} km/h</li>
+    <li>ID: {id}</li>
+    <li>Speed: {speed} km/h</li>
   </ul>`,
 };
 
@@ -61,7 +61,8 @@ export class Car {
   private removed = false;
   private focused: boolean;
   private initiated = false;
-  public stopped = false;
+  public manualStop = false;
+  public autoStop = false;
 
   public port: number;
 
@@ -125,7 +126,13 @@ export class Car {
   }
 
   public get speed(): number {
-    if (this.arrived || this.obstacleDetected || this.stopped) return 0;
+    if (
+      this.arrived ||
+      this.obstacleDetected ||
+      this.manualStop ||
+      this.autoStop
+    )
+      return 0;
     return this.carSpeed;
   }
 
@@ -502,9 +509,10 @@ export class Car {
   };
 
   public setSpeed = (speed: number) => {
-    if (speed <= 0) {
-      this.stopped = true;
+    if (speed <= 0 && !this.manualStop) {
+      this.autoStop = true;
     } else {
+      this.autoStop = false;
       this.carSpeed = speed;
     }
     this.updatePopupProps();
@@ -554,7 +562,7 @@ export class Car {
 
   private bindElements() {
     this.bindAnchorElement();
-    if (!this.stopped) this.bindSpeedControlElementStop();
+    if (!this.manualStop) this.bindSpeedControlElementStop();
     else this.bindSpeedControlElementMove();
   }
 
@@ -565,7 +573,7 @@ export class Car {
       .querySelector(`#control${this.id}-stop`) as HTMLAnchorElement;
     if (el)
       el.onclick = () => {
-        this.stopped = true;
+        this.manualStop = true;
         this.emit('change-speed', this);
         this.updatePopupProps();
       };
@@ -578,7 +586,7 @@ export class Car {
       .querySelector(`#control${this.id}-move`) as HTMLAnchorElement;
     if (el)
       el.onclick = () => {
-        this.stopped = false;
+        this.manualStop = false;
         this.emit('change-speed', this);
         this.updatePopupProps();
       };
@@ -643,8 +651,13 @@ export class Car {
     if (!this.focused)
       description += '<a id="link{id}">Go to the car interface</a>';
 
-    if (!this.arrived && !this.obstacleDetected && !this.focused) {
-      description += !this.stopped
+    if (
+      !this.arrived &&
+      !this.obstacleDetected &&
+      !this.focused &&
+      !this.autoStop
+    ) {
+      description += !this.manualStop
         ? '<a id="control{id}-stop">Stop</a>'
         : '<a id="control{id}-move">Move</a>';
     }

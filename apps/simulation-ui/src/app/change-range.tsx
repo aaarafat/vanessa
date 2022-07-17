@@ -70,7 +70,7 @@ const ChangeRange: React.FC = () => {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!focusedRSU) return;
-    focusedRSU.setRadius(range);
+    focusedRSU.setRange(range);
     socketEvents.addRSU(focusedRSU);
   };
 

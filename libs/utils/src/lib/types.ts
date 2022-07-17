@@ -21,7 +21,7 @@ export interface ICar extends ICommon {
   stopped?: boolean;
 }
 export interface IRSU extends ICommon {
-  radius: number;
+  range: number;
 }
 
 export interface CarProps extends Partial<ICar> {
