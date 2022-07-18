@@ -186,6 +186,10 @@ export class RSU {
     if (this.port > 0) {
       description += `<p>Port: ${this.port}</p>`;
     }
+
+    description +=
+      '<a id="link{id}" href="http://localhost:4202/{port}" target="_blank">Go to the rsu interface</a>';
+
     return interpolateString(description, this);
   }
 

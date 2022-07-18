@@ -563,7 +563,6 @@ export class Car {
   };
 
   private bindElements() {
-    this.bindAnchorElement();
     if (!this.manualStop) this.bindSpeedControlElementStop();
     else this.bindSpeedControlElementMove();
   }
@@ -591,17 +590,6 @@ export class Car {
         this.manualStop = false;
         this.emit('change-stop', this);
         this.updatePopupProps();
-      };
-  }
-
-  private bindAnchorElement() {
-    if (!this.popup) return;
-    const el = this.popup
-      .getElement()
-      .querySelector(`#link${this.id}`) as HTMLAnchorElement;
-    if (el)
-      el.onclick = () => {
-        this.emit('focus');
       };
   }
 
@@ -651,7 +639,8 @@ export class Car {
     }
 
     if (!this.focused)
-      description += '<a id="link{id}">Go to the car interface</a>';
+      description +=
+        '<a id="link{id}" href="http://localhost:4201/{port}" target="_blank">Go to the car interface</a>';
 
     if (
       !this.arrived &&
