@@ -164,7 +164,7 @@ func (a *Aodv) updateRSU() {
 	for {
 		entry, ok := a.neighborTables[WLAN1].GetFirst()
 		if ok {
-			new := a.routingTable.Set(entry.IP, entry.MAC, 0, VNeighborTable_UPDATE_INTERVAL_MS, 0, WLAN1)
+			new := a.routingTable.Set(entry.IP, entry.MAC, 0, ActiveRouteTimeMS, 0, WLAN1)
 			if new {
 				log.Printf("Path Discovery is successful for ip=%s !!!!", entry.IP)
 				go a.pathDiscoveryCallback(entry.IP)

@@ -104,7 +104,7 @@ func (a *App) checkFront() {
 func (a *App) checkZone() {
 	for {
 		a.checkFront()
-		time.Sleep(ZONE_MSG_INTERVAL_MS * time.Millisecond)
+		time.Sleep((ZONE_MSG_INTERVAL_MS / 3) * time.Millisecond)
 	}
 }
 
